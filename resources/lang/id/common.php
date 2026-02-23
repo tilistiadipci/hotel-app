@@ -140,6 +140,22 @@ return [
         'list_of_user' => 'Daftar Pengguna',
     ],
 
+    'tv' => [
+        'title' => 'TV',
+        'title_singular' => 'TV',
+        'list_of_tv' => 'Daftar TV',
+        'name' => 'Nama',
+        'slug' => 'Slug',
+        'logo' => 'Logo',
+        'type' => 'Tipe',
+        'region' => 'Region',
+        'stream_url' => 'Stream URL',
+        'frequency' => 'Frequency',
+        'quality' => 'Kualitas',
+        'sort_order' => 'Urutan',
+        'is_active' => 'Is Active',
+    ],
+
     'supplier' => [
         'title' => 'Pemasok',
         'title_singular' => 'Pemasok',

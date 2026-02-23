@@ -8,6 +8,7 @@ use App\Http\Controllers\Master\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SettingWebsiteController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\TVChannelController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -79,6 +80,15 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/bulkDelete', [UserController::class, 'bulkDelete'])->name('bulkDelete');
             Route::get('/{id}/detail/{part}', [UserController::class, 'detail'])->name('detail');
         });
+
+    // TV Channels
+    Route::resource('tv-channels', TVChannelController::class);
+    Route::prefix('tv-channels')
+        ->name('tv-channels.')
+        ->group(function () {
+            Route::post('/bulkDelete', [TVChannelController::class, 'bulkDelete'])->name('bulkDelete');
+        });
+
 
     // website
     Route::prefix('website')

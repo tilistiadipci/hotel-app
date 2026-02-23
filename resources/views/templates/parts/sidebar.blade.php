@@ -38,6 +38,11 @@
                         <i class="metismenu-icon lnr-laptop"></i> Dashboard
                     </a>
                 </li>
+                <li class="{{ $page == 'tv channels' ? 'mm-active' : '' }}">
+                    <a href="{{ url('/tv-channels') }}" class="{{ $page == 'tv channels' ? 'mm-active' : '' }}">
+                        <i class="metismenu-icon pe-7s-monitor"></i> TV Channels
+                    </a>
+                </li>
                 <li class="{{ $page == 'users' ? 'mm-active' : '' }}">
                     <a href="{{ url('/users') }}" class="{{ $page == 'users' ? 'mm-active' : '' }}">
                         <i class="metismenu-icon pe-7s-users"></i> {{ trans('common.user.title') }}

@@ -141,6 +141,21 @@ return [
         'list_of_user' => 'List of User',
     ],
 
+    'tv' => [
+        'title' => 'TV Channels',
+        'title_singular' => 'TV Channel',
+        'name' => 'Name',
+        'slug' => 'Slug',
+        'logo' => 'Logo',
+        'type' => 'Type',
+        'region' => 'Region',
+        'stream_url' => 'Stream URL',
+        'frequency' => 'Frequency',
+        'quality' => 'Quality',
+        'sort_order' => 'Sort Order',
+        'is_active' => 'Is Active',
+    ],
+
     'supplier' => [
         'title' => 'Suppliers',
         'title_singular' => 'Supplier',
