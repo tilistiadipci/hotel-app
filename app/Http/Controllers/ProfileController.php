@@ -9,6 +9,7 @@ class ProfileController extends Controller
 {
     protected $userRepository;
     protected $page = 'profile';
+    protected $icon = 'fa fa-user';
 
     public function __construct(UserRepository $userRepository)
     {
@@ -26,6 +27,7 @@ class ProfileController extends Controller
 
         return view('pages.profiles.index', [
             'user' => $user->load('profile'),
+            'icon' => $this->icon,
             'profile' => true,
             'page' => 'account'
         ]);
@@ -38,6 +40,7 @@ class ProfileController extends Controller
         return view('pages.profiles.change-profile', [
             'user' => $this->userRepository->find($id)->load('profile'),
             'profile' => true,
+            'icon' => $this->icon,
             'page' => 'account'
         ]);
     }

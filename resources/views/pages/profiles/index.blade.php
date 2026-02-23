@@ -7,7 +7,7 @@
 
                 @include('templates.parts.breadcrumb', [
                     'title' => trans('common.profile.title_singular'),
-                    'icon' => 'fa fa-check',
+                    'icon' => $icon,
                     'breadcrumbs' => [['href' => '#', 'label' => auth()->user()->profile->name ?? '']],
                 ])
 

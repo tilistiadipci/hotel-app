@@ -19,24 +19,14 @@ class RoleSeeder extends Seeder
                 'description' => 'Super user mengatur semua fitur aplikasi',
             ],
             [
-                'name' => 'Owner',
+                'name' => 'Admin',
                 'category' => 'admin',
-                'description' => 'Owner mengatur semua fitur aplikasi',
+                'description' => 'Admin mengatur semua fitur aplikasi',
             ],
             [
-                'name' => 'Manager',
+                'name' => 'Operator',
                 'category' => 'admin',
-                'description' => 'Manager mengatur semua fitur aplikasi',
-            ],
-            [
-                'name' => 'User',
-                'category' => 'user',
-                'description' => 'User mengatur semua fitur aplikasi',
-            ],
-            [
-                'name' => 'Audit',
-                'category' => 'audit',
-                'description' => 'Audit mengatur semua fitur aplikasi',
+                'description' => 'Operator mengatur semua fitur aplikasi',
             ],
         ];
 

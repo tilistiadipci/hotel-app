@@ -24,12 +24,12 @@ class RoleRepository extends BaseRepository
             return parent::where()->where('category', '!=', 'master')->get();
         }
 
-        if ($user->role->category == 'user') {
-            return parent::where()->where('category', '!=', 'master')->where('category', '!=', 'admin')->get();
-        }
+        // if ($user->role->category == 'user') {
+        //     return parent::where()->where('category', '!=', 'master')->where('category', '!=', 'admin')->get();
+        // }
 
-        if ($user->role->category == 'audit') {
-            return parent::where()->where('category', 'audit')->get();
-        }
+        // if ($user->role->category == 'audit') {
+        //     return parent::where()->where('category', 'audit')->get();
+        // }
     }
 }

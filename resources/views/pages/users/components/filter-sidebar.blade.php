@@ -35,7 +35,7 @@
             <button type="button" class="btn btn-secondary btn-sm mr-2" onclick="resetFilters()">
                 {{ trans('common.reset') }}
             </button>
-            <button type="button" class="btn btn-info btn-sm" onclick="applyFilters()">
+            <button type="button" class="btn btn-primary btn-sm" onclick="applyFilters()">
                 {{ trans('common.apply') }}
             </button>
         </div>

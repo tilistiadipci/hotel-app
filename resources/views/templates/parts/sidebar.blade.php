@@ -44,18 +44,15 @@
                     </a>
                 </li>
                 <li class="app-sidebar__heading">{{ trans('common.settings') }}</li>
-                <li class="{{ isset($profile) ? 'mm-active' : '' }}">
-                    <a href="#">
-                        <i class="metismenu-icon lnr-user"></i> Profile
-                        <i class="metismenu-state-icon fa fa-angle-down caret-left"></i>
+                <li class="{{ $page == 'account' ? 'mm-active' : '' }}">
+                    <a href="{{ url('/profile') }}" class="{{ $page == 'account' ? 'mm-active' : '' }}">
+                        <i class="metismenu-icon pe-7s-user"></i> {{ trans('common.account') }}
                     </a>
-                    <ul class="{{ isset($profile) ? 'mm-collapse mm-show' : '' }}">
-                        <li>
-                            <a href="{{ url('/profile') }}" class="{{ $page == 'account' ? 'mm-active' : '' }}">
-                                {{ trans('common.account') }}
-                            </a>
-                        </li>
-                    </ul>
+                </li>
+                <li class="{{ $page == 'settings' ? 'mm-active' : '' }}">
+                    <a href="{{ url('/settings') }}" class="{{ $page == 'settings' ? 'mm-active' : '' }}">
+                        <i class="metismenu-icon pe-7s-settings"></i> {{ trans('common.settings') }}
+                    </a>
                 </li>
             </ul>
         </div>
