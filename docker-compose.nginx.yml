@@ -1,0 +1,19 @@
+version: "3.8"
+
+services:
+  nginx:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: nginx
+    container_name: nginx
+    ports:
+      - "8000:80"
+    depends_on:
+      - app
+    networks:
+      - shared-networks
+
+networks:
+  shared-networks:
+    external: true

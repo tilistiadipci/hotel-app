@@ -1,0 +1,27 @@
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: app-asset   # ← pakai stage "app-asset"
+    container_name: app-asset
+    working_dir: /var/www
+    expose:
+      - "9000"
+    volumes:
+      - ./public:/var/www/public
+    networks:
+      - shared-networks
+
+  nginx:
+    image: nginx:latest
+    container_name: nginx
+    ports:
+      - "8888:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf
+      - ./public:/var/www/public
+    depends_on:
+      - app
+    networks:
+      - shared-networks
