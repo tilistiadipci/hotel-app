@@ -16,7 +16,8 @@ return [
     'contact_name' => 'Nama Kontak',
     'image' => 'Gambar',
     'photo' => 'Foto',
-    'title' => 'Jabatan',
+    'title' => 'Judul',
+    'category' => 'Kategori',
     'type' => 'Tipe',
     'bulk_edit' => 'Ubah Semua',
     'bulk_delete' => 'Hapus Semua',
@@ -167,6 +168,15 @@ return [
         'is_active' => 'Aktif',
         'stream_url' => 'Stream URL',
         'album_placeholder' => 'Album (boleh dikosongkan atau tambah baru)',
+    ],
+
+    'movie' => [
+        'list_of_movie' => 'Daftar Film',
+        'title' => 'Film',
+        'title_singular' => 'Film',
+        'director' => 'Sutradara',
+        'release_date' => 'Tanggal Rilis',
+        'category' => 'Kategori',
     ],
 
     'profile' => [

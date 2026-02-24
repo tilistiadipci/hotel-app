@@ -4,11 +4,12 @@ namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
 class Song extends Model
 {
-    use HasFactory;
+    use HasFactory, SoftDeletes;
 
     protected $fillable = [
         'uuid',
@@ -20,6 +21,9 @@ class Song extends Model
         'cover_image',
         'sort_order',
         'is_active',
+        'created_by',
+        'updated_by',
+        'deleted_by',
     ];
 
     protected $casts = [

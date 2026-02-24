@@ -8,16 +8,17 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::create('songs', function (Blueprint $table) {
+        Schema::create('movies', function (Blueprint $table) {
             $table->id();
             $table->uuid('uuid')->unique();
-            $table->foreignId('artist_id')->constrained('artists')->cascadeOnDelete();
-            $table->foreignId('album_id')->nullable()->constrained('albums')->nullOnDelete();
             $table->string('title', 200);
-            $table->string('url_stream', 255); // URL to stream the song
+            $table->text('description')->nullable();
+            $table->string('thumbnail', 255);
+            $table->string('banner_image', 255)->nullable();
+            $table->string('url_stream', 255);
             $table->integer('duration'); // seconds
-            $table->string('cover_image', 255)->nullable();
-            $table->integer('sort_order')->nullable(); // for album songs
+            $table->date('release_date')->nullable();
+            $table->string('rating', 10)->nullable();
             $table->boolean('is_active')->default(true);
             $table->integer('created_by')->nullable();
             $table->integer('updated_by')->nullable();
@@ -29,6 +30,6 @@ return new class extends Migration
 
     public function down(): void
     {
-        Schema::dropIfExists('songs');
+        Schema::dropIfExists('movies');
     }
 };

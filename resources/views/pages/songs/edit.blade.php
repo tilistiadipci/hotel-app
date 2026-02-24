@@ -11,7 +11,7 @@
                     'icon' => $icon,
                     'breadcrumbs' => [
                         ['href' => route('songs.index'), 'label' => trans('common.song.title')],
-                        ['href' => '#', 'label' => trans('common.edit_data')],
+                        ['href' => '#', 'label' => trans('common.edit')],
                     ],
                 ])
 
@@ -28,7 +28,7 @@
                 <div class="card mb-3">
                     <div class="card-header-tab card-header bg-primary text-white">
                         <div class="card-header-title font-size-lg text-capitalize font-weight-normal">
-                            {{ trans('common.edit_data') }}
+                            {{ trans('common.edit') }}
                         </div>
                     </div>
 

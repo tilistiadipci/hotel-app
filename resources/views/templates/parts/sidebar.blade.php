@@ -48,6 +48,11 @@
                         <i class="metismenu-icon pe-7s-music"></i> {{ trans('common.song.title') }}
                     </a>
                 </li>
+                <li class="{{ $page == 'movies' ? 'mm-active' : '' }}">
+                    <a href="{{ url('/movies') }}" class="{{ $page == 'movies' ? 'mm-active' : '' }}">
+                        <i class="metismenu-icon pe-7s-film"></i> Movies
+                    </a>
+                </li>
                 <li class="{{ $page == 'users' ? 'mm-active' : '' }}">
                     <a href="{{ url('/users') }}" class="{{ $page == 'users' ? 'mm-active' : '' }}">
                         <i class="metismenu-icon pe-7s-users"></i> {{ trans('common.user.title') }}

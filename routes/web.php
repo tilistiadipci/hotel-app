@@ -3,13 +3,12 @@
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ErrorController;
 use App\Http\Controllers\HomeController;
-use App\Http\Controllers\Master\SupplierController;
-use App\Http\Controllers\Master\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SettingWebsiteController;
 use App\Http\Controllers\SongController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\TVChannelController;
+use App\Http\Controllers\MovieController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -96,6 +95,14 @@ Route::middleware(['auth'])->group(function () {
         ->name('songs.')
         ->group(function () {
             Route::post('/bulkDelete', [SongController::class, 'bulkDelete'])->name('bulkDelete');
+        });
+
+    // Movies
+    Route::resource('movies', MovieController::class);
+     Route::prefix('movies')
+        ->name('movies.')
+        ->group(function () {
+            Route::post('/bulkDelete', [MovieController::class, 'bulkDelete'])->name('bulkDelete');
         });
 
 

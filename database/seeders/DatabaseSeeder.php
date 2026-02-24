@@ -16,6 +16,7 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             TVChannelSeeder::class,
             MusicSeeder::class,
+            MovieSeeder::class,
         ]);
     }
 }

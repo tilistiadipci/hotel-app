@@ -17,6 +17,7 @@ return [
     'image' => 'Image',
     'photo' => 'Photo',
     'title' => 'Title',
+    'category' => 'Category',
     'type' => 'Type',
     'bulk_edit' => 'Bulk Edit',
     'bulk_delete' => 'Bulk Delete',
@@ -166,6 +167,19 @@ return [
         'is_active' => 'Is Active',
         'stream_url' => 'Stream URL',
         'album_placeholder' => 'Album (can be empty or add new)',
+    ],
+
+    'movie' => [
+        'list_of_movie' => 'List of Movies',
+        'title' => 'Movies',
+        'title_singular' => 'Movie',
+        'name' => 'Name',
+        'slug' => 'Slug',
+        'category' => 'Category',
+        'release_date' => 'Release Date',
+        'rating' => 'Rating',
+        'duration' => 'Duration',
+        'is_active' => 'Is Active',
     ],
 
     'profile' => [
