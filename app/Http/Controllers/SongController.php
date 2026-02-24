@@ -252,7 +252,7 @@ class SongController extends Controller
         if ($file && $file->isValid()) {
             $stored = $this->storeAudioFile($file);
             $payload['url_stream'] = $stored['public_path'];
-            $payload['duration'] = $payload['duration'] ?? $this->detectAudioDuration($stored['absolute_path']);
+            // duration expected from frontend; keep provided value
 
             // Use filename as title if not provided
             if (empty($payload['title'])) {
@@ -264,7 +264,8 @@ class SongController extends Controller
             $payload['duration'] = $payload['duration'] ?? $existing->duration;
         }
 
-        if (empty($payload['duration'])) {
+        // duration should come from frontend; keep 0 or provided
+        if (!isset($payload['duration'])) {
             $payload['duration'] = 0;
         }
 
@@ -307,25 +308,4 @@ class SongController extends Controller
         ];
     }
 
-    /**
-    * Try to detect duration (seconds) using ffprobe if available.
-    */
-    private function detectAudioDuration(string $absolutePath): ?int
-    {
-        if (!file_exists($absolutePath)) {
-            return null;
-        }
-
-        // ffprobe (preferred lightweight fallback)
-        $cmd = 'ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 ' . escapeshellarg($absolutePath);
-        $output = @shell_exec($cmd);
-        if ($output !== null) {
-            $seconds = (int) round((float) trim($output));
-            if ($seconds > 0) {
-                return $seconds;
-            }
-        }
-
-        return null;
-    }
 }

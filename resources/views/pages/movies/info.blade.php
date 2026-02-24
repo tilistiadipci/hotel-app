@@ -18,11 +18,11 @@
                 <td>{{ optional($movie->release_date)->format('Y-m-d') ?? '-' }}</td>
             </tr>
             <tr>
-                <th>{{ trans('common.rating') }}</th>
+                <th>{{ trans('common.movie.rating') }}</th>
                 <td>{{ $movie->rating ?? '-' }}</td>
             </tr>
             <tr>
-                <th>{{ trans('common.duration') }}</th>
+                <th>{{ trans('common.movie.duration') }}</th>
                 <td>{{ $movie->duration ? floor($movie->duration / 60) . 'm ' . ($movie->duration % 60) . 's' : '-' }}</td>
             </tr>
             <tr>

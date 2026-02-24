@@ -55,6 +55,7 @@
                                     <th>{{ trans('common.title') }}</th>
                                     <th>{{ trans('common.category') }}</th>
                                     <th>{{ trans('common.movie.release_date') }}</th>
+                                    <th>{{ trans('common.movie.duration') }}</th>
                                     <th>{{ trans('common.status') }}</th>
                                     <th style="text-align:center">{!! trans('common.action') !!}</th>
                                 </tr>
@@ -91,6 +92,20 @@
             table.search('').draw();
             table.ajax.reload();
             toggleFilter(false);
+        }
+
+        function formatDurationHMS(seconds) {
+            const sec = parseInt(seconds, 10);
+            if (!sec || sec <= 0 || !isFinite(sec)) return '';
+            const h = Math.floor(sec / 3600);
+            const m = Math.floor((sec % 3600) / 60);
+            const s = sec % 60;
+            const parts = [
+                h.toString().padStart(2, '0'),
+                m.toString().padStart(2, '0'),
+                s.toString().padStart(2, '0')
+            ];
+            return parts.join(':');
         }
 
         var columns = [
@@ -133,6 +148,13 @@
                 name: 'release_date',
                 render: function(data) {
                     return data ? moment(data).format('YYYY') : '';
+                }
+            },
+            {
+                data: 'duration',
+                name: 'duration',
+                render: function(data) {
+                    return formatDurationHMS(data);
                 }
             },
             {

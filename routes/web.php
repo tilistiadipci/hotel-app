@@ -3,6 +3,7 @@
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ErrorController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\MovieCategoryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SettingWebsiteController;
 use App\Http\Controllers\SongController;
@@ -99,10 +100,17 @@ Route::middleware(['auth'])->group(function () {
 
     // Movies
     Route::resource('movies', MovieController::class);
-     Route::prefix('movies')
+    Route::prefix('movies')
         ->name('movies.')
         ->group(function () {
             Route::post('/bulkDelete', [MovieController::class, 'bulkDelete'])->name('bulkDelete');
+        });
+
+    // Movies Categories
+    Route::prefix('movie-categories')
+        ->name('movie-categories.')
+        ->group(function () {
+            Route::post('/store', [MovieCategoryController::class, 'store'])->name('store');
         });
 
 

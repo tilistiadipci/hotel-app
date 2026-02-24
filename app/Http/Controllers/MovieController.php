@@ -217,8 +217,8 @@ class MovieController extends Controller
         if ($file && $file->isValid()) {
             $stored = $this->storeVideoFile($file);
             $data['url_stream'] = $stored['public_path'];
-            $data['duration'] = $data['duration'] ?? $this->detectVideoDuration($stored['absolute_path']);
-        } elseif ($existing) {
+            // duration expected from frontend; keep provided value
+            } elseif ($existing) {
             $data['url_stream'] = $existing->url_stream;
             $data['duration'] = $data['duration'] ?? $existing->duration;
         }
@@ -257,21 +257,4 @@ class MovieController extends Controller
         ];
     }
 
-    private function detectVideoDuration(string $absolutePath): ?int
-    {
-        if (!file_exists($absolutePath)) {
-            return null;
-        }
-
-        $cmd = 'ffprobe -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 ' . escapeshellarg($absolutePath);
-        $output = @shell_exec($cmd);
-        if ($output !== null) {
-            $seconds = (int) round((float) trim($output));
-            if ($seconds > 0) {
-                return $seconds;
-            }
-        }
-
-        return null;
-    }
 }

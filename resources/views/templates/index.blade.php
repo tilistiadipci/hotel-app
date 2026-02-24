@@ -270,6 +270,14 @@
         }
 
         /* action btn */
+
+        /* ensure bootstrap modal sits above page overlays */
+        .modal {
+            z-index: 2060 !important;
+        }
+        .modal-backdrop {
+            z-index: 2050 !important;
+        }
     </style>
 
     @yield('css')
