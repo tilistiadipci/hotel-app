@@ -179,6 +179,18 @@ return [
         'category' => 'Kategori',
     ],
 
+    'place' => [
+        'list_of_place' => 'Daftar Tempat',
+        'title' => 'Tempat',
+        'title_singular' => 'Tempat',
+        'name' => 'Nama',
+        'category' => 'Kategori',
+        'address' => 'Alamat',
+        'latitude' => 'Latitude',
+        'longitude' => 'Longitude',
+        'distance' => 'Jarak',
+    ],
+
     'profile' => [
         'title_singular' => 'Profil',
         'change_password' => 'Ubah Password',

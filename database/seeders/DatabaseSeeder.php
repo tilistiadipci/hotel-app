@@ -17,6 +17,8 @@ class DatabaseSeeder extends Seeder
             TVChannelSeeder::class,
             MusicSeeder::class,
             MovieSeeder::class,
+            PlaceCategorySeeder::class,
+            PlaceSeeder::class,
         ]);
     }
 }

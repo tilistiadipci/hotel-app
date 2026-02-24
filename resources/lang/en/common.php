@@ -182,6 +182,18 @@ return [
         'is_active' => 'Is Active',
     ],
 
+    'place' => [
+        'list_of_place' => 'List of Places',
+        'title' => 'Places',
+        'title_singular' => 'Place',
+        'name' => 'Name',
+        'category' => 'Category',
+        'address' => 'Address',
+        'latitude' => 'Latitude',
+        'longitude' => 'Longitude',
+        'distance' => 'Distance',
+    ],
+
     'profile' => [
         'title_singular' => 'Profile',
         'change_password' => 'Change Password',

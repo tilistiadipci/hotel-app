@@ -50,7 +50,12 @@
                 </li>
                 <li class="{{ $page == 'movies' ? 'mm-active' : '' }}">
                     <a href="{{ url('/movies') }}" class="{{ $page == 'movies' ? 'mm-active' : '' }}">
-                        <i class="metismenu-icon pe-7s-film"></i> Movies
+                        <i class="metismenu-icon pe-7s-film"></i> {{ trans('common.movie.title') }}
+                    </a>
+                </li>
+                <li class="{{ $page == 'places' ? 'mm-active' : '' }}">
+                    <a href="{{ url('/places') }}" class="{{ $page == 'places' ? 'mm-active' : '' }}">
+                        <i class="metismenu-icon pe-7s-map-marker"></i> {{ trans('common.place.title') }}
                     </a>
                 </li>
                 <li class="{{ $page == 'users' ? 'mm-active' : '' }}">

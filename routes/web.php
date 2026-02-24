@@ -10,6 +10,8 @@ use App\Http\Controllers\SongController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\TVChannelController;
 use App\Http\Controllers\MovieController;
+use App\Http\Controllers\PlaceController;
+use App\Http\Controllers\PlaceCategoryController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -112,6 +114,16 @@ Route::middleware(['auth'])->group(function () {
         ->group(function () {
             Route::post('/store', [MovieCategoryController::class, 'store'])->name('store');
         });
+
+    // Places
+    Route::resource('places', PlaceController::class);
+    Route::prefix('places')
+        ->name('places.')
+        ->group(function () {
+            Route::post('/bulkDelete', [PlaceController::class, 'bulkDelete'])->name('bulkDelete');
+        });
+
+    Route::post('place-categories', [PlaceCategoryController::class, 'store'])->name('place-categories.store');
 
 
     // website
