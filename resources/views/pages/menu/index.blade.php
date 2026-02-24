@@ -7,16 +7,16 @@
             <div class="page-title-wrapper">
 
                 @include('templates.parts.breadcrumb', [
-                    'title' => trans('common.user.title_singular'),
+                    'title' => trans('common.menu.title'),
                     'icon' => $icon,
                     'breadcrumbs' => [
-                        ['href' => '#', 'label' => trans('common.user.list_of_user')]
+                        ['href' => '#', 'label' => trans('common.menu.title')],
                     ],
                 ])
 
                 <div class="page-title-actions">
                     @include('partials.buttons.btn-create-new', [
-                        'url' => route('users.create'),
+                        'url' => route('menu.create'),
                     ])
                 </div>
             </div>
@@ -27,7 +27,7 @@
                 <div class="card mb-3">
                     <div class="card-header-tab card-header">
                         <div class="card-header-title font-size-lg text-capitalize font-weight-normal">
-                            {{ trans('common.user.list_of_user') }}
+                            {{ trans('common.menu.list_of_menu') }}
                         </div>
                         <div class="btn-actions-pane-right actions-icon-btn d-flex align-items-center">
                             <button class="btn btn-sm btn-light mr-2" id="filterBtn" data-toggle="tooltip" title="{{ trans('common.filter') }}">
@@ -52,12 +52,12 @@
                                         </label>
                                     </th>
                                     <th style="width:60px">No</th>
-                                    <th>{{ trans('common.user.name') }}</th>
-                                    <th>{{ trans('common.phone') }}</th>
-                                    <th>{{ trans('common.email') }}</th>
-                                    <th>{{ trans('common.user.username') }}</th>
-                                    <th>{{ trans('common.user.role') }}</th>
-                                    <th>{{ trans('common.user.status') }}</th>
+                                    <th>{{ trans('common.name') }}</th>
+                                    <th>{{ trans('common.category') }}</th>
+                                    <th>{{ trans('common.menu.price') }}</th>
+                                    <th>{{ trans('common.menu.discount') }}</th>
+                                    <th>{{ trans('common.sort_order') }}</th>
+                                    <th>{{ trans('common.status') }}</th>
                                     <th style="text-align:center">{!! trans('common.action') !!}</th>
                                 </tr>
                             </thead>
@@ -69,19 +69,15 @@
             </div>
         </div>
 
-        {{-- Right sidebar filter --}}
-        @include('pages.users.components.filter-sidebar')
+        @include('pages.menu.components.filter-sidebar')
     </div>
 @endsection
 
 @section('js')
     <script>
-        // attach filters into DataTable request
         function attachFilters(d) {
             d.filters = {
-                username: $('#filterUsername').val(),
-                email: $('#filterEmail').val(),
-                role: $('#filterRole').val(),
+                category_id: $('#filterCategory').val(),
                 status: $('#filterStatus').val(),
             };
         }
@@ -93,10 +89,15 @@
 
         function resetFilters() {
             $('#filterForm')[0].reset();
-            $('#filterRole, #filterStatus').val(null).trigger('change');
+            $('#filterCategory, #filterStatus').val(null).trigger('change');
             table.search('').draw();
             table.ajax.reload();
             toggleFilter(false);
+        }
+
+        function formatMoney(num) {
+            if (num === null || num === undefined || num === '') return '';
+            return parseFloat(num).toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 });
         }
 
         var columns = [
@@ -125,37 +126,33 @@
                 data: 'name',
                 name: 'name',
                 render: function(data, type, row) {
-                    let url = `{{ url('users') }}/${row.uuid}`
-                    return `<a href="${url}">${row.profile.name || ''}</a>`
+                    let url = `{{ url('menu') }}/${row.uuid}/edit`
+                    let show = `{{ url('menu') }}/${row.uuid}`
+                    return `<a href="${url}">${row.name || ''}</a>`
+                }
+            },
+            { data: 'category', name: 'category', defaultContent: '' },
+            {
+                data: 'price',
+                name: 'price',
+                render: function(data) {
+                    return formatMoney(data);
                 }
             },
             {
-                name: 'phone',
-                render: function(data, type, row) {
-                    return row.profile.phone;
+                data: 'discount_price',
+                name: 'discount_price',
+                render: function(data) {
+                    return formatMoney(data);
                 }
             },
+            { data: 'sort_order', name: 'sort_order', defaultContent: '' },
             {
-                name: 'email',
+                name: 'is_available',
                 render: function(data, type, row) {
-                    return row.email;
-                }
-            },
-            {
-                data: 'username',
-                name: 'username',
-            },
-            {
-                name: 'role',
-                render: function(data, type, row) {
-                    return getRoleText(row.role_id);
-                }
-            },
-            {
-                name: 'status',
-                render: function(data, type, row) {
-                    let badgeClass = row.is_active == 1 ? 'success' : 'secondary';
-                    return `<span class="badge badge-${badgeClass}">${getStatusText(row.is_active)}</span>`;
+                    let badgeClass = row.is_available == 1 ? 'success' : 'secondary';
+                    let text = row.is_available == 1 ? 'Active' : 'Inactive';
+                    return `<span class="badge badge-${badgeClass}">${text}</span>`;
                 }
             },
             {
@@ -166,48 +163,18 @@
                 className: 'text-center',
                 width: '8%',
             },
-            {
-                data: 'created_at',
-                name: 'created_at',
-                visible: false // Hide the created_at column
-            },
-        ]
+            { data: 'created_at', name: 'created_at', visible: false },
+        ];
 
-        function getRoleText(roleId) {
-            const roles = @json($roles->pluck('name', 'id'));
-            return roles[roleId] || '';
-        }
-
-        function getStatusText(isActive) {
-            return isActive == 1 ? 'Active' : 'Inactive';
-        }
-
-        var getUrl = "{{ route('users.index') }}";
-        var showUrl = "{{ route('users.show', ':id') }}";
-        var editUrl = "{{ route('users.edit', ':id') }}";
-        var destroyUrl = "{{ route('users.destroy', ':id') }}";
+        var getUrl = "{{ route('menu.index') }}";
+        var showUrl = "{{ route('menu.show', ':id') }}";
+        var editUrl = "{{ route('menu.edit', ':id') }}";
+        var destroyUrl = "{{ route('menu.destroy', ':id') }}";
         var scrollX = false;
         var fixedColumns = false;
 
-    </script>
-
-    @include('js.datatable')
-
-    <script>
-        // image preview handler used in forms image partial
-        function previewImage(event) {
-            const [file] = event.target.files;
-            if (file) {
-                const preview = document.getElementById('avatarPreview');
-                if (preview) {
-                    preview.src = URL.createObjectURL(file);
-                }
-            }
-        }
-
-        // init filter selects with allowClear and hook clear buttons for text inputs
         $(function () {
-            $('#filterRole, #filterStatus').select2({
+            $('#filterCategory, #filterStatus').select2({
                 theme: 'bootstrap4',
                 width: '100%',
                 allowClear: true,
@@ -215,35 +182,12 @@
                 dropdownParent: $('#filterSidebar')
             });
 
-            $('.clear-input').on('click', function () {
-                const target = $(this).data('target');
-                $(target).val('');
-            });
-
             $('.clear-select').on('click', function () {
                 const target = $(this).data('target');
                 $(target).val(null).trigger('change');
             });
-
-            // show built-in clear icon nicely aligned
-            if (!document.getElementById('select2-clear-style-global')) {
-                const style = `<style id="select2-clear-style-global">
-                    .select2-container--bootstrap4 .select2-selection--single .select2-selection__clear {
-                        position: absolute;
-                        right: 2.2rem;
-                        top: 50%;
-                        transform: translateY(-50%);
-                        display: inline-block;
-                        font-size: 14px;
-                        color: #6c757d;
-                        cursor: pointer;
-                    }
-                    .select2-container--bootstrap4 .select2-selection--single .select2-selection__arrow {
-                        right: 8px;
-                    }
-                </style>`;
-                $('head').append(style);
-            }
         });
     </script>
+
+    @include('js.datatable')
 @endsection

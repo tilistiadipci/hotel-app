@@ -74,6 +74,7 @@ return [
     'status' => 'Status',
     'no_data_please_enter_to_add' => 'No data. Press Enter to add.',
     'please_wait' => 'Please wait...',
+    'sort_order' => 'Sort Order',
 
     'list_month' => [
         'january' => 'January',
@@ -150,8 +151,6 @@ return [
         'stream_url' => 'Stream URL',
         'frequency' => 'Frequency',
         'quality' => 'Quality',
-        'sort_order' => 'Sort Order',
-        'is_active' => 'Is Active',
     ],
 
     'song' => [
@@ -164,7 +163,6 @@ return [
         'duration' => 'Duration',
         'album' => 'Album',
         'file' => 'File',
-        'is_active' => 'Is Active',
         'stream_url' => 'Stream URL',
         'album_placeholder' => 'Album (can be empty or add new)',
     ],
@@ -175,11 +173,9 @@ return [
         'title_singular' => 'Movie',
         'name' => 'Name',
         'slug' => 'Slug',
-        'category' => 'Category',
         'release_date' => 'Release Date',
         'rating' => 'Rating',
         'duration' => 'Duration',
-        'is_active' => 'Is Active',
     ],
 
     'place' => [
@@ -187,11 +183,21 @@ return [
         'title' => 'Places',
         'title_singular' => 'Place',
         'name' => 'Name',
-        'category' => 'Category',
         'address' => 'Address',
         'latitude' => 'Latitude',
         'longitude' => 'Longitude',
         'distance' => 'Distance',
+    ],
+
+    'menu' => [
+        'list_of_menu' => 'List of Menu Items',
+        'title' => 'Menu Items',
+        'title_singular' => 'Menu Item',
+        'price' => 'Price',
+        'discount' => 'Discount',
+        'tax' => 'Tax',
+        'is_available' => 'Is Available',
+        'preparation_time' => 'Preparation Time (minutes)',
     ],
 
     'profile' => [

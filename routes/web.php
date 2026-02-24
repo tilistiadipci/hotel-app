@@ -12,6 +12,8 @@ use App\Http\Controllers\TVChannelController;
 use App\Http\Controllers\MovieController;
 use App\Http\Controllers\PlaceController;
 use App\Http\Controllers\PlaceCategoryController;
+use App\Http\Controllers\MenuController;
+use App\Http\Controllers\MenuCategoryController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -124,6 +126,15 @@ Route::middleware(['auth'])->group(function () {
         });
 
     Route::post('place-categories', [PlaceCategoryController::class, 'store'])->name('place-categories.store');
+
+    // Menu
+    Route::resource('menu', MenuController::class);
+    Route::prefix('menu')
+        ->name('menu.')
+        ->group(function () {
+            Route::post('/bulkDelete', [MenuController::class, 'bulkDelete'])->name('bulkDelete');
+        });
+    Route::post('menu-categories', [MenuCategoryController::class, 'store'])->name('menu-categories.store');
 
 
     // website

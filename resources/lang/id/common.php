@@ -73,6 +73,7 @@ return [
     'status' => 'Status',
     'no_data_please_enter_to_add' => 'Tidak ada data. Tekan Enter untuk menambah.',
     'please_wait' => 'Mohon tunggu...',
+    'sort_order' => 'Urutan',
 
     'list_month' => [
         'january' => 'Januari',
@@ -150,8 +151,6 @@ return [
         'stream_url' => 'Stream URL',
         'frequency' => 'Frequency',
         'quality' => 'Kualitas',
-        'sort_order' => 'Urutan',
-        'is_active' => 'Is Active',
     ],
 
     'song' => [
@@ -164,8 +163,6 @@ return [
         'url_stream' => 'URL Stream',
         'duration' => 'Durasi',
         'cover_image' => 'Gambar Sampul',
-        'sort_order' => 'Urutan',
-        'is_active' => 'Aktif',
         'stream_url' => 'Stream URL',
         'album_placeholder' => 'Album (boleh dikosongkan atau tambah baru)',
     ],
@@ -176,7 +173,6 @@ return [
         'title_singular' => 'Film',
         'director' => 'Sutradara',
         'release_date' => 'Tanggal Rilis',
-        'category' => 'Kategori',
     ],
 
     'place' => [
@@ -189,6 +185,18 @@ return [
         'latitude' => 'Latitude',
         'longitude' => 'Longitude',
         'distance' => 'Jarak',
+    ],
+
+    'menu' => [
+        'list_of_menu' => 'Daftar Menu',
+        'title' => 'Menu',
+        'title_singular' => 'Menu',
+        'category' => 'Kategori',
+        'price' => 'Harga',
+        'discount' => 'Diskon',
+        'tax' => 'Pajak',
+        'is_available' => 'Tersedia',
+        'preparation_time' => 'Waktu Persiapan (menit)',
     ],
 
     'profile' => [

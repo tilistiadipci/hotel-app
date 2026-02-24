@@ -53,6 +53,11 @@
                         <i class="metismenu-icon pe-7s-film"></i> {{ trans('common.movie.title') }}
                     </a>
                 </li>
+                <li class="{{ $page == 'menu-items' ? 'mm-active' : '' }}">
+                    <a href="{{ url('/menu') }}" class="{{ $page == 'menu-items' ? 'mm-active' : '' }}">
+                        <i class="metismenu-icon fa fa-utensils"></i> Menu
+                    </a>
+                </li>
                 <li class="{{ $page == 'places' ? 'mm-active' : '' }}">
                     <a href="{{ url('/places') }}" class="{{ $page == 'places' ? 'mm-active' : '' }}">
                         <i class="metismenu-icon pe-7s-map-marker"></i> {{ trans('common.place.title') }}

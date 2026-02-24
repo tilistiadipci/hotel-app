@@ -111,7 +111,8 @@
                         <input type="hidden" name="old_thumbnail" value="{{ $movie->thumbnail }}">
                     @endif
                     <input type="file" name="thumbnail" id="thumbnail" class="form-control-file" accept="image/*">
-                    <small class="text-muted d-block mt-1" style="font-style: normal;">Jpg, Png, Jpeg. Max 1024KB.</small>
+                    <small class="text-muted d-block mt-1" style="font-style: normal;">Jpg, Png, Jpeg. Max
+                        1024KB.</small>
                     @error('thumbnail')
                         <div class="text-danger">{{ $message }}</div>
                     @enderror
@@ -122,7 +123,8 @@
                     @if ($movie && $movie->banner_image)
                         <input type="hidden" name="old_banner_image" value="{{ $movie->banner_image }}">
                     @endif
-                    <input type="file" name="banner_image" id="banner_image" class="form-control-file" accept="image/*">
+                    <input type="file" name="banner_image" id="banner_image" class="form-control-file"
+                        accept="image/*">
                     <small class="text-muted d-block mt-1" style="font-style: normal;">Jpg, Png, Jpeg. Max 2MB.</small>
                     @error('banner_image')
                         <div class="text-danger">{{ $message }}</div>
@@ -133,7 +135,8 @@
                     <label class="font-weight-bold d-block mb-2">File Video</label>
                     <input type="file" name="video" id="video" class="form-control-file" accept="video/*"
                         {{ $movie ? '' : 'required' }}>
-                    <small class="text-muted d-block mt-1" style="font-style: normal;">Format: MP4/MOV/MKV/WEBM/AVI. Maks ~1GB.</small>
+                    <small class="text-muted d-block mt-1" style="font-style: normal;">Format: MP4/MOV/MKV/WEBM/AVI.
+                        Maks ~1GB.</small>
                     @error('video')
                         <div class="text-danger">{{ $message }}</div>
                     @enderror
@@ -164,7 +167,8 @@
             <div class="custom-modal__body">
                 <div class="form-group">
                     <label for="newCategoryName">Name</label>
-                    <input type="text" name="name" id="newCategoryName" class="form-control" required maxlength="100">
+                    <input type="text" name="name" id="newCategoryName" class="form-control" required
+                        maxlength="100">
                 </div>
                 <div class="form-group">
                     <label for="newCategoryDescription">Description</label>
@@ -191,14 +195,17 @@
             justify-content: center;
             z-index: 5000;
         }
+
         .custom-modal.is-open {
             display: flex;
         }
+
         .custom-modal__backdrop {
             position: absolute;
             inset: 0;
             background: rgba(0, 0, 0, 0.45);
         }
+
         .custom-modal__dialog {
             position: relative;
             background: #fff;
@@ -209,17 +216,20 @@
             z-index: 1;
             padding: 16px;
         }
+
         .custom-modal__header {
             display: flex;
             align-items: center;
             justify-content: space-between;
             margin-bottom: 8px;
         }
+
         .custom-modal__title {
             margin: 0;
             font-size: 18px;
             font-weight: 600;
         }
+
         .custom-modal__close {
             border: none;
             background: transparent;
@@ -228,15 +238,18 @@
             padding: 0 4px;
             cursor: pointer;
         }
+
         .custom-modal__body {
             padding: 4px 0 8px;
         }
+
         .custom-modal__footer {
             display: flex;
             justify-content: flex-end;
             gap: 8px;
             padding-top: 8px;
         }
+
         body.custom-modal-open {
             overflow: hidden;
         }
@@ -299,7 +312,12 @@
                         }
                     },
                     error: function(xhr) {
-                        alert(xhr.responseJSON?.message || 'Gagal menyimpan kategori');
+                        swal.close();
+                        swal.fire({
+                            icon: 'error',
+                            title: 'Error',
+                            text: xhr.responseJSON?.message || 'Error adding category. Please try again.',
+                        });
                     },
                     complete: function() {
                         btn.prop('disabled', false).text('Save');
@@ -312,14 +330,14 @@
             const videoInput = document.getElementById('video');
             const durationInput = document.getElementById('duration');
             if (videoInput && durationInput) {
-                videoInput.addEventListener('change', function () {
+                videoInput.addEventListener('change', function() {
                     const file = this.files?.[0];
                     if (!file) return;
                     const url = URL.createObjectURL(file);
                     const videoEl = document.createElement('video');
                     videoEl.preload = 'metadata';
                     videoEl.src = url;
-                    videoEl.onloadedmetadata = function () {
+                    videoEl.onloadedmetadata = function() {
                         if (videoEl.duration && isFinite(videoEl.duration)) {
                             durationInput.value = Math.round(videoEl.duration);
                         }

@@ -19,6 +19,8 @@ class DatabaseSeeder extends Seeder
             MovieSeeder::class,
             PlaceCategorySeeder::class,
             PlaceSeeder::class,
+            MenuCategorySeeder::class,
+            MenuItemSeeder::class,
         ]);
     }
 }

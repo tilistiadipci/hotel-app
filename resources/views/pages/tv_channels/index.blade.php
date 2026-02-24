@@ -25,7 +25,7 @@
         <div class="row">
             <div class="col-md-12">
                 <div class="card mb-3">
-                    <div class="card-header-tab card-header bg-primary text-white">
+                    <div class="card-header-tab card-header">
                         <div class="card-header-title font-size-lg text-capitalize font-weight-normal">
                             {{ trans('common.tv.list_of_tv') }}
                         </div>

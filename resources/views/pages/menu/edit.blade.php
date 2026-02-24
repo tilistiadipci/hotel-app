@@ -7,17 +7,17 @@
             <div class="page-title-wrapper">
 
                 @include('templates.parts.breadcrumb', [
-                    'title' => trans('common.user.title_singular'),
+                    'title' => trans('common.menu.title'),
                     'icon' => $icon,
                     'breadcrumbs' => [
-                        ['href' => route('users.index'), 'label' => trans('common.user.title_singular')],
-                        ['href' => '#', 'label' => trans('common.create_new')],
+                        ['href' => route('menu.index'), 'label' => trans('common.menu.title')],
+                        ['href' => '#', 'label' => trans('common.edit')],
                     ],
                 ])
 
                 <div class="page-title-actions">
                     @include('partials.buttons.btn-back', [
-                        'url' => route('users.index'),
+                        'url' => route('menu.index'),
                     ])
                 </div>
             </div>
@@ -28,16 +28,11 @@
                 <div class="card mb-3">
                     <div class="card-header-tab card-header">
                         <div class="card-header-title font-size-lg text-capitalize font-weight-normal">
-                            {{ trans('common.create_new') }}
-                        </div>
-                        <div class="btn-actions-pane-right actions-icon-btn">
-                            {{-- <a href="{{ route('users.index') }}" class="btn btn-danger">
-                                <i class="fa fa-arrow-left"></i> {{ trans('common.back') }}
-                            </a> --}}
+                            {{ trans('common.edit') }}
                         </div>
                     </div>
 
-                    @include('pages.users.components.form')
+                    @include('pages.menu.components.form', ['item' => $item])
                 </div>
             </div>
         </div>
