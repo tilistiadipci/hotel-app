@@ -7,10 +7,10 @@
             <div class="page-title-wrapper">
 
                 @include('templates.parts.breadcrumb', [
-                    'title' => 'TV Channels',
+                    'title' => trans('common.tv.title'),
                     'icon' => $icon,
                     'breadcrumbs' => [
-                        ['href' => '#', 'label' => 'Daftar Channel']
+                        ['href' => '#', 'label' => trans('common.tv.title')],
                     ],
                 ])
 
@@ -52,10 +52,10 @@
                                         </label>
                                     </th>
                                     <th style="width:60px">No</th>
-                                    <th>Nama</th>
-                                    <th>Jenis</th>
-                                    <th>Region</th>
-                                    <th>Status</th>
+                                    <th>{{ trans('common.tv.name') }}</th>
+                                    <th>{{ trans('common.tv.type') }}</th>
+                                    <th>{{ trans('common.tv.region') }}</th>
+                                    <th>{{ trans('common.status') }}</th>
                                     <th style="text-align:center">{!! trans('common.action') !!}</th>
                                 </tr>
                             </thead>
@@ -67,7 +67,7 @@
             </div>
         </div>
 
-        @include('pages.tv_channels.partials.filter-sidebar')
+        @include('pages.tv_channels.components.filter-sidebar')
     </div>
 @endsection
 

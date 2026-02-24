@@ -7,10 +7,10 @@
             <div class="page-title-wrapper">
 
                 @include('templates.parts.breadcrumb', [
-                    'title' => 'TV Channels',
+                    'title' =>  trans('common.tv.title'),
                     'icon' => $icon,
                     'breadcrumbs' => [
-                        ['href' => route('tv-channels.index'), 'label' => 'TV Channels'],
+                        ['href' => route('tv-channels.index'), 'label' => trans('common.tv.title')],
                         ['href' => '#', 'label' => trans('common.edit')],
                     ],
                 ])

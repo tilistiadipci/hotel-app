@@ -38,6 +38,7 @@
     <script src="{{ asset('template/js/jquery-3.3.1.min.js') }}"></script>
     <script src="{{ asset('template/js/bootstrap.bundle.min.js') }}"></script>
     <script src="{{ asset('template/js/metismenu.js') }}"></script>
+    <script src="{{ asset('js/sweetalert.min.js') }}"></script>
     <script>
         $(document).on('click', '.toggle-password', function() {
             $(this).toggleClass("fa-eye fa-eye-slash");
@@ -55,6 +56,17 @@
             if (e.which == 13) {
                 $(this).closest('form').submit();
             }
+        });
+
+        $(document).on('submit', 'form', function() {
+            swal({
+                title: 'Please Wait',
+                text: 'Processing login...',
+                icon: 'info',
+                buttons: false,
+                closeOnClickOutside: false,
+                closeOnEsc: false,
+            });
         });
     </script>
 </body>

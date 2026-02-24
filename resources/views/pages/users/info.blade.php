@@ -15,7 +15,7 @@
     ];
 @endphp
 
-<div class="row">
+<div class="row mb-5">
     <div class="col-sm-8">
         <ul class="list-group list-group-flush shadow-sm rounded">
             @foreach ($items as $label => $value)

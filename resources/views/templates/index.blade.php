@@ -268,6 +268,7 @@
             color: #b42323;
             box-shadow: 0 6px 14px rgba(229, 62, 62, 0.25);
         }
+
         /* action btn */
     </style>
 
@@ -588,6 +589,11 @@
                 $('#searchFromAsset').submit();
             }
         })
+
+        // add loading submit form anyway
+        $(document).on('submit', 'form', function() {
+            loadingSwal();
+        });
     </script>
 
     @yield('js')
