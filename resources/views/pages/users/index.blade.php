@@ -93,6 +93,7 @@
 
         function resetFilters() {
             $('#filterForm')[0].reset();
+            $('#filterRole, #filterStatus').val(null).trigger('change');
             table.search('').draw();
             table.ajax.reload();
             toggleFilter(false);
@@ -203,5 +204,46 @@
                 }
             }
         }
+
+        // init filter selects with allowClear and hook clear buttons for text inputs
+        $(function () {
+            $('#filterRole, #filterStatus').select2({
+                theme: 'bootstrap4',
+                width: '100%',
+                allowClear: true,
+                placeholder: "{{ trans('common.all') }}",
+                dropdownParent: $('#filterSidebar')
+            });
+
+            $('.clear-input').on('click', function () {
+                const target = $(this).data('target');
+                $(target).val('');
+            });
+
+            $('.clear-select').on('click', function () {
+                const target = $(this).data('target');
+                $(target).val(null).trigger('change');
+            });
+
+            // show built-in clear icon nicely aligned
+            if (!document.getElementById('select2-clear-style-global')) {
+                const style = `<style id="select2-clear-style-global">
+                    .select2-container--bootstrap4 .select2-selection--single .select2-selection__clear {
+                        position: absolute;
+                        right: 2.2rem;
+                        top: 50%;
+                        transform: translateY(-50%);
+                        display: inline-block;
+                        font-size: 14px;
+                        color: #6c757d;
+                        cursor: pointer;
+                    }
+                    .select2-container--bootstrap4 .select2-selection--single .select2-selection__arrow {
+                        right: 8px;
+                    }
+                </style>`;
+                $('head').append(style);
+            }
+        });
     </script>
 @endsection

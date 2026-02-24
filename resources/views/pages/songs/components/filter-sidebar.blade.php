@@ -7,38 +7,31 @@
     </div>
     <form id="filterForm" class="px-3 pt-2">
         <div class="form-group">
-            <label for="filterName">Nama Channel</label>
-            <div class="input-group input-group-sm">
-                <input type="text" id="filterName" class="form-control" placeholder="Nama channel">
-                <div class="input-group-append">
-                    <button class="btn btn-outline-secondary clear-input" type="button" data-target="#filterName" aria-label="Clear name">×</button>
-                </div>
-            </div>
-        </div>
-        <div class="form-group">
-            <label for="filterType">Jenis</label>
+            <label for="filterArtist">Artist</label>
             <div class="d-flex align-items-center">
-                <select id="filterType" class="form-control form-control-sm select2 filter-select" style="width: 100%;" data-placeholder="{{ trans('common.all') }}">
+                <select id="filterArtist" class="form-control form-control-sm select2 filter-select" style="width: 100%;" data-placeholder="{{ trans('common.all') }}">
                     <option value="">{{ trans('common.all') }}</option>
-                    <option value="digital">Digital</option>
-                    <option value="streaming">Streaming</option>
+                    @foreach ($artists as $artist)
+                        <option value="{{ $artist->id }}">{{ $artist->name }}</option>
+                    @endforeach
                 </select>
-                <button type="button" class="btn btn-outline-secondary btn-sm ml-2 clear-select" data-target="#filterType" aria-label="Clear type">×</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm ml-2 clear-select" data-target="#filterArtist" aria-label="Clear artist">×</button>
             </div>
         </div>
         <div class="form-group">
-            <label for="filterRegion">Region</label>
+            <label for="filterAlbum">Album</label>
             <div class="d-flex align-items-center">
-                <select id="filterRegion" class="form-control form-control-sm select2 filter-select" style="width: 100%;" data-placeholder="{{ trans('common.all') }}">
+                <select id="filterAlbum" class="form-control form-control-sm select2 filter-select" style="width: 100%;" data-placeholder="{{ trans('common.all') }}">
                     <option value="">{{ trans('common.all') }}</option>
-                    <option value="national">Nasional</option>
-                    <option value="international">International</option>
+                    @foreach ($albums as $album)
+                        <option value="{{ $album->id }}">{{ $album->title }}</option>
+                    @endforeach
                 </select>
-                <button type="button" class="btn btn-outline-secondary btn-sm ml-2 clear-select" data-target="#filterRegion" aria-label="Clear region">×</button>
+                <button type="button" class="btn btn-outline-secondary btn-sm ml-2 clear-select" data-target="#filterAlbum" aria-label="Clear album">×</button>
             </div>
         </div>
         <div class="form-group">
-            <label for="filterStatus">Status</label>
+            <label for="filterStatus">{{ trans('common.status') }}</label>
             <div class="d-flex align-items-center">
                 <select id="filterStatus" class="form-control form-control-sm select2 filter-select" style="width: 100%;" data-placeholder="{{ trans('common.all') }}">
                     <option value="">{{ trans('common.all') }}</option>
@@ -48,7 +41,7 @@
                 <button type="button" class="btn btn-outline-secondary btn-sm ml-2 clear-select" data-target="#filterStatus" aria-label="Clear status">×</button>
             </div>
         </div>
-        <div class="d-flex justify-content-end">
+        <div class="d-flex justify-content-end pb-3">
             <button type="button" class="btn btn-secondary btn-sm mr-2" onclick="resetFilters()">
                 {{ trans('common.reset') }}
             </button>

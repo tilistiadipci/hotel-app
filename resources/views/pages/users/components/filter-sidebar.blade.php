@@ -8,28 +8,44 @@
     <form id="filterForm" class="px-3 pt-2">
         <div class="form-group">
             <label for="filterUsername">Username</label>
-            <input type="text" id="filterUsername" class="form-control form-control-sm" placeholder="Username">
+            <div class="input-group input-group-sm">
+                <input type="text" id="filterUsername" class="form-control" placeholder="Username">
+                <div class="input-group-append">
+                    <button class="btn btn-outline-secondary clear-input" type="button" data-target="#filterUsername" aria-label="Clear username">×</button>
+                </div>
+            </div>
         </div>
         <div class="form-group">
             <label for="filterEmail">Email</label>
-            <input type="text" id="filterEmail" class="form-control form-control-sm" placeholder="Email">
+            <div class="input-group input-group-sm">
+                <input type="text" id="filterEmail" class="form-control" placeholder="Email">
+                <div class="input-group-append">
+                    <button class="btn btn-outline-secondary clear-input" type="button" data-target="#filterEmail" aria-label="Clear email">×</button>
+                </div>
+            </div>
         </div>
         <div class="form-group">
             <label for="filterRole">Role</label>
-            <select id="filterRole" class="form-control form-control-sm">
-                <option value="">{{ trans('common.all') }}</option>
-                @foreach ($roles as $role)
-                    <option value="{{ $role->id }}">{{ $role->name }}</option>
-                @endforeach
-            </select>
+            <div class="d-flex align-items-center">
+                <select id="filterRole" class="form-control form-control-sm select2 filter-select" style="width: 100%;" data-placeholder="{{ trans('common.all') }}">
+                    <option value="">{{ trans('common.all') }}</option>
+                    @foreach ($roles as $role)
+                        <option value="{{ $role->id }}">{{ $role->name }}</option>
+                    @endforeach
+                </select>
+                <button type="button" class="btn btn-outline-secondary btn-sm ml-2 clear-select" data-target="#filterRole" aria-label="Clear role">×</button>
+            </div>
         </div>
         <div class="form-group">
             <label for="filterStatus">Status</label>
-            <select id="filterStatus" class="form-control form-control-sm">
-                <option value="">{{ trans('common.all') }}</option>
-                <option value="active">{{ trans('common.active') }}</option>
-                <option value="inactive">{{ trans('common.inactive') }}</option>
-            </select>
+            <div class="d-flex align-items-center">
+                <select id="filterStatus" class="form-control form-control-sm select2 filter-select" style="width: 100%;" data-placeholder="{{ trans('common.all') }}">
+                    <option value="">{{ trans('common.all') }}</option>
+                    <option value="active">{{ trans('common.active') }}</option>
+                    <option value="inactive">{{ trans('common.inactive') }}</option>
+                </select>
+                <button type="button" class="btn btn-outline-secondary btn-sm ml-2 clear-select" data-target="#filterStatus" aria-label="Clear status">×</button>
+            </div>
         </div>
         <div class="d-flex justify-content-end">
             <button type="button" class="btn btn-secondary btn-sm mr-2" onclick="resetFilters()">

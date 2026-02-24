@@ -7,6 +7,7 @@ use App\Http\Controllers\Master\SupplierController;
 use App\Http\Controllers\Master\ProductController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SettingWebsiteController;
+use App\Http\Controllers\SongController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\TVChannelController;
 use Illuminate\Support\Facades\Auth;
@@ -87,6 +88,14 @@ Route::middleware(['auth'])->group(function () {
         ->name('tv-channels.')
         ->group(function () {
             Route::post('/bulkDelete', [TVChannelController::class, 'bulkDelete'])->name('bulkDelete');
+        });
+
+    // Songs
+    Route::resource('songs', SongController::class);
+    Route::prefix('songs')
+        ->name('songs.')
+        ->group(function () {
+            Route::post('/bulkDelete', [SongController::class, 'bulkDelete'])->name('bulkDelete');
         });
 
 

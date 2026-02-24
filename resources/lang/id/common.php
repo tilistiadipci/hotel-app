@@ -69,6 +69,9 @@ return [
     'choose_item_text' => 'Silahkan pilih item terlebih dahulu!',
     'no_data' => 'Tidak ada data',
     'detail' => 'Detail',
+    'status' => 'Status',
+    'no_data_please_enter_to_add' => 'Tidak ada data. Tekan Enter untuk menambah.',
+    'please_wait' => 'Mohon tunggu...',
 
     'list_month' => [
         'january' => 'Januari',
@@ -123,13 +126,6 @@ return [
         'create' => 'Data berhasil dibuat',
     ],
 
-    'status' => [
-        'title' => 'Status',
-        'title_singular' => 'Status',
-        'status' => 'Status',
-        'pending' => 'Pending',
-    ],
-
     'user' => [
         'title' => 'Pengguna',
         'title_singular' => 'Pengguna',
@@ -141,6 +137,7 @@ return [
     ],
 
     'tv' => [
+        'list_of_tv' => 'Daftar TV',
         'title' => 'TV',
         'title_singular' => 'TV',
         'list_of_tv' => 'Daftar TV',
@@ -156,16 +153,20 @@ return [
         'is_active' => 'Is Active',
     ],
 
-    'supplier' => [
-        'title' => 'Pemasok',
-        'title_singular' => 'Pemasok',
-        'list_of_supplier' => 'Daftar Pemasok',
-    ],
-
-    'product' => [
-        'title' => 'Produk',
-        'title_singular' => 'Produk',
-        'list_of_product' => 'Daftar Produk',
+    'song' => [
+        'list_of_song' => 'Daftar Lagu',
+        'title' => 'Lagu',
+        'title_singular' => 'Lagu',
+        'artist' => 'Artis',
+        'album' => 'Album',
+        'title_field' => 'Judul',
+        'url_stream' => 'URL Stream',
+        'duration' => 'Durasi',
+        'cover_image' => 'Gambar Sampul',
+        'sort_order' => 'Urutan',
+        'is_active' => 'Aktif',
+        'stream_url' => 'Stream URL',
+        'album_placeholder' => 'Album (boleh dikosongkan atau tambah baru)',
     ],
 
     'profile' => [

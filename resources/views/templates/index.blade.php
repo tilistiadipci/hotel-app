@@ -540,7 +540,7 @@
         function loadingSwal() {
             swal({
                 title: "{{ trans('common.loading') }}",
-                text: "{{ trans('common.audit.getting') }}",
+                text: "{{ trans('common.please_wait') }}",
                 icon: "info",
                 buttons: false,
                 closeOnClickOutside: false,

@@ -7,16 +7,16 @@
             <div class="page-title-wrapper">
 
                 @include('templates.parts.breadcrumb', [
-                    'title' => trans('common.tv.title'),
+                    'title' => 'Songs',
                     'icon' => $icon,
                     'breadcrumbs' => [
-                        ['href' => '#', 'label' => trans('common.tv.title')],
+                        ['href' => '#', 'label' => 'Songs'],
                     ],
                 ])
 
                 <div class="page-title-actions">
                     @include('partials.buttons.btn-create-new', [
-                        'url' => route('tv-channels.create'),
+                        'url' => route('songs.create'),
                     ])
                 </div>
             </div>
@@ -27,7 +27,7 @@
                 <div class="card mb-3">
                     <div class="card-header-tab card-header bg-primary text-white">
                         <div class="card-header-title font-size-lg text-capitalize font-weight-normal">
-                            {{ trans('common.tv.list_of_tv') }}
+                            {{ trans('common.song.list_of_song') }}
                         </div>
                         <div class="btn-actions-pane-right actions-icon-btn d-flex align-items-center">
                             <button class="btn btn-sm btn-light mr-2" id="filterBtn" data-toggle="tooltip" title="{{ trans('common.filter') }}">
@@ -52,9 +52,10 @@
                                         </label>
                                     </th>
                                     <th style="width:60px">No</th>
-                                    <th>{{ trans('common.tv.name') }}</th>
-                                    <th>{{ trans('common.tv.type') }}</th>
-                                    <th>{{ trans('common.tv.region') }}</th>
+                                    <th>{{ trans('common.title') }}</th>
+                                    <th>{{ trans('common.song.artist') }}</th>
+                                    <th>{{ trans('common.song.album') }}</th>
+                                    <th>{{ trans('common.song.duration') }}</th>
                                     <th>{{ trans('common.status') }}</th>
                                     <th style="text-align:center">{!! trans('common.action') !!}</th>
                                 </tr>
@@ -67,7 +68,7 @@
             </div>
         </div>
 
-        @include('pages.tv_channels.components.filter-sidebar')
+        @include('pages.songs.components.filter-sidebar')
     </div>
 @endsection
 
@@ -75,9 +76,8 @@
     <script>
         function attachFilters(d) {
             d.filters = {
-                name: $('#filterName').val(),
-                type: $('#filterType').val(),
-                region: $('#filterRegion').val(),
+                artist_id: $('#filterArtist').val(),
+                album_id: $('#filterAlbum').val(),
                 is_active: $('#filterStatus').val(),
             };
         }
@@ -87,13 +87,20 @@
             toggleFilter(false);
         }
 
-    function resetFilters() {
-        $('#filterForm')[0].reset();
-        $('#filterType, #filterRegion, #filterStatus').val(null).trigger('change');
-        table.search('').draw();
-        table.ajax.reload();
-        toggleFilter(false);
-    }
+        function resetFilters() {
+            $('#filterForm')[0].reset();
+            $('#filterArtist, #filterAlbum, #filterStatus').val(null).trigger('change');
+            table.search('').draw();
+            table.ajax.reload();
+            toggleFilter(false);
+        }
+
+        function formatDuration(seconds) {
+            if (!seconds) return '';
+            const mins = Math.floor(seconds / 60);
+            const secs = seconds % 60;
+            return `${mins}:${secs.toString().padStart(2, '0')}`;
+        }
 
         var columns = [
             {
@@ -118,15 +125,22 @@
                 }
             },
             {
-                data: 'name',
-                name: 'name',
+                data: 'title',
+                name: 'title',
                 render: function(data, type, row) {
-                    let url = `{{ url('tv-channels') }}/${row.uuid}/edit`
-                    return `<a href="${url}">${row.name || ''}</a>`
+                    let url = `{{ url('songs') }}/${row.uuid}/edit`
+                    return `<a href="${url}">${row.title || ''}</a>`
                 }
             },
-            { data: 'type', name: 'type', render: d => d ? d.toUpperCase() : '' },
-            { data: 'region', name: 'region', render: d => d ? d.charAt(0).toUpperCase() + d.slice(1) : '' },
+            { data: 'artist', name: 'artist', defaultContent: '' },
+            { data: 'album', name: 'album', defaultContent: '' },
+            {
+                data: 'duration',
+                name: 'duration',
+                render: function(data) {
+                    return formatDuration(data);
+                }
+            },
             {
                 name: 'is_active',
                 render: function(data, type, row) {
@@ -146,53 +160,47 @@
             { data: 'created_at', name: 'created_at', visible: false },
         ];
 
-    var getUrl = "{{ route('tv-channels.index') }}";
-    var showUrl = "{{ route('tv-channels.show', ':id') }}";
-    var editUrl = "{{ route('tv-channels.edit', ':id') }}";
-    var destroyUrl = "{{ route('tv-channels.destroy', ':id') }}";
-    var scrollX = false;
-    var fixedColumns = false;
+        var getUrl = "{{ route('songs.index') }}";
+        var showUrl = "{{ route('songs.show', ':id') }}";
+        var editUrl = "{{ route('songs.edit', ':id') }}";
+        var destroyUrl = "{{ route('songs.destroy', ':id') }}";
+        var scrollX = false;
+        var fixedColumns = false;
 
-    $(function () {
-        $('#filterType, #filterRegion, #filterStatus').select2({
-            theme: 'bootstrap4',
-            width: '100%',
-            allowClear: true,
-            placeholder: "{{ trans('common.all') }}",
-            dropdownParent: $('#filterSidebar')
+        $(function () {
+            $('#filterArtist, #filterAlbum, #filterStatus').select2({
+                theme: 'bootstrap4',
+                width: '100%',
+                allowClear: true,
+                placeholder: "{{ trans('common.all') }}",
+                dropdownParent: $('#filterSidebar')
+            });
+
+            if (!document.getElementById('select2-clear-style-global')) {
+                const style = `<style id="select2-clear-style-global">
+                    .select2-container--bootstrap4 .select2-selection--single .select2-selection__clear {
+                        position: absolute;
+                        right: 2.2rem;
+                        top: 50%;
+                        transform: translateY(-50%);
+                        display: inline-block;
+                        font-size: 14px;
+                        color: #6c757d;
+                        cursor: pointer;
+                    }
+                    .select2-container--bootstrap4 .select2-selection--single .select2-selection__arrow {
+                        right: 8px;
+                    }
+                </style>`;
+                $('head').append(style);
+            }
+
+            $('.clear-select').on('click', function () {
+                const target = $(this).data('target');
+                $(target).val(null).trigger('change');
+            });
         });
+    </script>
 
-        $('.clear-input').on('click', function () {
-            const target = $(this).data('target');
-            $(target).val('');
-        });
-
-        $('.clear-select').on('click', function () {
-            const target = $(this).data('target');
-            $(target).val(null).trigger('change');
-        });
-
-        // ensure built-in select2 clear visible and aligned
-        if (!document.getElementById('select2-clear-style-global')) {
-            const style = `<style id="select2-clear-style-global">
-                .select2-container--bootstrap4 .select2-selection--single .select2-selection__clear {
-                    position: absolute;
-                    right: 2.2rem;
-                    top: 50%;
-                    transform: translateY(-50%);
-                    display: inline-block;
-                    font-size: 14px;
-                    color: #6c757d;
-                    cursor: pointer;
-                }
-                .select2-container--bootstrap4 .select2-selection--single .select2-selection__arrow {
-                    right: 8px;
-                }
-            </style>`;
-            $('head').append(style);
-        }
-    });
-</script>
-
-@include('js.datatable')
+    @include('js.datatable')
 @endsection

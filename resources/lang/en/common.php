@@ -70,6 +70,9 @@ return [
     'choose_item_text' => 'Please choose an item first!',
     'no_data' => 'No data',
     'detail' => 'Detail',
+    'status' => 'Status',
+    'no_data_please_enter_to_add' => 'No data. Press Enter to add.',
+    'please_wait' => 'Please wait...',
 
     'list_month' => [
         'january' => 'January',
@@ -124,13 +127,6 @@ return [
         'create' => 'Data created successfully',
     ],
 
-    'status' => [
-        'title' => 'Statuses',
-        'title_singular' => 'Status',
-        'status' => 'Status',
-        'pending' => 'Pending',
-    ],
-
     'user' => [
         'title' => 'Users',
         'title_singular' => 'User',
@@ -142,6 +138,7 @@ return [
     ],
 
     'tv' => [
+        'list_of_tv' => 'List of TV Channels',
         'title' => 'TV Channels',
         'title_singular' => 'TV Channel',
         'name' => 'Name',
@@ -156,16 +153,19 @@ return [
         'is_active' => 'Is Active',
     ],
 
-    'supplier' => [
-        'title' => 'Suppliers',
-        'title_singular' => 'Supplier',
-        'list_of_supplier' => 'List of Suppliers',
-    ],
-
-    'product' => [
-        'title' => 'Products',
-        'title_singular' => 'Product',
-        'list_of_product' => 'List of Products',
+    'song' => [
+        'list_of_song' => 'List of Songs',
+        'title' => 'Songs',
+        'title_singular' => 'Song',
+        'name' => 'Name',
+        'slug' => 'Slug',
+        'artist' => 'Artist',
+        'duration' => 'Duration',
+        'album' => 'Album',
+        'file' => 'File',
+        'is_active' => 'Is Active',
+        'stream_url' => 'Stream URL',
+        'album_placeholder' => 'Album (can be empty or add new)',
     ],
 
     'profile' => [

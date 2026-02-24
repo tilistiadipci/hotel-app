@@ -43,6 +43,11 @@
                         <i class="metismenu-icon pe-7s-monitor"></i> TV Channels
                     </a>
                 </li>
+                <li class="{{ $page == 'songs' ? 'mm-active' : '' }}">
+                    <a href="{{ url('/songs') }}" class="{{ $page == 'songs' ? 'mm-active' : '' }}">
+                        <i class="metismenu-icon pe-7s-music"></i> {{ trans('common.song.title') }}
+                    </a>
+                </li>
                 <li class="{{ $page == 'users' ? 'mm-active' : '' }}">
                     <a href="{{ url('/users') }}" class="{{ $page == 'users' ? 'mm-active' : '' }}">
                         <i class="metismenu-icon pe-7s-users"></i> {{ trans('common.user.title') }}
