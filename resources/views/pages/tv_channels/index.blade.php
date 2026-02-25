@@ -52,7 +52,7 @@
                                         </label>
                                     </th>
                                     <th style="width:60px">No</th>
-                                    <th>{{ trans('common.tv.name') }}</th>
+                                    <th>{{ trans('common.name') }}</th>
                                     <th>{{ trans('common.tv.type') }}</th>
                                     <th>{{ trans('common.tv.region') }}</th>
                                     <th>{{ trans('common.status') }}</th>

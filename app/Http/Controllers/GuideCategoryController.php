@@ -39,7 +39,7 @@ class GuideCategoryController extends Controller
                 ->make(true);
         }
 
-        return view('pages.guide-categories.index', [
+        return view('pages.guide_categories.index', [
             'page' => $this->page,
             'icon' => $this->icon,
         ]);
@@ -47,7 +47,7 @@ class GuideCategoryController extends Controller
 
     public function create()
     {
-        return view('pages.guide-categories.create', [
+        return view('pages.guide_categories.create', [
             'page' => $this->page,
             'icon' => $this->icon,
         ]);
@@ -60,7 +60,7 @@ class GuideCategoryController extends Controller
             return redirect()->route('error.404');
         }
 
-        return view('pages.guide-categories.edit', [
+        return view('pages.guide_categories.edit', [
             'page' => $this->page,
             'icon' => $this->icon,
             'category' => $category,
@@ -99,7 +99,7 @@ class GuideCategoryController extends Controller
             ]);
         }
 
-        return redirect()->route('guide-categories.index')->with('success', trans('common.success.create'));
+        return redirect()->route('guide_categories.index')->with('success', trans('common.success.create'));
     }
 
     public function update(Request $request, string $uid)
@@ -122,7 +122,7 @@ class GuideCategoryController extends Controller
 
         $this->categoryRepository->update($category->id, $data);
 
-        return redirect()->route('guide-categories.index')->with('success', trans('common.success.update'));
+        return redirect()->route('guide_categories.index')->with('success', trans('common.success.update'));
     }
 
     public function destroy(string $uid)
@@ -218,7 +218,7 @@ class GuideCategoryController extends Controller
 
             return response()->json([
                 'status' => true,
-                'data' => view('pages.guide-categories.info', [
+                'data' => view('pages.guide_categories.info', [
                     'category' => $category,
                 ])->render(),
                 'return_type' => 'json',
@@ -229,6 +229,6 @@ class GuideCategoryController extends Controller
             return redirect()->route('error.404');
         }
 
-        return redirect()->route('guide-categories.index');
+        return redirect()->route('guide_categories.index');
     }
 }

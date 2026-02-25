@@ -40,7 +40,7 @@ class MenuCategoryController extends Controller
                 ->make(true);
         }
 
-        return view('pages.menu-categories.index', [
+        return view('pages.menu_categories.index', [
             'page' => $this->page,
             'icon' => $this->icon,
         ]);
@@ -48,7 +48,7 @@ class MenuCategoryController extends Controller
 
     public function create()
     {
-        return view('pages.menu-categories.create', [
+        return view('pages.menu_categories.create', [
             'page' => $this->page,
             'icon' => $this->icon,
         ]);
@@ -61,7 +61,7 @@ class MenuCategoryController extends Controller
             return redirect()->route('error.404');
         }
 
-        return view('pages.menu-categories.edit', [
+        return view('pages.menu_categories.edit', [
             'page' => $this->page,
             'icon' => $this->icon,
             'category' => $category,
@@ -221,7 +221,7 @@ class MenuCategoryController extends Controller
 
             return response()->json([
                 'status' => true,
-                'data' => view('pages.menu-categories.info', [
+                'data' => view('pages.menu_categories.info', [
                     'category' => $category,
                 ])->render(),
                 'return_type' => 'json',
