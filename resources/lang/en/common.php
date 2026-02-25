@@ -234,6 +234,12 @@ return [
         'title_singular' => 'Place Category',
     ],
 
+    'movie_category' => [
+        'list_of_movie_category' => 'List of Movie Categories',
+        'title' => 'Movie Categories',
+        'title_singular' => 'Movie Category',
+    ],
+
     'profile' => [
         'title_singular' => 'Profile',
         'change_password' => 'Change Password',

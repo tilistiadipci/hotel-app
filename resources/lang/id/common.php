@@ -225,6 +225,12 @@ return [
         'title_singular' => 'Kategori Tempat',
     ],
 
+    'movie_category' => [
+        'list_of_movie_category' => 'Daftar Kategori Film',
+        'title' => 'Kategori Film',
+        'title_singular' => 'Kategori Film',
+    ],
+
     'profile' => [
         'title_singular' => 'Profil',
         'change_password' => 'Ubah Password',

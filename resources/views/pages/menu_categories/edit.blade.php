@@ -21,7 +21,7 @@
                     <div class="card-header">
                         {{ trans('common.edit') ?? 'Edit' }}
                     </div>
-                    @include('pages.menu-categories.components.form', ['category' => $category])
+                    @include('pages.menu_categories.components.form', ['category' => $category])
                 </div>
             </div>
         </div>

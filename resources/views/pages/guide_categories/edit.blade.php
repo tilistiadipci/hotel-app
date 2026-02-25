@@ -21,7 +21,7 @@
                     <div class="card-header">
                         {{ trans('common.edit') }}
                     </div>
-                    @include('pages.guide-categories.components.form', ['category' => $category])
+                    @include('pages.guide_categories.components.form', ['category' => $category])
                 </div>
             </div>
         </div>

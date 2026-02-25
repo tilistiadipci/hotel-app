@@ -27,7 +27,7 @@
                     <div class="card-header">
                         {{ trans('common.create_new') }}
                     </div>
-                    @include('pages.menu-categories.components.form')
+                    @include('pages.menu_categories.components.form')
                 </div>
             </div>
         </div>

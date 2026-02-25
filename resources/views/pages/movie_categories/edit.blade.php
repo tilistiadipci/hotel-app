@@ -5,11 +5,11 @@
         <div class="app-page-title">
             <div class="page-title-wrapper">
                 @include('templates.parts.breadcrumb', [
-                    'title' => trans('common.guide_category.title'),
+                    'title' => trans('common.movie_category.title'),
                     'icon' => $icon,
                     'breadcrumbs' => [
-                        ['href' => route('guide-categories.index'), 'label' => trans('common.guide_category.title')],
-                        ['href' => '#', 'label' => trans('common.create_new')],
+                        ['href' => route('movie-categories.index'), 'label' => trans('common.movie_category.title')],
+                        ['href' => '#', 'label' => trans('common.edit')],
                     ],
                 ])
             </div>
@@ -19,9 +19,9 @@
             <div class="col-md-12">
                 <div class="main-card mb-3 card">
                     <div class="card-header">
-                        {{ trans('common.create_new') }}
+                        {{ trans('common.edit') }}
                     </div>
-                    @include('pages.guide_categories.components.form')
+                    @include('pages.movie_categories.components.form', ['category' => $category])
                 </div>
             </div>
         </div>

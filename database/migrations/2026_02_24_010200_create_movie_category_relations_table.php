@@ -12,7 +12,12 @@ return new class extends Migration
             $table->id();
             $table->foreignId('movie_id')->constrained('movies')->cascadeOnDelete();
             $table->foreignId('category_id')->constrained('movies_categories')->cascadeOnDelete();
+
+            $table->integer('created_by')->nullable();
+            $table->integer('updated_by')->nullable();
+            $table->integer('deleted_by')->nullable();
             $table->timestamps();
+            $table->softDeletes();
 
             $table->unique(['movie_id', 'category_id'], 'unique_movie_category');
         });

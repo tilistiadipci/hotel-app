@@ -113,10 +113,11 @@ Route::middleware(['auth'])->group(function () {
         });
 
     // Movies Categories
+    Route::resource('movie-categories', MovieCategoryController::class);
     Route::prefix('movie-categories')
         ->name('movie-categories.')
         ->group(function () {
-            Route::post('/store', [MovieCategoryController::class, 'store'])->name('store');
+            Route::post('/bulkDelete', [MovieCategoryController::class, 'bulkDelete'])->name('bulkDelete');
         });
 
     // Places
