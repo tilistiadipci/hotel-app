@@ -127,7 +127,13 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/bulkDelete', [PlaceController::class, 'bulkDelete'])->name('bulkDelete');
         });
 
-    Route::post('place-categories', [PlaceCategoryController::class, 'store'])->name('place-categories.store');
+    // Place Categories
+    Route::resource('place-categories', PlaceCategoryController::class);
+    Route::prefix('place-categories')
+        ->name('place-categories.')
+        ->group(function () {
+            Route::post('/bulkDelete', [PlaceCategoryController::class, 'bulkDelete'])->name('bulkDelete');
+        });
 
     // Guide
     Route::resource('guides', GuideItemController::class);

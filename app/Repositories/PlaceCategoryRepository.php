@@ -24,4 +24,16 @@ class PlaceCategoryRepository extends BaseRepository
     {
         return $this->model->where('slug', $slug)->first();
     }
+
+    public function bulkDeleteByUid(array $uids, $fieldName = null, $destroyImage = false)
+    {
+        if (empty($uids)) {
+            return 0;
+        }
+
+        return $this->model->whereIn('uuid', $uids)->update([
+            'deleted_by' => auth()->id(),
+            'deleted_at' => now(),
+        ]);
+    }
 }

@@ -219,6 +219,12 @@ return [
         'title_singular' => 'Kategori Guide',
     ],
 
+    'place_category' => [
+        'list_of_place_category' => 'Daftar Kategori Tempat',
+        'title' => 'Kategori Tempat',
+        'title_singular' => 'Kategori Tempat',
+    ],
+
     'profile' => [
         'title_singular' => 'Profil',
         'change_password' => 'Ubah Password',

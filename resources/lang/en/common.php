@@ -228,6 +228,12 @@ return [
         'title_singular' => 'Guide Category',
     ],
 
+    'place_category' => [
+        'list_of_place_category' => 'List of Place Categories',
+        'title' => 'Place Categories',
+        'title_singular' => 'Place Category',
+    ],
+
     'profile' => [
         'title_singular' => 'Profile',
         'change_password' => 'Change Password',
