@@ -32,7 +32,7 @@
                             'value' => $channel->slug ?? old('slug'),
                             'type' => 'text',
                         ])
-                        <small class="text-muted">Kosongkan untuk auto-generate.</small>
+                        <small class="text-muted">{{ trans('common.slug_information') }}</small>
                     </div>
                 </div>
 
@@ -70,12 +70,12 @@
                             'value' => $channel->stream_url ?? old('stream_url'),
                             'type' => 'text',
                         ])
-                        <small class="text-muted">Isi URL HLS/DASH atau deep link.</small>
+                        <small class="text-muted">{{ trans('common.stream_url_information') }}</small>
                     </div>
                 </div>
 
                 <div class="position-relative row form-group">
-                    <label class="col-sm-4 col-form-label text-sm-right">Frequency</label>
+                    <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.tv.frequency') }}</label>
                     <div class="col-sm-8">
                         @include('partials.forms.input', [
                             'elementId' => 'frequency',
@@ -86,7 +86,7 @@
                 </div>
 
                 <div class="position-relative row form-group">
-                    <label class="col-sm-4 col-form-label text-sm-right">Quality</label>
+                    <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.tv.quality') }}</label>
                     <div class="col-sm-8">
                         @include('partials.forms.input', [
                             'elementId' => 'quality',

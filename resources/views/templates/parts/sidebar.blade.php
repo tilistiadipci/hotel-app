@@ -63,10 +63,39 @@
                         <i class="metismenu-icon pe-7s-map-marker"></i> {{ trans('common.place.title') }}
                     </a>
                 </li>
+                <li class="{{ $page == 'guides' ? 'mm-active' : '' }}">
+                    <a href="{{ url('/guides') }}" class="{{ $page == 'guides' ? 'mm-active' : '' }}">
+                        <i class="metismenu-icon pe-7s-date"></i> {{ trans('common.guide.title') }}
+                    </a>
+                </li>
                 <li class="{{ $page == 'users' ? 'mm-active' : '' }}">
                     <a href="{{ url('/users') }}" class="{{ $page == 'users' ? 'mm-active' : '' }}">
                         <i class="metismenu-icon pe-7s-users"></i> {{ trans('common.user.title') }}
                     </a>
+                </li>
+
+                <li class="{{ in_array($page, ['menu-categories', 'guide-categories', 'place-categories']) ? 'mm-active' : '' }}">
+                    <a href="#">
+                        <i class="metismenu-icon pe-7s-folder"></i> Categories
+                        <i class="metismenu-state-icon pe-7s-angle-down caret-left"></i>
+                    </a>
+                    <ul>
+                        <li class="{{ $page == 'menu-categories' ? 'mm-active' : '' }}">
+                            <a href="{{ url('/menu-categories') }}" class="{{ $page == 'menu-categories' ? 'mm-active' : '' }}">
+                                <i class="metismenu-icon"></i> Menu Categories
+                            </a>
+                        </li>
+                        <li class="{{ $page == 'guide-categories' ? 'mm-active' : '' }}">
+                            <a href="{{ url('/guide-categories') }}" class="{{ $page == 'guide-categories' ? 'mm-active' : '' }}">
+                                <i class="metismenu-icon"></i> Guide Categories
+                            </a>
+                        </li>
+                        <li class="{{ $page == 'place-categories' ? 'mm-active' : '' }}">
+                            <a href="{{ url('/place-categories') }}" class="{{ $page == 'place-categories' ? 'mm-active' : '' }}">
+                                <i class="metismenu-icon"></i> Place Categories
+                            </a>
+                        </li>
+                    </ul>
                 </li>
                 <li class="app-sidebar__heading">{{ trans('common.settings') }}</li>
                 <li class="{{ $page == 'account' ? 'mm-active' : '' }}">

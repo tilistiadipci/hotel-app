@@ -75,6 +75,15 @@ return [
     'no_data_please_enter_to_add' => 'No data. Press Enter to add.',
     'please_wait' => 'Please wait...',
     'sort_order' => 'Sort Order',
+    'slug_information' => 'Leave blank to auto-generate.',
+    'open' => 'Open',
+    'close' => 'Close',
+    'short_description' => 'Short Description',
+    'long_description' => 'Long Description',
+    'location' => 'Location',
+    'contact' => 'Contact',
+    'select_an_option' => 'Select an option',
+    'add_category' => 'Add Category',
 
     'list_month' => [
         'january' => 'January',
@@ -132,7 +141,6 @@ return [
     'user' => [
         'title' => 'Users',
         'title_singular' => 'User',
-        'name' => 'Name',
         'username' => 'Username',
         'role' => 'Role',
         'status' => 'Status',
@@ -143,7 +151,6 @@ return [
         'list_of_tv' => 'List of TV Channels',
         'title' => 'TV Channels',
         'title_singular' => 'TV Channel',
-        'name' => 'Name',
         'slug' => 'Slug',
         'logo' => 'Logo',
         'type' => 'Type',
@@ -157,7 +164,6 @@ return [
         'list_of_song' => 'List of Songs',
         'title' => 'Songs',
         'title_singular' => 'Song',
-        'name' => 'Name',
         'slug' => 'Slug',
         'artist' => 'Artist',
         'duration' => 'Duration',
@@ -171,7 +177,6 @@ return [
         'list_of_movie' => 'List of Movies',
         'title' => 'Movies',
         'title_singular' => 'Movie',
-        'name' => 'Name',
         'slug' => 'Slug',
         'release_date' => 'Release Date',
         'rating' => 'Rating',
@@ -182,7 +187,16 @@ return [
         'list_of_place' => 'List of Places',
         'title' => 'Places',
         'title_singular' => 'Place',
-        'name' => 'Name',
+        'address' => 'Address',
+        'latitude' => 'Latitude',
+        'longitude' => 'Longitude',
+        'distance' => 'Distance',
+    ],
+
+    'guide' => [
+        'list_of_guide' => 'List of Guides',
+        'title' => 'Guides',
+        'title_singular' => 'Guide',
         'address' => 'Address',
         'latitude' => 'Latitude',
         'longitude' => 'Longitude',
@@ -198,6 +212,14 @@ return [
         'tax' => 'Tax',
         'is_available' => 'Is Available',
         'preparation_time' => 'Preparation Time (minutes)',
+        'optional_discount' => 'Optional; leave blank if no discount.',
+        'discount_price' => 'Discount Price',
+    ],
+
+    'menu_category' => [
+        'list_of_menu_category' => 'List of Menu Categories',
+        'title' => 'Menu Categories',
+        'title_singular' => 'Menu Category',
     ],
 
     'profile' => [

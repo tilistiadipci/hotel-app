@@ -21,6 +21,8 @@ class DatabaseSeeder extends Seeder
             PlaceSeeder::class,
             MenuCategorySeeder::class,
             MenuItemSeeder::class,
+            GuideCategorySeeder::class,
+            GuideItemSeeder::class,
         ]);
     }
 }

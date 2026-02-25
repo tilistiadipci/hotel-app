@@ -74,6 +74,15 @@ return [
     'no_data_please_enter_to_add' => 'Tidak ada data. Tekan Enter untuk menambah.',
     'please_wait' => 'Mohon tunggu...',
     'sort_order' => 'Urutan',
+    'slug_information' => 'Biarkan kosong untuk auto-generate.',
+    'stream_url_information' => 'Isi URL HLS/DASH atau deep link. Contoh: <code>https://example.com/stream.m3u8</code> atau <code>tvapp://channel/123</code>',
+    'open' => 'Buka',
+    'close' => 'Tutup',
+    'short_description' => 'Deskripsi Singkat',
+    'location' => 'Lokasi',
+    'contact' => 'Kontak',
+    'select_an_option' => 'Pilih Opsi',
+    'add_category' => 'Tambah Kategori',
 
     'list_month' => [
         'january' => 'Januari',
@@ -131,7 +140,6 @@ return [
     'user' => [
         'title' => 'Pengguna',
         'title_singular' => 'Pengguna',
-        'name' => 'Nama',
         'username' => 'Nama Pengguna',
         'role' => 'Role',
         'status' => 'Status',
@@ -143,13 +151,12 @@ return [
         'title' => 'TV',
         'title_singular' => 'TV',
         'list_of_tv' => 'Daftar TV',
-        'name' => 'Nama',
         'slug' => 'Slug',
         'logo' => 'Logo',
         'type' => 'Tipe',
         'region' => 'Region',
         'stream_url' => 'Stream URL',
-        'frequency' => 'Frequency',
+        'frequency' => 'Frekuensi',
         'quality' => 'Kualitas',
     ],
 
@@ -179,7 +186,6 @@ return [
         'list_of_place' => 'Daftar Tempat',
         'title' => 'Tempat',
         'title_singular' => 'Tempat',
-        'name' => 'Nama',
         'category' => 'Kategori',
         'address' => 'Alamat',
         'latitude' => 'Latitude',
@@ -197,6 +203,14 @@ return [
         'tax' => 'Pajak',
         'is_available' => 'Tersedia',
         'preparation_time' => 'Waktu Persiapan (menit)',
+        'optional_discount' => 'Opsional; kosongkan jika tidak ada diskon.',
+        'discount_price' => 'Harga Diskon',
+    ],
+
+    'menu_category' => [
+        'list_of_menu_category' => 'Daftar Kategori Menu',
+        'title' => 'Kategori Menu',
+        'title_singular' => 'Kategori Menu',
     ],
 
     'profile' => [

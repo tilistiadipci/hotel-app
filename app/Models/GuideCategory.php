@@ -5,9 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
-class MenuCategory extends Model
+class GuideCategory extends Model
 {
     use HasFactory, SoftDeletes;
 
@@ -20,7 +21,7 @@ class MenuCategory extends Model
     protected static function booted(): void
     {
         static::creating(function (self $model) {
-            if (empty($model->uuid)) {
+            if (Schema::hasColumn($model->getTable(), 'uuid') && empty($model->uuid)) {
                 $model->uuid = Str::uuid()->toString();
             }
         });
@@ -28,7 +29,7 @@ class MenuCategory extends Model
 
     public function items()
     {
-        return $this->hasMany(MenuItem::class, 'category_id');
+        return $this->hasMany(GuideItem::class, 'category_id');
     }
 
     public function scopeFilter($query, array $filters)

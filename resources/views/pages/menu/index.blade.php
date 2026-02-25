@@ -127,7 +127,6 @@
                 name: 'name',
                 render: function(data, type, row) {
                     let url = `{{ url('menu') }}/${row.uuid}/edit`
-                    let show = `{{ url('menu') }}/${row.uuid}`
                     return `<a href="${url}">${row.name || ''}</a>`
                 }
             },

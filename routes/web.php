@@ -14,6 +14,8 @@ use App\Http\Controllers\PlaceController;
 use App\Http\Controllers\PlaceCategoryController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\MenuCategoryController;
+use App\Http\Controllers\GuideItemController;
+use App\Http\Controllers\GuideCategoryController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -127,14 +129,29 @@ Route::middleware(['auth'])->group(function () {
 
     Route::post('place-categories', [PlaceCategoryController::class, 'store'])->name('place-categories.store');
 
+    // Guide
+    Route::resource('guides', GuideItemController::class);
+    Route::prefix('guides')
+        ->name('guides.')
+        ->group(function () {
+            Route::post('/bulkDelete', [GuideItemController::class, 'bulkDelete'])->name('bulkDelete');
+        });
+    Route::post('guide-categories', [GuideCategoryController::class, 'store'])->name('guide-categories.store');
+
     // Menu
     Route::resource('menu', MenuController::class);
     Route::prefix('menu')
         ->name('menu.')
         ->group(function () {
-            Route::post('/bulkDelete', [MenuController::class, 'bulkDelete'])->name('bulkDelete');
+        Route::post('/bulkDelete', [MenuController::class, 'bulkDelete'])->name('bulkDelete');
+    });
+    // Menu Categories
+    Route::resource('menu-categories', MenuCategoryController::class);
+    Route::prefix('menu-categories')
+        ->name('menu-categories.')
+        ->group(function () {
+            Route::post('/bulkDelete', [MenuCategoryController::class, 'bulkDelete'])->name('bulkDelete');
         });
-    Route::post('menu-categories', [MenuCategoryController::class, 'store'])->name('menu-categories.store');
 
 
     // website

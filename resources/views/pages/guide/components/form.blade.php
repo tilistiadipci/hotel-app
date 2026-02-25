@@ -2,8 +2,7 @@
     $item = $item ?? null;
 @endphp
 
-<form action="{{ $item ? route('menu.update', $item->uuid) : route('menu.store') }}" method="POST"
-    enctype="multipart/form-data">
+<form action="{{ $item ? route('guides.update', $item->uuid ?? $item->id) : route('guides.store') }}" method="POST" enctype="multipart/form-data">
     @csrf
     @if ($item)
         @method('PUT')
@@ -13,12 +12,12 @@
         <div class="row">
             <div class="col-md-6">
                 <div class="position-relative row form-group">
-                    <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.name') }}</label>
+                    <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.title') ?? 'Title' }}</label>
                     <div class="col-sm-8">
                         @include('partials.forms.input', [
-                            'elementId' => 'name',
+                            'elementId' => 'title',
                             'required' => true,
-                            'value' => $item->name ?? old('name'),
+                            'value' => $item->title ?? old('title'),
                             'type' => 'text',
                         ])
                     </div>
@@ -28,18 +27,16 @@
                     <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.category') }}</label>
                     <div class="col-sm-8">
                         <div class="d-flex">
-                            <select name="category_id" id="category_id" class="form-control select2"
-                                style="width: 100%;">
-                                <option value="">{{ trans('common.select_an_option') ?? 'Select an option' }}
-                                </option>
+                            <select name="category_id" id="category_id" class="form-control select2" style="width: 100%;">
+                                <option value="">{{ trans('common.select_an_option') ?? 'Select an option' }}</option>
                                 @foreach ($categories as $category)
                                     <option value="{{ $category->id }}"
-                                        {{ old('category_id') == $category->id || ($item && $item->category_id == $category->id) ? 'selected' : '' }}>
+                                        {{ (old('category_id') == $category->id || ($item && $item->category_id == $category->id)) ? 'selected' : '' }}>
                                         {{ $category->name }}
                                     </option>
                                 @endforeach
                             </select>
-                            <button type="button" class="btn btn-outline-primary ml-2" id="btnAddMenuCategory"
+                            <button type="button" class="btn btn-outline-primary ml-2" id="btnAddGuideCategory"
                                 data-toggle="tooltip" title="Add category">
                                 <i class="fa fa-plus"></i>
                             </button>
@@ -48,59 +45,39 @@
                 </div>
 
                 <div class="position-relative row form-group">
-                    <label
-                        class="col-sm-4 col-form-label text-sm-right">{{ trans('common.description') ?? 'Description' }}</label>
+                    <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.short_description') ?? 'Short Description' }}</label>
                     <div class="col-sm-8">
-                        <textarea name="description" id="description" class="form-control" rows="3">{{ $item->description ?? old('description') }}</textarea>
+                        <textarea name="short_description" id="short_description" class="form-control" rows="2">{{ $item->short_description ?? old('short_description') }}</textarea>
                     </div>
                 </div>
 
                 <div class="position-relative row form-group">
-                    <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.menu.price') }}</label>
+                    <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.description') ?? 'Description' }}</label>
+                    <div class="col-sm-8">
+                        <textarea name="description" id="description" class="form-control" rows="4">{{ $item->description ?? old('description') }}</textarea>
+                    </div>
+                </div>
+
+                <div class="position-relative row form-group">
+                    <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.location') ?? 'Location' }}</label>
                     <div class="col-sm-8">
                         @include('partials.forms.input', [
-                            'elementId' => 'price',
-                            'required' => true,
-                            'value' => $item->price ?? old('price'),
-                            'type' => 'number',
-                            'step' => '0.01',
+                            'elementId' => 'location',
+                            'value' => $item->location ?? old('location'),
+                            'type' => 'text',
+                            'maxlength' => 150,
                         ])
                     </div>
                 </div>
 
                 <div class="position-relative row form-group">
-                    <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.menu.discount_price') }}</label>
+                    <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.contact') ?? 'Contact Ext.' }}</label>
                     <div class="col-sm-8">
                         @include('partials.forms.input', [
-                            'elementId' => 'discount_price',
-                            'value' => $item->discount_price ?? old('discount_price'),
-                            'type' => 'number',
-                            'step' => '0.01',
-                        ])
-                        <small class="text-muted">{{ trans('common.menu.optional_discount') }}</small>
-                    </div>
-                </div>
-
-                <div class="position-relative row form-group">
-                    <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.sort_order') }}</label>
-                    <div class="col-sm-8">
-                        @include('partials.forms.input', [
-                            'elementId' => 'sort_order',
-                            'value' => $item->sort_order ?? old('sort_order', 0),
-                            'type' => 'number',
-                            'step' => '1',
-                        ])
-                    </div>
-                </div>
-
-                <div class="position-relative row form-group">
-                    <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.menu.preparation_time') }}</label>
-                    <div class="col-sm-8">
-                        @include('partials.forms.input', [
-                            'elementId' => 'preparation_time',
-                            'value' => $item->preparation_time ?? old('preparation_time'),
-                            'type' => 'number',
-                            'step' => '1',
+                            'elementId' => 'contact_extension',
+                            'value' => $item->contact_extension ?? old('contact_extension'),
+                            'type' => 'text',
+                            'maxlength' => 20,
                         ])
                     </div>
                 </div>
@@ -109,31 +86,62 @@
                     <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.status') }}</label>
                     <div class="col-sm-8">
                         @php
-                            $isAvailable = $item->is_available ?? old('is_available', 1);
+                            $isActive = $item->is_active ?? old('is_active', 1);
                         @endphp
-                        <select name="is_available" id="is_available" class="form-control select2" style="width: 100%;">
-                            <option value="1" {{ $isAvailable == 1 ? 'selected' : '' }}>Active</option>
-                            <option value="0" {{ $isAvailable == 0 ? 'selected' : '' }}>Inactive</option>
+                        <select name="is_active" id="is_active" class="form-control select2" style="width: 100%;">
+                            <option value="1" {{ $isActive == 1 ? 'selected' : '' }}>{{ trans('common.active') }}</option>
+                            <option value="0" {{ $isActive == 0 ? 'selected' : '' }}>{{ trans('common.inactive') }}</option>
                         </select>
+                    </div>
+                </div>
+
+                <div class="position-relative row form-group">
+                    <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.sort_order') ?? 'Sort Order' }}</label>
+                    <div class="col-sm-8">
+                        @include('partials.forms.input', [
+                            'elementId' => 'sort_order',
+                            'value' => $item->sort_order ?? old('sort_order', 0),
+                            'type' => 'number',
+                            'min' => 0,
+                        ])
                     </div>
                 </div>
             </div>
 
             <div class="col-md-6">
+                <div class="position-relative row form-group">
+                    <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.open') ?? 'Open Time' }}</label>
+                    <div class="col-sm-8">
+                        @include('partials.forms.input', [
+                            'elementId' => 'open_time',
+                            'value' => $item->open_time ?? old('open_time'),
+                            'type' => 'time',
+                        ])
+                    </div>
+                </div>
+
+                <div class="position-relative row form-group">
+                    <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.close') ?? 'Close Time' }}</label>
+                    <div class="col-sm-8">
+                        @include('partials.forms.input', [
+                            'elementId' => 'close_time',
+                            'value' => $item->close_time ?? old('close_time'),
+                            'type' => 'time',
+                        ])
+                    </div>
+                </div>
+
                 <div class="mb-3 w-100 upload-block">
-                    <label class="font-weight-bold d-block mb-2">{{ trans('common.image') }}</label>
+                    <label class="font-weight-bold d-block mb-2">{{ trans('common.image') ?? 'Image' }}</label>
                     @if ($item && $item->image)
                         <input type="hidden" name="old_image" value="{{ $item->image }}">
                         <div class="mb-2">
-                            <img src="{{ asset($item->image) }}" alt="Current Image"
-                                class="img-fluid rounded shadow-sm" style="max-height: 160px; object-fit: cover;">
+                            <img src="{{ asset($item->image) }}" alt="Current Image" class="img-fluid rounded shadow-sm" style="max-height: 160px; object-fit: cover;">
                         </div>
                     @endif
-                    <input type="file" name="image" id="image" class="form-control-file" accept="image/*"
-                        {{ $item ? '' : 'required' }}>
+                    <input type="file" name="image" id="image" class="form-control-file" accept="image/*">
                     <div class="mt-2" id="imagePreviewWrapper" style="display: none;">
-                        <img id="imagePreview" src="" alt="Preview" class="img-fluid rounded shadow-sm"
-                            style="max-height: 160px; object-fit: cover;">
+                        <img id="imagePreview" src="" alt="Preview" class="img-fluid rounded shadow-sm" style="max-height: 160px; object-fit: cover;">
                     </div>
                     <small class="text-muted d-block mt-1" style="font-style: normal;">Jpg, Png, Jpeg. Max 2MB.</small>
                     @error('image')
@@ -146,38 +154,36 @@
     <div class="card-footer d-block text-right">
         <div class="row">
             @include('partials.forms.save-buttons', [
-                'cancelUrl' => route('menu.index'),
+                'cancelUrl' => route('guides.index'),
                 'save' => trans('common.save'),
             ])
         </div>
     </div>
 </form>
 
-{{-- Custom Modal Add Menu Category --}}
-<div id="modalAddMenuCategory" class="custom-modal" aria-hidden="true">
+{{-- Custom Modal Add Category --}}
+<div id="modalAddGuideCategory" class="custom-modal" aria-hidden="true">
     <div class="custom-modal__backdrop" data-modal-close></div>
-    <div class="custom-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="modalAddMenuCategoryLabel">
+    <div class="custom-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="modalAddGuideCategoryLabel">
         <div class="custom-modal__header">
-            <h5 class="custom-modal__title" id="modalAddMenuCategoryLabel">{{ trans('common.add_category') }}</h5>
+            <h5 class="custom-modal__title" id="modalAddGuideCategoryLabel">{{ trans('common.add_category') }}</h5>
             <button type="button" class="custom-modal__close" data-modal-close aria-label="Close">&times;</button>
         </div>
-        <form id="formAddMenuCategory">
+        <form id="formAddGuideCategory">
             @csrf
             <div class="custom-modal__body">
                 <div class="form-group">
-                    <label for="newMenuCategoryName">{{ trans('common.name') }}</label>
-                    <input type="text" name="name" id="newMenuCategoryName" class="form-control" required
-                        maxlength="100">
+                    <label for="newGuideCategoryName">{{ trans('common.name') }}</label>
+                    <input type="text" name="name" id="newGuideCategoryName" class="form-control" required maxlength="100">
                 </div>
                 <div class="form-group">
-                    <label for="newMenuCategorySort">{{ trans('common.sort_order') }} (optional)</label>
-                    <input type="number" name="sort_order" id="newMenuCategorySort" class="form-control"
-                        min="0" step="1">
+                    <label for="newGuideCategorySort">{{ trans('common.sort_order') }}</label>
+                    <input type="number" name="sort_order" id="newGuideCategorySort" class="form-control" min="0" step="1" value="0">
                 </div>
             </div>
             <div class="custom-modal__footer">
                 <button type="button" class="btn btn-secondary" data-modal-close>{{ trans('common.close') }}</button>
-                <button type="submit" class="btn btn-primary" id="saveMenuCategoryBtn">{{ trans('common.save') }}</button>
+                <button type="submit" class="btn btn-primary" id="saveGuideCategoryBtn">{{ trans('common.save') }}</button>
             </div>
         </form>
     </div>
@@ -186,7 +192,6 @@
 @section('css')
     @parent
     <style>
-        /* Custom modal styling */
         .custom-modal {
             position: fixed;
             inset: 0;
@@ -195,17 +200,11 @@
             justify-content: center;
             z-index: 5000;
         }
-
-        .custom-modal.is-open {
-            display: flex;
-        }
-
+        .custom-modal.is-open { display: flex; }
         .custom-modal__backdrop {
-            position: absolute;
-            inset: 0;
+            position: absolute; inset: 0;
             background: rgba(0, 0, 0, 0.45);
         }
-
         .custom-modal__dialog {
             position: relative;
             background: #fff;
@@ -216,43 +215,19 @@
             z-index: 1;
             padding: 16px;
         }
-
         .custom-modal__header {
             display: flex;
             align-items: center;
             justify-content: space-between;
             margin-bottom: 8px;
         }
-
-        .custom-modal__title {
-            margin: 0;
-            font-size: 18px;
-            font-weight: 600;
-        }
-
+        .custom-modal__title { margin: 0; font-size: 18px; font-weight: 600; }
         .custom-modal__close {
-            border: none;
-            background: transparent;
-            font-size: 24px;
-            line-height: 1;
-            padding: 0 4px;
-            cursor: pointer;
+            border: none; background: transparent; font-size: 24px; line-height: 1; padding: 0 4px; cursor: pointer;
         }
-
-        .custom-modal__body {
-            padding: 4px 0 8px;
-        }
-
-        .custom-modal__footer {
-            display: flex;
-            justify-content: flex-end;
-            gap: 8px;
-            padding-top: 8px;
-        }
-
-        body.custom-modal-open {
-            overflow: hidden;
-        }
+        .custom-modal__body { padding: 4px 0 8px; }
+        .custom-modal__footer { display: flex; justify-content: flex-end; gap: 8px; padding-top: 8px; }
+        body.custom-modal-open { overflow: hidden; }
     </style>
 @endsection
 
@@ -261,7 +236,7 @@
     <script>
         (function waitForjQuery() {
             if (window.jQuery) {
-                ['#category_id', '#is_available'].forEach(selector => {
+                ['#category_id', '#is_active'].forEach(selector => {
                     const el = $(selector);
                     if (el.hasClass('select2-hidden-accessible')) {
                         el.select2('destroy');
@@ -273,32 +248,30 @@
                     });
                 });
 
-                // Custom modal handlers
-                const menuModal = $('#modalAddMenuCategory');
+                const guideModal = $('#modalAddGuideCategory');
                 const openModal = () => {
-                    menuModal.addClass('is-open').attr('aria-hidden', 'false');
+                    guideModal.addClass('is-open').attr('aria-hidden', 'false');
                     $('body').addClass('custom-modal-open');
-                    $('#newMenuCategoryName').val('').focus();
-                    $('#newMenuCategorySort').val('');
+                    $('#newGuideCategoryName').val('').focus();
+                    $('#newGuideCategorySort').val('0');
                 };
                 const closeModal = () => {
-                    menuModal.removeClass('is-open').attr('aria-hidden', 'true');
+                    guideModal.removeClass('is-open').attr('aria-hidden', 'true');
                     $('body').removeClass('custom-modal-open');
                 };
 
-                $('#btnAddMenuCategory').on('click', openModal);
-                menuModal.find('[data-modal-close]').on('click', closeModal);
-                menuModal.find('.custom-modal__backdrop').on('click', closeModal);
-                $(document).off('keydown.customMenuModal').on('keydown.customMenuModal', function(e) {
-                    if (e.key === 'Escape' && menuModal.hasClass('is-open')) closeModal();
+                $('#btnAddGuideCategory').on('click', openModal);
+                guideModal.find('[data-modal-close]').on('click', closeModal);
+                guideModal.find('.custom-modal__backdrop').on('click', closeModal);
+                $(document).off('keydown.customGuideModal').on('keydown.customGuideModal', function(e) {
+                    if (e.key === 'Escape' && guideModal.hasClass('is-open')) closeModal();
                 });
 
-                // Preview image
                 const imageInput = document.getElementById('image');
                 const previewWrapper = document.getElementById('imagePreviewWrapper');
                 const previewImg = document.getElementById('imagePreview');
                 if (imageInput && previewWrapper && previewImg) {
-                    imageInput.addEventListener('change', function() {
+                    imageInput.addEventListener('change', function () {
                         const file = this.files?.[0];
                         if (!file) {
                             previewWrapper.style.display = 'none';
@@ -312,13 +285,12 @@
                     });
                 }
 
-                // AJAX add category
-                $('#formAddMenuCategory').on('submit', function(e) {
+                $('#formAddGuideCategory').on('submit', function(e) {
                     e.preventDefault();
-                    const btn = $('#saveMenuCategoryBtn');
+                    const btn = $('#saveGuideCategoryBtn');
                     btn.prop('disabled', true).text('Saving...');
                     $.ajax({
-                        url: "{{ route('menu-categories.store') }}",
+                        url: "{{ route('guide-categories.store') }}",
                         method: 'POST',
                         data: $(this).serialize(),
                         success: function(res) {
@@ -333,8 +305,7 @@
                             swal.fire({
                                 icon: 'error',
                                 title: 'Error',
-                                text: xhr.responseJSON?.message ||
-                                    'Error adding category. Please try again.',
+                                text: xhr.responseJSON?.message || 'An error occurred while saving the category.'
                             });
                         },
                         complete: function() {
