@@ -171,6 +171,8 @@ return [
         'file' => 'File',
         'stream_url' => 'Stream URL',
         'album_placeholder' => 'Album (can be empty or add new)',
+        'album_information' => 'You can type a new album name, it will be created automatically.',
+        'audio_information' => 'File information: MP3, WAV, FLAC, AAC/M4A, OGG. Max 300MB. If title is empty, it will use the file name.',
     ],
 
     'movie' => [

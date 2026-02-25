@@ -2,16 +2,18 @@
     $name = isset($name) ? $name : 'img';
     $text = isset($text) ? $text : 'Jpg, Png, Jpeg and Max. 512KB';
     $label = isset($label) ? $label : trans('common.image');
+    $colClass = isset($colClass) ? $colClass : 'col-sm-6';
+    $colClassLabel = isset($colClassLabel) ? $colClassLabel : 'col-sm-2';
 
     if (isset($size)) {
         $text .= ' (' . trans('common.size') . ' ' . $size . ')';
     }
 @endphp
 
-<label for="{{ $name }}" class="col-sm-2 col-form-label text-sm-right">
+<label for="{{ $name }}" class="{{ $colClassLabel }} col-form-label text-sm-right">
     {{ $label }}
 </label>
-<div class="col-sm-6">
+<div class="{{ $colClass }}">
     @if (isset($required))
         <small class="text-primary" style="font-style: italic">* {{ trans('common.required') }}</small>
     @endif

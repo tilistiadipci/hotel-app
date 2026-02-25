@@ -12,7 +12,7 @@
         <div class="row">
             <div class="col-md-6">
                 <div class="position-relative row form-group">
-                    <label class="col-sm-4 col-form-label text-sm-right">Judul</label>
+                    <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.title') }}</label>
                     <div class="col-sm-8">
                         @include('partials.forms.input', [
                             'elementId' => 'title',
@@ -60,7 +60,7 @@
                                 </option>
                             @endforeach
                         </select>
-                        <small class="text-muted d-block mt-1">Bisa ketik nama album baru, otomatis dibuat.</small>
+                        <small class="text-muted d-block mt-1">{{ trans('common.song.album_information') }}</small>
                     </div>
                 </div>
 
@@ -69,7 +69,7 @@
                     <div class="col-sm-8">
                         <input type="file" name="audio" id="audio" class="form-control-file" accept="audio/*" {{ $song ? '' : 'required' }}>
                         <small class="text-muted d-block mt-1">
-                            Format: MP3, WAV, FLAC, AAC/M4A, OGG. Maks 300MB. Jika judul kosong, otomatis pakai nama file.
+                            {{ trans('common.song.audio_information') }}
                         </small>
                         @error('audio')
                             <div class="text-danger">{{ $message }}</div>
@@ -80,7 +80,7 @@
                 {{-- Durasi otomatis dihitung backend dari file audio --}}
 
                 <div class="position-relative row form-group">
-                    <label class="col-sm-4 col-form-label text-sm-right">Urutan</label>
+                    <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.sort_order') }}</label>
                     <div class="col-sm-8">
                         @include('partials.forms.input', [
                             'elementId' => 'sort_order',
@@ -125,6 +125,8 @@
                         'data' => $song ?? null,
                         'image' => $song->cover_image ?? null,
                         'size' => 'Max 500 x 500 px',
+                        'colClassLabel' => 'col-sm-4 text-center',
+                        'colClass' => 'col-sm-8',
                     ])
                 </div>
             </div>

@@ -172,6 +172,8 @@ return [
         'cover_image' => 'Gambar Sampul',
         'stream_url' => 'Stream URL',
         'album_placeholder' => 'Album (boleh dikosongkan atau tambah baru)',
+        'album_information' => 'Anda bisa mengetik nama album baru, otomatis akan dibuat.',
+        'audio_information' => 'Informasi file: MP3, WAV, FLAC, AAC/M4A, OGG. Maks 300MB. Jika judul kosong, akan menggunakan nama file.',
     ],
 
     'movie' => [
