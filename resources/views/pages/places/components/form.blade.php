@@ -318,10 +318,18 @@
                         },
                         error: function(xhr) {
                             swal.close();
-                            swal.fire({
+                            const resp = xhr.responseJSON;
+                            let msg = resp?.message || 'Error adding category. Please try again.';
+                            if (resp?.errors) {
+                                const firstErr = Object.values(resp.errors)[0];
+                                if (Array.isArray(firstErr)) {
+                                    msg = firstErr[0];
+                                }
+                            }
+                            swal({
                                 icon: 'error',
                                 title: 'Error',
-                                text: xhr.responseJSON?.message || 'An error occurred while saving the category.'
+                                text: msg,
                             });
                         },
                         complete: function() {

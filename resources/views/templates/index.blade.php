@@ -602,6 +602,25 @@
         $(document).on('submit', 'form', function() {
             loadingSwal();
         });
+
+        // global ajax error handler -> show swal with server message if available
+        $(document).ajaxError(function(event, jqxhr) {
+            if (jqxhr && jqxhr.responseJSON) {
+                let msg = jqxhr.responseJSON.message || 'Terjadi kesalahan saat memproses permintaan.';
+                const errors = jqxhr.responseJSON.errors;
+                if (errors) {
+                    const first = Object.values(errors)[0];
+                    if (Array.isArray(first)) {
+                        msg = first[0];
+                    }
+                }
+                swal({
+                    icon: 'error',
+                    title: 'Error',
+                    text: msg
+                });
+            }
+        });
     </script>
 
     @yield('js')

@@ -7,16 +7,16 @@
             <div class="page-title-wrapper">
 
                 @include('templates.parts.breadcrumb', [
-                    'title' => trans('common.menu_category.title'),
+                    'title' => trans('common.guide_category.title'),
                     'icon' => $icon,
                     'breadcrumbs' => [
-                        ['href' => '#', 'label' => trans('common.menu_category.title')],
+                        ['href' => '#', 'label' => trans('common.guide_category.title')],
                     ],
                 ])
 
                 <div class="page-title-actions">
                     @include('partials.buttons.btn-create-new', [
-                        'url' => route('menu-categories.create'),
+                        'url' => route('guide-categories.create'),
                     ])
                 </div>
             </div>
@@ -27,7 +27,7 @@
                 <div class="card mb-3">
                     <div class="card-header-tab card-header">
                         <div class="card-header-title font-size-lg text-capitalize font-weight-normal">
-                            {{ trans('common.menu_category.list_of_menu_category') }}
+                            {{ trans('common.guide_category.list_of_guide_category') }}
                         </div>
                         <div class="btn-actions-pane-right actions-icon-btn d-flex align-items-center">
                             <button class="btn btn-sm btn-danger" id="applyBulkAction" data-toggle="tooltip" title="{{ trans('common.bulk_delete') }}">
@@ -89,7 +89,7 @@
                 data: 'name',
                 name: 'name',
                 render: function(data, type, row) {
-                    let url = `{{ url('menu-categories') }}/${row.uuid ?? row.id}/edit`
+                    let url = `{{ url('guide-categories') }}/${row.uuid ?? row.id}/edit`
                     return `<a href="${url}">${row.name || ''}</a>`
                 }
             },
@@ -113,10 +113,10 @@
             { data: 'created_at', name: 'created_at', visible: false },
         ];
 
-        var getUrl = "{{ route('menu-categories.index') }}";
-        var showUrl = "{{ route('menu-categories.show', ':id') }}";
-        var editUrl = "{{ route('menu-categories.edit', ':id') }}";
-        var destroyUrl = "{{ route('menu-categories.destroy', ':id') }}";
+        var getUrl = "{{ route('guide-categories.index') }}";
+        var showUrl = "{{ route('guide-categories.show', ':id') }}";
+        var editUrl = "{{ route('guide-categories.edit', ':id') }}";
+        var destroyUrl = "{{ route('guide-categories.destroy', ':id') }}";
         var scrollX = false;
         var fixedColumns = false;
 

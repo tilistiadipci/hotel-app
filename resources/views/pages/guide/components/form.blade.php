@@ -289,6 +289,7 @@
                     e.preventDefault();
                     const btn = $('#saveGuideCategoryBtn');
                     btn.prop('disabled', true).text('Saving...');
+                    if (typeof loadingSwal === 'function') loadingSwal();
                     $.ajax({
                         url: "{{ route('guide-categories.store') }}",
                         method: 'POST',
@@ -302,10 +303,18 @@
                         },
                         error: function(xhr) {
                             swal.close();
-                            swal.fire({
+                            const resp = xhr.responseJSON;
+                            let msg = resp?.message || 'An error occurred while saving the category.';
+                            if (resp?.errors) {
+                                const firstErr = Object.values(resp.errors)[0];
+                                if (Array.isArray(firstErr)) {
+                                    msg = firstErr[0];
+                                }
+                            }
+                            swal({
                                 icon: 'error',
                                 title: 'Error',
-                                text: xhr.responseJSON?.message || 'An error occurred while saving the category.'
+                                text: msg
                             });
                         },
                         complete: function() {

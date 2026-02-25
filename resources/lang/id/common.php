@@ -213,6 +213,12 @@ return [
         'title_singular' => 'Kategori Menu',
     ],
 
+    'guide_category' => [
+        'list_of_guide_category' => 'Daftar Kategori Guide',
+        'title' => 'Kategori Guide',
+        'title_singular' => 'Kategori Guide',
+    ],
+
     'profile' => [
         'title_singular' => 'Profil',
         'change_password' => 'Ubah Password',

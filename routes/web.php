@@ -136,7 +136,13 @@ Route::middleware(['auth'])->group(function () {
         ->group(function () {
             Route::post('/bulkDelete', [GuideItemController::class, 'bulkDelete'])->name('bulkDelete');
         });
-    Route::post('guide-categories', [GuideCategoryController::class, 'store'])->name('guide-categories.store');
+    // Guide Categories
+    Route::resource('guide-categories', GuideCategoryController::class);
+    Route::prefix('guide-categories')
+        ->name('guide-categories.')
+        ->group(function () {
+            Route::post('/bulkDelete', [GuideCategoryController::class, 'bulkDelete'])->name('bulkDelete');
+        });
 
     // Menu
     Route::resource('menu', MenuController::class);

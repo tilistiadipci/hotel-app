@@ -222,6 +222,12 @@ return [
         'title_singular' => 'Menu Category',
     ],
 
+    'guide_category' => [
+        'list_of_guide_category' => 'List of Guide Categories',
+        'title' => 'Guide Categories',
+        'title_singular' => 'Guide Category',
+    ],
+
     'profile' => [
         'title_singular' => 'Profile',
         'change_password' => 'Change Password',
