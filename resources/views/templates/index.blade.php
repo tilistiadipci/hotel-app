@@ -598,8 +598,12 @@
             }
         })
 
-        // add loading submit form anyway
+        // add loading submit form anyway, kecuali form upload media (id uploadForm) dan form yang diberi data-no-loading
         $(document).on('submit', 'form', function() {
+            const $form = $(this);
+            if ($form.attr('id') === 'uploadForm' || $form.data('no-loading')) {
+                return;
+            }
             loadingSwal();
         });
 

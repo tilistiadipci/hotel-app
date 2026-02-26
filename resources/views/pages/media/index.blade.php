@@ -1,76 +1,7 @@
 @extends('templates.index')
 
 @section('css')
-    <style>
-        .media-hero {
-            display: flex;
-            gap: 18px;
-        }
-        .media-list {
-            flex: 2;
-            background: #f8fafc;
-            border: 1px solid #e5e7eb;
-            border-radius: 10px;
-            padding: 16px;
-            max-height: 70vh;
-            overflow-y: auto;
-        }
-        .media-item {
-            display: flex;
-            align-items: center;
-            gap: 12px;
-            padding: 10px 12px;
-            border-radius: 8px;
-            transition: background 0.15s ease;
-            cursor: pointer;
-            background: #fff;
-            border: 1px solid #e5e7eb;
-        }
-        .media-item:hover { background: #eef2ff; }
-        .media-thumb {
-            width: 64px;
-            height: 64px;
-            object-fit: cover;
-            border-radius: 8px;
-            background: #f1f5f9;
-        }
-        .media-meta {
-            color: #6b7280;
-            font-size: 12px;
-        }
-        .media-upload {
-            flex: 1;
-            border: 1px dashed #cbd5e1;
-            border-radius: 12px;
-            padding: 18px;
-            background: #fff;
-        }
-        .dropzone {
-            border: 1px dashed #94a3b8;
-            border-radius: 12px;
-            padding: 22px;
-            text-align: center;
-            background: #f8fafc;
-            cursor: pointer;
-        }
-        .dropzone:hover { border-color: #3b82f6; }
-        .pill {
-            display: inline-flex;
-            align-items: center;
-            padding: 4px 10px;
-            border-radius: 999px;
-            background: #e5e7eb;
-            font-size: 12px;
-            color: #374151;
-        }
-        .usage-box {
-            background: #f8fafc;
-            border: 1px solid #e5e7eb;
-            border-radius: 10px;
-            padding: 10px 12px;
-            margin-top: 12px;
-        }
-    </style>
+    @include('pages.media.style')
 @endsection
 
 @section('content')
@@ -80,9 +11,7 @@
                 @include('templates.parts.breadcrumb', [
                     'title' => 'Media Library',
                     'icon' => $icon ?? 'fa fa-photo-film',
-                    'breadcrumbs' => [
-                        ['href' => '#', 'label' => 'Media Library'],
-                    ],
+                    'breadcrumbs' => [['href' => '#', 'label' => 'Media Library']],
                 ])
             </div>
         </div>
@@ -97,7 +26,18 @@
 
                 <div class="media-hero">
                     <div class="media-list" id="mediaList">
-                        <div class="text-muted mb-2 small" id="mediaCount"></div>
+                        <div class="d-flex justify-content-between align-items-center mb-2">
+                            <div class="text-muted small" id="mediaCount"></div>
+                            <div class="d-flex align-items-center">
+                                <span class="badge badge-light mr-2" id="mediaSelectedBadge">0 selected</span>
+                                <div class="btn-group btn-group-sm" role="group">
+                                    <button class="btn btn-outline-secondary" id="btnEditSelected" disabled><i
+                                            class="fa fa-pen mr-1"></i>Edit</button>
+                                    <button class="btn btn-outline-danger" id="btnDeleteSelected" disabled><i
+                                            class="fa fa-trash mr-1"></i>Delete</button>
+                                </div>
+                            </div>
+                        </div>
                         <div id="mediaItems"></div>
                     </div>
                     <div class="media-upload">
@@ -105,55 +45,169 @@
                         <div class="dropzone mb-3" id="dropzone">
                             <div><i class="fa fa-cloud-upload fa-2x text-primary mb-2"></i></div>
                             <div class="text-muted small">Drop your file here or click to browse</div>
-                            <input type="file" class="d-none" id="uploadInput" accept="image/*">
+                            <input type="file" class="d-none" id="uploadInput" accept="image/*" multiple>
                         </div>
+                        <div class="text-muted small mb-1" id="uploadFileCount">No file selected</div>
+                        <div id="pendingFilesList" class="pending-files-wrap mb-3" style="display:none;"></div>
                         <form id="uploadForm">
                             @csrf
                             <input type="hidden" name="type" id="uploadType" value="image">
                             <input type="hidden" name="duration" id="uploadDuration" value="">
-                            <div class="form-group">
+                            <div class="form-group" id="uploadNameGroup">
                                 <label class="small text-muted mb-1">Media Name</label>
-                                <input type="text" class="form-control" name="name" id="uploadName" placeholder="Optional">
+                                <input type="text" class="form-control" name="name" id="uploadName"
+                                    placeholder="Optional">
                             </div>
                             <button type="submit" class="btn btn-primary btn-block" id="uploadBtn">
                                 <i class="fa fa-upload mr-1"></i> Complete Upload
                             </button>
+                            <div class="progress mt-2 d-none" id="uploadProgressWrap" style="height: 12px;">
+                                <div class="progress-bar bg-success" role="progressbar" style="width: 0%;" id="uploadProgressBar">0%</div>
+                            </div>
+                            <div class="small text-muted d-none" id="uploadProgressText">0%</div>
                         </form>
 
                         <div class="usage-box">
                             <div class="d-flex justify-content-between align-items-center mb-1">
                                 <span class="small text-muted">Storage Used</span>
                                 <span class="small font-weight-bold">
-                                    {{ $usageHuman }}{{ $quotaHuman ? ' / ' . $quotaHuman : '' }}
+                                    {{ $usageHuman }}
                                 </span>
                             </div>
-                            <div class="progress" style="height: 10px;">
-                                @php
-                                    $pct = $usagePercent ?? 0;
-                                @endphp
-                                @php
-                                    $barPct = $pct > 0 ? max($pct, 0.1) : 0;
-                                @endphp
-                                <div class="progress-bar bg-primary" role="progressbar" style="width: {{ $barPct }}%;" aria-valuenow="{{ $barPct }}" aria-valuemin="0" aria-valuemax="100"></div>
-                            </div>
-                            @if($quotaHuman)
-                                <div class="small text-muted mt-1">{{ $usagePercentLabel ?? ($usagePercent ? round($usagePercent, 1) . '%' : '0%') }} of quota</div>
-                            @endif
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
+
+    <div id="mediaEditModal" class="custom-modal" aria-hidden="true">
+        <div class="custom-modal__backdrop" data-modal-close></div>
+        <div class="custom-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="mediaEditModalTitle">
+            <div class="custom-modal__header">
+                <h5 class="custom-modal__title" id="mediaEditModalTitle">Edit Media Names</h5>
+                <button type="button" class="custom-modal__close" data-modal-close aria-label="Close">&times;</button>
+            </div>
+            <form id="mediaEditForm">
+                @csrf
+                <div class="custom-modal__body">
+                    <div id="mediaEditList"></div>
+                </div>
+                <div class="custom-modal__footer d-flex justify-content-end mt-3">
+                    <button type="button" class="btn btn-secondary mr-2" data-modal-close>Cancel</button>
+                    <button type="submit" class="btn btn-primary">Save</button>
+                </div>
+            </form>
+        </div>
+    </div>
 @endsection
 
 @section('js')
+    <script src="{{ asset('js/resumable.js') }}"></script>
     <script>
         const datasets = {
-            image: { items: @json($images), next: @json($nextImage), loading: false },
-            video: { items: @json($videos), next: @json($nextVideo), loading: false },
-            audio: { items: @json($audios), next: @json($nextAudio), loading: false },
+            image: {
+                items: @json($images),
+                next: @json($nextImage),
+                loading: false
+            },
+            video: {
+                items: @json($videos),
+                next: @json($nextVideo),
+                loading: false
+            },
+            audio: {
+                items: @json($audios),
+                next: @json($nextAudio),
+                loading: false
+            },
         };
+        const selected = new Set();
+        let currentType = 'image';
+        let pendingFiles = [];
+        let totalBytes = 0;
+        let uploadedBytes = 0;
+        let videoResumable = null;
+        let pendingVideoFile = null;
+        let videoUploading = false;
+
+        function resetProgress() {
+            totalBytes = 0;
+            uploadedBytes = 0;
+            $('#uploadProgressWrap').addClass('d-none');
+            $('#uploadProgressText').addClass('d-none').text('0%');
+            $('#uploadProgressBar').css('width', '0%').text('0%');
+        }
+
+        function showProgress() {
+            $('#uploadProgressWrap').removeClass('d-none');
+            $('#uploadProgressText').removeClass('d-none');
+        }
+
+        function updateProgress(bytes) {
+            uploadedBytes = bytes;
+            const pct = totalBytes > 0 ? Math.min(100, (uploadedBytes / totalBytes) * 100) : 0;
+            $('#uploadProgressBar').css('width', pct + '%').text(pct.toFixed(0) + '%');
+            $('#uploadProgressText').text(`${humanSize(uploadedBytes)} / ${humanSize(totalBytes)} (${pct.toFixed(1)}%)`);
+        }
+
+        async function uploadVideoChunk(file, customName = '') {
+            return new Promise((resolve) => {
+                detectDuration(file).then((dur) => {
+                    file.durationSeconds = dur;
+                    const r = new Resumable({
+                        target: "{{ route('media.uploadChunk', [], false) }}",
+                        chunkSize: 5 * 1024 * 1024,
+                        simultaneousUploads: 3,
+                        testChunks: false,
+                        throttleProgressCallbacks: 1,
+                        withCredentials: true,
+                        query: () => ({
+                            _token: "{{ csrf_token() }}",
+                            duration: file.durationSeconds ?? '',
+                            name: customName || file.name,
+                            filename: file.name,
+                        }),
+                        headers: {
+                            'X-CSRF-TOKEN': "{{ csrf_token() }}"
+                        }
+                    });
+
+                    if (!r.support) {
+                        toastr["error"]("Browser tidak mendukung upload chunk", "Error");
+                        return resolve();
+                    }
+
+                    r.on('fileProgress', function(fileObj) {
+                        const uploaded = fileObj.progress() * file.size;
+                        updateProgress(uploadedBytes + uploaded);
+                    });
+
+                    r.on('fileSuccess', function(fileObj, message) {
+                        try {
+                            const res = JSON.parse(message);
+                            if (res.media) {
+                                datasets['video'].items.unshift(res.media);
+                            }
+                        } catch (e) {
+                            console.error('Invalid response', e);
+                        }
+                        uploadedBytes += file.size;
+                        updateProgress(uploadedBytes);
+                        resolve();
+                    });
+
+                    r.on('fileError', function(fileObj, message) {
+                        console.error('Chunk upload error', message);
+                        toastr["error"]("Gagal upload video besar", "Error");
+                        resolve();
+                    });
+
+                    r.addFile(file);
+                    r.upload();
+                });
+            });
+        }
 
         function humanSize(bytes) {
             if (!bytes) return '';
@@ -162,12 +216,28 @@
             return (kb / 1024).toFixed(2) + ' MB';
         }
 
+        function findItem(uuid) {
+            for (const key of Object.keys(datasets)) {
+                const found = (datasets[key].items || []).find(i => i.uuid === uuid);
+                if (found) return found;
+            }
+            return null;
+        }
+
+        function updateSelectedUI() {
+            $('#mediaSelectedBadge').text(`${selected.size} selected`);
+            const has = selected.size > 0;
+            $('#btnEditSelected').prop('disabled', !has);
+            $('#btnDeleteSelected').prop('disabled', !has);
+        }
+
         function detectDuration(file) {
             return new Promise((resolve) => {
                 if (!file || (!file.type.startsWith('video/') && !file.type.startsWith('audio/'))) {
                     return resolve(null);
                 }
-                const el = file.type.startsWith('video/') ? document.createElement('video') : document.createElement('audio');
+                const el = file.type.startsWith('video/') ? document.createElement('video') : document
+                    .createElement('audio');
                 el.preload = 'metadata';
                 const url = URL.createObjectURL(file);
                 el.src = url;
@@ -183,6 +253,45 @@
                     resolve(null);
                     URL.revokeObjectURL(url);
                 };
+            });
+        }
+
+        function renderPendingFiles() {
+            const list = $('#pendingFilesList');
+            const nameGroup = $('#uploadNameGroup');
+            list.empty();
+            if (!pendingFiles.length) {
+                list.hide();
+                $('#uploadFileCount').text('No file selected');
+                nameGroup.show();
+                $('#uploadName').val('').prop('disabled', false);
+                $('#uploadDuration').val('');
+                return;
+            }
+            list.show();
+            $('#uploadFileCount').text(`${pendingFiles.length} file${pendingFiles.length > 1 ? 's' : ''} selected`);
+            if (pendingFiles.length > 1) {
+                nameGroup.hide();
+                $('#uploadName').val('').prop('disabled', true);
+                $('#uploadDuration').val('');
+            } else {
+                nameGroup.show();
+                $('#uploadName').prop('disabled', false).val(pendingFiles[0].name);
+                detectDuration(pendingFiles[0]).then(secs => $('#uploadDuration').val(secs ?? ''));
+            }
+
+            pendingFiles.forEach((file, idx) => {
+                list.append(`
+                    <div class="pending-file d-flex align-items-center justify-content-between" data-idx="${idx}">
+                        <div>
+                            <div class="font-weight-semibold">${file.name}</div>
+                            <div class="text-muted small">${humanSize(file.size) || ''}</div>
+                        </div>
+                        <button type="button" class="btn btn-sm btn-link text-danger p-0 remove-pending" data-idx="${idx}">
+                            <i class="fa fa-times"></i>
+                        </button>
+                    </div>
+                `);
             });
         }
 
@@ -202,7 +311,11 @@
                 if (item.type === 'video' && item.duration) meta.push(item.duration + 's');
 
                 wrap.append(`
-                    <div class="media-item">
+                    <div class="media-item" data-uuid="${item.uuid}">
+                        <div class="custom-control custom-checkbox">
+                            <input type="checkbox" class="custom-control-input media-select" id="chk-${item.uuid}" data-uuid="${item.uuid}" ${selected.has(item.uuid) ? 'checked' : ''}>
+                            <label class="custom-control-label" for="chk-${item.uuid}"></label>
+                        </div>
                         ${item.type === 'image'
                             ? `<img class="media-thumb" src="${thumb}" alt="${item.name}">`
                             : `<div class="media-thumb d-flex align-items-center justify-content-center"><i class="fa ${icon} text-primary"></i></div>`}
@@ -215,17 +328,23 @@
                 `);
             });
             if (!items.length) {
-                wrap.html('<div class="text-muted small">Belum ada media untuk kategori ini.</div>');
+                wrap.html(`<div class="text-center text-muted py-5">
+                    <i class="fa fa-ban fa-2x mb-2"></i><br>
+                    No ${type} media found. Start uploading to see them here!
+                </div>`);
             }
+            updateSelectedUI();
         }
 
         function setTab(type) {
             $('#mediaTabs .nav-link').removeClass('active');
             $(`#mediaTabs [data-media-tab="${type}"]`).addClass('active');
+            currentType = type;
             $('#uploadType').val(type);
             if (type === 'image') $('#uploadInput').attr('accept', 'image/*');
             else if (type === 'video') $('#uploadInput').attr('accept', 'video/*');
             else $('#uploadInput').attr('accept', 'audio/*');
+            selected.clear();
             renderList(type);
         }
 
@@ -244,7 +363,7 @@
             });
         }
 
-        $(function () {
+        $(function() {
             $('#mediaTabs [data-media-tab]').on('click', function(e) {
                 e.preventDefault();
                 setTab($(this).data('media-tab'));
@@ -263,56 +382,394 @@
             const dz = $('#dropzone');
             const input = $('#uploadInput');
             dz.on('click', () => input.trigger('click'));
-            input.on('click', function(e) { e.stopPropagation(); });
+            input.on('click', function(e) {
+                e.stopPropagation();
+            });
 
             input.on('change', function() {
-                const file = this.files[0];
-                if (file) {
-                    $('#uploadName').val(file.name);
-                    detectDuration(file).then((secs) => {
-                        $('#uploadDuration').val(secs ?? '');
+                let files = Array.from(this.files || []);
+
+                if (currentType === 'video') {
+                    const file = files[0];
+                    if (!file) return;
+                    if (!file.type.startsWith('video/')) {
+                        alert('Pilih file video.');
+                        this.value = '';
+                        return;
+                    }
+                    pendingVideoFile = file;
+                    pendingFiles = []; // clear non-video queue
+                    $('#uploadFileCount').text(`1 file selected: ${file.name}`);
+                    if (!$('#uploadName').val()) {
+                        $('#uploadName').val(file.name);
+                    }
+                    if (videoResumable) {
+                        videoResumable.cancel();
+                        videoResumable.addFile(file);
+                    }
+                    this.value = '';
+                    resetProgress();
+                    return;
+                }
+
+                // Batas maksimal 5 file per unggah
+                if (files.length > 5) {
+                    alert('Maksimal 5 file per unggahan.');
+                    files = files.slice(0, 5);
+                }
+
+                const videos = files.filter(f => f.type && f.type.startsWith('video/'));
+                if (videos.length) {
+                    alert('Video harus diunggah saat tab Video aktif.');
+                }
+
+                pendingFiles = files.filter(f => !f.type.startsWith('video/'));
+                $(this).val(''); // allow reselect same files
+                renderPendingFiles();
+                resetProgress();
+            });
+
+            // Resumable upload khusus video (mirip Movies)
+            const mediaVideoInput = document.getElementById('uploadInput');
+            const mediaProgressWrap = document.getElementById('uploadProgressWrap');
+            const mediaProgressBar = document.getElementById('uploadProgressBar');
+            const uploadNameInput = document.getElementById('uploadName');
+
+            if (mediaVideoInput && window.Resumable) {
+                const r = new Resumable({
+                    target: "{{ route('media.uploadChunk', [], false) }}", // relative path
+                    chunkSize: 5 * 1024 * 1024,
+                    simultaneousUploads: 3,
+                    testChunks: false,
+                    throttleProgressCallbacks: 1,
+                    withCredentials: true,
+                    query: function(file) {
+                        return {
+                            _token: "{{ csrf_token() }}",
+                            duration: (file && typeof file.durationSeconds !== 'undefined') ? file.durationSeconds : '',
+                            name: ((uploadNameInput ? uploadNameInput.value : '') || (file && file.file ? file.file.name : '') || '').trim(),
+                        };
+                    },
+                    headers: {
+                        'X-CSRF-TOKEN': "{{ csrf_token() }}"
+                    }
+                });
+
+                videoResumable = r;
+
+                if (!r.support) {
+                    console.warn('Resumable.js not supported in this browser.');
+                } else {
+                    r.assignBrowse(mediaVideoInput);
+
+                    r.on('fileAdded', function(file) {
+                        if (currentType !== 'video' || !((file.file && file.file.type) || '').startsWith('video/')) {
+                            r.removeFile(file);
+                            return;
+                        }
+                        pendingVideoFile = file.file;
+                        pendingFiles = [];
+                        if (mediaProgressWrap) mediaProgressWrap.classList.remove('d-none');
+                        $('#uploadBtn').prop('disabled', false).text('Complete Upload');
+                        // compute duration before upload so it can be sent with chunks
+                        const probe = new Promise((resolve) => {
+                            const el = document.createElement('video');
+                            el.preload = 'metadata';
+                            const url = URL.createObjectURL(file.file);
+                            el.src = url;
+                            el.onloadedmetadata = function() {
+                                file.durationSeconds = isFinite(el.duration) ? Math.round(el.duration) : null;
+                                URL.revokeObjectURL(url);
+                                resolve();
+                            };
+                            el.onerror = function() {
+                                file.durationSeconds = null;
+                                URL.revokeObjectURL(url);
+                                resolve();
+                            };
+                        });
+                        probe.then(() => {
+                            // tunggu klik Complete Upload untuk mulai upload
+                        });
                     });
+
+                    r.on('fileProgress', function(file) {
+                        if (!mediaProgressBar) return;
+                        const pct = Math.floor(file.progress() * 100);
+                        mediaProgressBar.style.width = pct + '%';
+                        mediaProgressBar.textContent = pct + '%';
+                        $('#uploadProgressText').removeClass('d-none').text(pct + '%');
+                    });
+
+                    r.on('fileSuccess', function(file, message) {
+                        try {
+                            const res = JSON.parse(message);
+                            if (res.media) {
+                                datasets['video'].items.unshift(res.media);
+                            }
+                        } catch (e) {
+                            console.error('Invalid response', e);
+                            alert('Upload selesai tapi response server tidak valid.');
+                        }
+                        if (mediaVideoInput) {
+                            mediaVideoInput.value = ''; // jangan upload ulang via form
+                        }
+                        $('#uploadBtn').prop('disabled', false).html('<i class="fa fa-upload mr-1"></i> Complete Upload');
+                        pendingFiles = [];
+                        pendingVideoFile = null;
+                        $('#uploadName').val('');
+                        $('#uploadFileCount').text('No file selected');
+                        renderPendingFiles();
+                        renderList('video');
+                        toastr["success"]("{{ trans('common.success.create') }}", "Success");
+                        videoUploading = false;
+                        resetProgress();
+                    });
+
+                    r.on('fileError', function(file, message) {
+                        console.error('Upload error', message);
+                        alert('Gagal upload video: ' + message);
+                        $('#uploadBtn').prop('disabled', false).html(`<i class="fa fa-upload mr-1"></i> Complete Upload`);
+                        videoUploading = false;
+                        resetProgress();
+                    });
+                }
+            } else {
+                console.warn('Resumable.js tidak tersedia untuk upload video.');
+            }
+
+            // Upload non-video via form submit (image/audio)
+            $('#uploadForm').on('submit', async function(e) {
+                e.preventDefault();
+                if (currentType === 'video') {
+                    if (!videoResumable || !pendingVideoFile) {
+                        alert('Pilih satu video terlebih dahulu.');
+                        return;
+                    }
+                    videoUploading = true;
+                    totalBytes = pendingVideoFile.size;
+                    uploadedBytes = 0;
+                    showProgress();
+                    $('#uploadBtn').prop('disabled', true).text('Uploading...');
+                    // inject latest custom name into query
+                    videoResumable.opts.query = function(file) {
+                        return {
+                            _token: "{{ csrf_token() }}",
+                            duration: file?.durationSeconds ?? '',
+                            name: ($('#uploadName').val() || file?.file?.name || '').trim()
+                        };
+                    };
+                    videoResumable.upload();
+                    return;
+                }
+
+                const files = pendingFiles.slice().filter(f => !f.type.startsWith('video/'));
+                if (!files.length) return;
+                const type = $('#uploadType').val();
+                const customName = ($('#uploadName').val() || '').trim();
+                $('#uploadBtn').prop('disabled', true).text('Uploading...');
+                totalBytes = files.reduce((sum, f) => sum + (f?.size || 0), 0);
+                uploadedBytes = 0;
+                showProgress();
+                try {
+                    for (const file of files) {
+                        let resolvedType = type;
+                        if (file.type.startsWith('audio/')) resolvedType = 'audio';
+                        else if (file.type.startsWith('image/')) resolvedType = 'image';
+                        const formData = new FormData();
+                        formData.append('_token', $('input[name=_token]', this).val() || '{{ csrf_token() }}');
+                        formData.append('file', file);
+                        formData.append('type', resolvedType);
+                        if (customName) {
+                            const name = files.length > 1 ? `${customName} - ${file.name}` : customName;
+                            formData.append('name', name);
+                        }
+                        const dur = await detectDuration(file);
+                        if (dur !== null) formData.append('duration', dur);
+                        await $.ajax({
+                            url: "{{ route('media.store') }}",
+                            method: 'POST',
+                            data: formData,
+                            processData: false,
+                            contentType: false,
+                            xhr: function() {
+                                const xhr = $.ajaxSettings.xhr();
+                                if (xhr.upload) {
+                                    xhr.upload.addEventListener('progress', function(ev) {
+                                        if (ev.lengthComputable) {
+                                            updateProgress(uploadedBytes + ev.loaded);
+                                        }
+                                    }, false);
+                                }
+                                return xhr;
+                            },
+                            success: function(res) {
+                                if (res.status && res.media) {
+                                    const t = res.media.type;
+                                    datasets[t].items.unshift(res.media);
+                                }
+                            },
+                            error: function() {
+                                toastr["error"]("{{ trans('common.error.500') }}", "Error");
+                            }
+                        });
+                        uploadedBytes += file.size;
+                        updateProgress(uploadedBytes);
+                    }
+                    renderList($('#mediaTabs .nav-link.active').data('media-tab'));
+                    pendingFiles = [];
+                    renderPendingFiles();
+                    toastr["success"]("{{ trans('common.success.create') }}", "Success");
+                } finally {
+                    $('#uploadBtn').prop('disabled', false).html('<i class="fa fa-upload mr-1"></i> Complete Upload');
+                    input.val('');
+                    $('#uploadName').val('').prop('disabled', false);
+                    $('#uploadDuration').val('');
+                    $('#uploadFileCount').text('No file selected');
+                    resetProgress();
                 }
             });
 
-            $('#uploadForm').on('submit', function(e) {
-                e.preventDefault();
-                const file = input[0].files[0];
-                if (!file) {
-                    alert('Pilih file terlebih dahulu.');
-                    return;
+            // selection handlers
+            $('#mediaItems').on('change', '.media-select', function() {
+                const uuid = $(this).data('uuid');
+                if (!uuid) return;
+                if (this.checked) selected.add(uuid);
+                else selected.delete(uuid);
+                updateSelectedUI();
+            });
+
+            $('#mediaItems').on('click', '.media-item', function(e) {
+                if ($(e.target).is('input, label, button, a')) return;
+                const checkbox = $(this).find('.media-select').get(0);
+                if (checkbox) {
+                    checkbox.checked = !checkbox.checked;
+                    $(checkbox).trigger('change');
                 }
-                const formData = new FormData(this);
-                formData.append('file', file);
-                $.ajax({
-                    url: "{{ route('media.store') }}",
-                    method: 'POST',
-                    data: formData,
-                    processData: false,
-                    contentType: false,
-                    beforeSend: function() {
-                        $('#uploadBtn').prop('disabled', true).text('Uploading...');
-                    },
-                    success: function(res) {
-                        if (res.status && res.media) {
-                            const type = res.media.type;
-                            datasets[type].items.unshift(res.media);
-                            renderList(type);
-                            input.val('');
-                            $('#uploadName').val('');
-                            toastr["success"]("{{ trans('common.success.create') }}", "Success");
-                        }
-                    },
-                    error: function(xhr) {
-                        console.log(xhr)
-                        toastr["error"]("{{ trans('common.error.500') }}", "Error");
-                    },
-                    complete: function() {
-                        swal.close();
-                        $('#uploadBtn').prop('disabled', false).html('<i class="fa fa-upload mr-1"></i> Complete Upload');
+            });
+
+            $('#btnDeleteSelected').on('click', function() {
+                if (!selected.size) return;
+                swal({
+                    title: "Are you sure?",
+                    text: `This will permanently delete ${selected.size} media item${selected.size > 1 ? 's' : ''}.`,
+                    icon: "warning",
+                    buttons: ["Cancel", "Delete"],
+                    dangerMode: true,
+                })
+                .then((willDelete) => {
+                    if (willDelete) {
+                        $.post("{{ route('media.bulkDelete') }}", {
+                            _token: "{{ csrf_token() }}",
+                            uids: Array.from(selected)
+                        }).done(function() {
+                            // remove from datasets
+                            for (const key of Object.keys(datasets)) {
+                                datasets[key].items = (datasets[key].items || []).filter(
+                                    i => !selected.has(i.uuid));
+                            }
+                            selected.clear();
+                            renderList($('#mediaTabs .nav-link.active').data('media-tab'));
+                            toastr["success"]("{{ trans('common.success.delete') }}",
+                                "Deleted");
+                        }).fail(function() {
+                            toastr["error"]("{{ trans('common.error.500') }}", "Error");
+                        });
                     }
                 });
             });
+
+            $('#pendingFilesList').on('click', '.remove-pending', function() {
+                const idx = parseInt($(this).data('idx'), 10);
+                if (Number.isFinite(idx)) {
+                    pendingFiles.splice(idx, 1);
+                    renderPendingFiles();
+                }
+            });
+
+            const mediaEditModal = $('#mediaEditModal');
+
+            function openEditModal() {
+                const list = $('#mediaEditList');
+                list.empty();
+                selected.forEach(uuid => {
+                    const item = findItem(uuid);
+                    if (!item) return;
+                    list.append(`
+                        <div class="form-group">
+                            <label class="small text-muted mb-1">${item.original_filename || item.name}</label>
+                            <input type="text" class="form-control media-edit-input" data-uuid="${uuid}" value="${item.name}">
+                        </div>
+                    `);
+                });
+                mediaEditModal.addClass('is-open');
+                $('body').addClass('custom-modal-open');
+            }
+
+            $('#btnEditSelected').on('click', function() {
+                if (!selected.size) return;
+                openEditModal();
+            });
+
+            $('#mediaEditForm').on('submit', function(e) {
+                e.preventDefault();
+                const items = [];
+                $('.media-edit-input').each(function() {
+                    const uuid = $(this).data('uuid');
+                    const name = $(this).val();
+                    if (uuid && name) {
+                        items.push({
+                            uuid,
+                            name
+                        });
+                    }
+                });
+                if (!items.length) {
+                    mediaEditModal.removeClass('is-open');
+                    $('body').removeClass('custom-modal-open');
+                    return;
+                }
+                $.ajax({
+                    url: "{{ route('media.bulkUpdate') }}",
+                    method: 'POST',
+                    data: {
+                        _token: "{{ csrf_token() }}",
+                        items
+                    },
+                    success: function() {
+                        for (const it of items) {
+                            const item = findItem(it.uuid);
+                            if (item) {
+                                item.name = it.name;
+                            }
+                        }
+                        mediaEditModal.removeClass('is-open');
+                        $('body').removeClass('custom-modal-open');
+                        renderList($('#mediaTabs .nav-link.active').data('media-tab'));
+                        toastr["success"]("Updated", "Success");
+                    },
+                    error: function() {
+                        toastr["error"]("{{ trans('common.error.500') }}", "Error");
+                    },
+                    complete: function() {
+                        setTimeout(() => {
+                            location.reload();
+                        }, 1500);
+                    }
+                });
+            });
+
+            mediaEditModal.find('[data-modal-close]').on('click', function() {
+                mediaEditModal.removeClass('is-open');
+                $('body').removeClass('custom-modal-open');
+            });
+
+            mediaEditModal.on('click', '.custom-modal__backdrop', function() {
+                mediaEditModal.removeClass('is-open');
+                $('body').removeClass('custom-modal-open');
+            });
+
+            updateSelectedUI();
         });
     </script>
 @endsection

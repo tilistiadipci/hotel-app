@@ -193,8 +193,9 @@ class MovieController extends Controller
         $rules = [
             'title' => 'required|max:200|unique:movies,title' . ($movieId ? ',' . $movieId : ''),
             'description' => 'nullable|string',
-            'image' => ($uid ? 'nullable' : 'required') . '|image|mimes:jpeg,png,jpg|max:2048',
-            'video' => ($uid ? 'nullable' : 'required_without:uploaded_video_filename,video_media_id') . '|file|mimes:mp4,mov,mkv,webm,avi|max:1024000', // ~1GB
+            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'image_media_id' => 'nullable|integer|exists:medias,id',
+            'video' => 'nullable|file|mimes:mp4,mov,mkv,webm,avi|max:1024000', // ~1GB
             'uploaded_video_filename' => 'nullable|string',
             'video_media_id' => 'nullable|integer|exists:medias,id',
             'duration' => 'nullable|integer|min:0',
@@ -205,7 +206,24 @@ class MovieController extends Controller
             'category_ids.*' => 'integer|exists:movies_categories,id',
         ];
 
+        // Create: wajib pilih salah satu (upload baru atau pilih media) untuk image
+        if (!$uid) {
+            $rules['image'] = 'required_without:image_media_id|' . $rules['image'];
+            $rules['image_media_id'] = 'required_without:image|integer|exists:medias,id';
+        }
+
         $validated = $request->validate($rules);
+
+        // Pastikan video tersedia dari salah satu sumber (upload baru, upload chunk, atau pilih media)
+        if (
+            !$request->file('video') &&
+            !$request->filled('uploaded_video_filename') &&
+            !$request->filled('video_media_id')
+        ) {
+            throw ValidationException::withMessages([
+                'video' => 'Silakan unggah video atau pilih dari media yang sudah ada.',
+            ]);
+        }
 
         // ensure duration available either provided or to be detected; handled in upload
         return $validated;
@@ -215,12 +233,21 @@ class MovieController extends Controller
     {
         $file = $request->file('image');
         $existing = $request->route('movie') ? $this->movieRepository->findUid($request->route('movie')) : null;
+        $selectedMediaId = $request->input('image_media_id');
 
         if ($file && $file->isValid()) {
             $media = $this->storeImageFile($request, $file);
             $data['image_id'] = $media->id;
             $createdMediaIds[] = $media->id;
             $storedPaths[] = $media->storage_path;
+        } elseif ($selectedMediaId) {
+            $media = $this->mediaRepository->find($selectedMediaId);
+            if (!$media || $media->type !== 'image') {
+                throw ValidationException::withMessages([
+                    'image' => 'Media gambar tidak ditemukan atau bukan gambar.',
+                ]);
+            }
+            $data['image_id'] = $media->id;
         } elseif ($existing) {
             $data['image_id'] = $existing->image_id;
         }
@@ -231,6 +258,7 @@ class MovieController extends Controller
         $file = $request->file('video');
         $existing = $uid ? $this->movieRepository->findUid($uid) : null;
         $duration = isset($data['duration']) && $data['duration'] !== '' ? (int) $data['duration'] : null;
+        $selectedMediaId = $request->input('video_media_id');
 
         if ($file && $file->isValid()) {
             $stored = $this->storeVideoFile($file, $duration);
@@ -250,6 +278,20 @@ class MovieController extends Controller
             if ($duration !== null) {
                 $media->duration = $duration;
                 $media->save();
+            }
+        } elseif ($selectedMediaId) {
+            $media = $this->mediaRepository->find($selectedMediaId);
+            if (!$media || $media->type !== 'video') {
+                throw ValidationException::withMessages([
+                    'video' => 'Media video tidak ditemukan atau bukan video.',
+                ]);
+            }
+            $data['video_id'] = $media->id;
+            if ($duration !== null) {
+                $media->duration = $duration;
+                $media->save();
+            } elseif ($media->duration !== null) {
+                $data['duration'] = $media->duration;
             }
         } elseif ($existing) {
             $data['video_id'] = $existing->video_id;

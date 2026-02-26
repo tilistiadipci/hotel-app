@@ -15,7 +15,7 @@ class MediaController extends Controller
 {
     protected MediaRepository $mediaRepository;
     private string $page = 'media-library';
-    private string $icon = 'fa fa-photo-film';
+    private string $icon = 'metismenu-icon pe-7s-photo';
 
     public function __construct(MediaRepository $mediaRepository)
     {
@@ -24,29 +24,20 @@ class MediaController extends Controller
 
     public function index(Request $request)
     {
-        $imagesPage = $this->mediaRepository->query()->where('type', 'image')->latest()->paginate(10);
-        $videosPage = $this->mediaRepository->query()->where('type', 'video')->latest()->paginate(10);
-        $audiosPage = $this->mediaRepository->query()->where('type', 'audio')->latest()->paginate(10);
+        $perPage = 10;
+
+        $imagesPage = $this->mediaRepository->query()->where('type', 'image')->latest()->paginate($perPage);
+        $videosPage = $this->mediaRepository->query()->where('type', 'video')->latest()->paginate($perPage);
+        $audiosPage = $this->mediaRepository->query()->where('type', 'audio')->latest()->paginate($perPage);
 
         $images = collect($imagesPage->items())->map(fn ($m) => $this->transformMedia($m));
         $videos = collect($videosPage->items())->map(fn ($m) => $this->transformMedia($m));
         $audios = collect($audiosPage->items())->map(fn ($m) => $this->transformMedia($m));
 
         $usageBytes = $this->getDiskUsageBytes(config('filesystems.disks.media.root'));
-        $quotaEnvBytes = env('MEDIA_STORAGE_QUOTA_BYTES', 500 * 1024 * 1024 * 1024); // default 500GB
-        $quotaEnvGb = env('MEDIA_STORAGE_QUOTA_GB', null);
-        $quotaBytes = $quotaEnvBytes ?: ($quotaEnvGb ? $quotaEnvGb * 1024 * 1024 * 1024 : null);
-        $usagePercent = $quotaBytes ? min(100, ($usageBytes / $quotaBytes) * 100) : null;
+        $quotaBytes = null;
+        $usagePercent = null;
         $usagePercentLabel = null;
-        if ($usagePercent !== null) {
-            if ($usagePercent >= 0.1) {
-                $usagePercentLabel = round($usagePercent, 1) . '%';
-            } elseif ($usagePercent > 0) {
-                $usagePercentLabel = '<0.1%';
-            } else {
-                $usagePercentLabel = '0%';
-            }
-        }
 
         return view('pages.media.index', [
             'page' => $this->page,
@@ -54,9 +45,15 @@ class MediaController extends Controller
             'images' => $images,
             'videos' => $videos,
             'audios' => $audios,
-            'nextImage' => $imagesPage->appends(['type' => 'image'])->nextPageUrl(),
-            'nextVideo' => $videosPage->appends(['type' => 'video'])->nextPageUrl(),
-            'nextAudio' => $audiosPage->appends(['type' => 'audio'])->nextPageUrl(),
+            'nextImage' => $imagesPage->hasMorePages()
+                ? route('media.library', ['type' => 'image', 'per_page' => $perPage, 'page' => $imagesPage->currentPage() + 1])
+                : null,
+            'nextVideo' => $videosPage->hasMorePages()
+                ? route('media.library', ['type' => 'video', 'per_page' => $perPage, 'page' => $videosPage->currentPage() + 1])
+                : null,
+            'nextAudio' => $audiosPage->hasMorePages()
+                ? route('media.library', ['type' => 'audio', 'per_page' => $perPage, 'page' => $audiosPage->currentPage() + 1])
+                : null,
             'usageBytes' => $usageBytes,
             'quotaBytes' => $quotaBytes,
             'usagePercent' => $usagePercent,
@@ -72,17 +69,20 @@ class MediaController extends Controller
     public function library(Request $request)
     {
         $type = $request->get('type', 'image');
+        $perPage = (int) $request->get('per_page', 10);
+        $perPage = $perPage > 0 ? $perPage : 10;
+
         $media = $this->mediaRepository->query()
             ->when($type, fn($q) => $q->where('type', $type))
             ->latest()
-            ->paginate(10);
+            ->paginate($perPage);
 
         $items = collect($media->items())->map(fn ($m) => $this->transformMedia($m))->values();
 
         return response()->json([
             'status' => true,
             'items' => $items,
-            'next_url' => $media->appends(['type' => $type])->nextPageUrl(),
+            'next_url' => $media->appends(['type' => $type, 'per_page' => $perPage])->nextPageUrl(),
             'current_page' => $media->currentPage(),
             'last_page' => $media->lastPage(),
         ]);
@@ -165,6 +165,8 @@ class MediaController extends Controller
             'duration' => $duration,
         ]);
 
+        $transformed = $this->transformMedia($media);
+
         // Clean temp
         File::deleteDirectory($tempDir);
 
@@ -172,13 +174,14 @@ class MediaController extends Controller
             'filename' => $safeFilename,
             'media_id' => $media->id,
             'relative_path' => $finalRelative,
+            'media' => $transformed,
         ]);
     }
 
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'file' => 'required|file|max:2048000', // ~2GB cap
+            'file' => 'required|file|max:5242880', // ~5GB cap
             'type' => 'nullable|in:image,video,audio',
             'name' => 'nullable|string|max:255',
             'duration' => 'nullable|integer|min:0',
@@ -229,11 +232,32 @@ class MediaController extends Controller
             return response()->json(['status' => false, 'message' => 'Media not found'], 404);
         }
 
-        $media->deleted_by = auth()->id();
-        $media->deleted_at = now();
-        $media->save();
+        $this->deleteMediaWithFile($media);
 
         return response()->json(['status' => true, 'message' => trans('common.success.delete')]);
+    }
+
+    public function bulkUpdate(Request $request)
+    {
+        $data = $request->validate([
+            'items' => 'required|array|min:1',
+            'items.*.uuid' => 'required|string',
+            'items.*.name' => 'required|string|max:255',
+        ]);
+
+        $updated = 0;
+        foreach ($data['items'] as $item) {
+            $media = $this->mediaRepository->findUid($item['uuid']);
+            if (!$media) {
+                continue;
+            }
+            $media->name = $item['name'];
+            $media->updated_by = auth()->id();
+            $media->save();
+            $updated++;
+        }
+
+        return response()->json(['status' => true, 'updated' => $updated]);
     }
 
     public function bulkDelete(Request $request)
@@ -243,12 +267,13 @@ class MediaController extends Controller
             return response()->json(['status' => false, 'message' => 'No items selected'], 422);
         }
 
-        $this->mediaRepository->query()
+        $medias = $this->mediaRepository->query()
             ->whereIn('uuid', $uids)
-            ->update([
-                'deleted_by' => auth()->id(),
-                'deleted_at' => now(),
-            ]);
+            ->get();
+
+        foreach ($medias as $media) {
+            $this->deleteMediaWithFile($media);
+        }
 
         return response()->json(['status' => true, 'message' => trans('common.success.delete')]);
     }
@@ -313,6 +338,22 @@ class MediaController extends Controller
     {
         $root = config('filesystems.disks.media.root');
         return rtrim($root, "/\\") . DIRECTORY_SEPARATOR . ltrim($relativePath, "/\\");
+    }
+
+    private function deleteMediaWithFile($media): void
+    {
+        if (!$media) {
+            return;
+        }
+        // delete file if exists
+        $abs = $this->mediaAbsolutePath($media->storage_path);
+        if (is_file($abs)) {
+            @unlink($abs);
+        }
+
+        $media->deleted_by = auth()->id();
+        $media->deleted_at = now();
+        $media->save();
     }
 
     private function sanitizeIdentifier(string $identifier): string

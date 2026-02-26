@@ -182,6 +182,7 @@ Route::middleware(['auth'])->group(function () {
         ->group(function () {
             Route::get('/library', [MediaController::class, 'library'])->name('library');
             Route::post('/bulkDelete', [MediaController::class, 'bulkDelete'])->name('bulkDelete');
+            Route::post('/bulkUpdate', [MediaController::class, 'bulkUpdate'])->name('bulkUpdate');
             Route::match(['get', 'post'], '/upload-chunk', [MediaController::class, 'uploadChunk'])->name('uploadChunk');
         });
     Route::resource('media', MediaController::class)
