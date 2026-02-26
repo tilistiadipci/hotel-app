@@ -31,6 +31,7 @@ return [
     */
 
     'env' => env('APP_ENV', 'production'),
+    'app_service_api' => env('APP_SERVICE_API', 'http://localhost:3000/api'),
 
     /*
     |--------------------------------------------------------------------------

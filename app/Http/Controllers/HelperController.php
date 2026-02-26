@@ -6,6 +6,37 @@ use Illuminate\Support\Facades\Storage;
 
 class HelperController extends Controller
 {
+    /**
+     * Delete media ids (soft delete) and physical files relative to media disk root.
+     * Designed for rollback/cleanup on failed transactions.
+     */
+    public function cleanupMedia(array $mediaIds, array $relativePaths = []): void
+    {
+        // remove files
+        foreach (array_filter($relativePaths) as $relative) {
+            $abs = $this->mediaAbsolutePath($relative);
+            if (is_file($abs)) {
+                @unlink($abs);
+            }
+        }
+
+        // soft delete media rows (if model available)
+        if (class_exists(\App\Models\Media::class)) {
+            foreach (array_filter($mediaIds) as $id) {
+                $media = \App\Models\Media::find($id);
+                if ($media) {
+                    $media->delete();
+                }
+            }
+        }
+    }
+
+    private function mediaAbsolutePath(string $relativePath): string
+    {
+        $root = config('filesystems.disks.media.root');
+        return rtrim($root, "/\\") . DIRECTORY_SEPARATOR . ltrim($relativePath, "/\\");
+    }
+
     public function uploadFile($request, string $name = 'profile', string $path = 'profile'): string
     {
         if (!$request->hasFile($name)) {

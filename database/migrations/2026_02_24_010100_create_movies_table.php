@@ -13,9 +13,8 @@ return new class extends Migration
             $table->uuid('uuid')->unique();
             $table->string('title', 200);
             $table->text('description')->nullable();
-            $table->string('thumbnail', 255);
-            $table->string('banner_image', 255)->nullable();
-            $table->string('url_stream', 255);
+            $table->foreignId('image_id')->nullable()->constrained('medias')->nullOnDelete();
+            $table->foreignId('video_id')->nullable()->constrained('medias')->nullOnDelete();
             $table->integer('duration'); // seconds
             $table->date('release_date')->nullable();
             $table->string('rating', 10)->nullable();

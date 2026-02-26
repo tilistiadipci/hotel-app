@@ -66,27 +66,25 @@
                     </div>
                 </div>
 
-                <div class="position-relative row form-group">
-                    <label class="col-sm-4 col-form-label text-sm-right">Rating</label>
+                <div class="position-relative row form-group align-items-center">
+                    <label class="col-sm-4 col-form-label text-sm-right">
+                        Rating
+                        <span class="ml-1" data-toggle="tooltip" data-placement="top" title="G/SU: semua umur. PG: pendampingan orang tua. PG-13/13+: remaja, konten ringan. R/17+: konten dewasa lebih kuat. NC-17/21+: khusus dewasa.">
+                            <i class="fa fa-info-circle text-muted"></i>
+                        </span>
+                    </label>
                     <div class="col-sm-8">
-                        @include('partials.forms.input', [
-                            'elementId' => 'rating',
-                            'value' => $movie->rating ?? old('rating'),
-                            'type' => 'text',
-                        ])
-                        <small class="text-muted">Contoh: PG, PG-13, R.</small>
-                    </div>
-                </div>
-
-                <div class="position-relative row form-group">
-                    <label class="col-sm-4 col-form-label text-sm-right">Durasi (detik)</label>
-                    <div class="col-sm-8">
-                        @include('partials.forms.input', [
-                            'elementId' => 'duration',
-                            'value' => $movie->duration ?? old('duration'),
-                            'type' => 'number',
-                        ])
-                        <small class="text-muted">Jika kosong, akan mencoba dideteksi dari video.</small>
+                        @php
+                            $ratingVal = $movie->rating ?? old('rating');
+                        @endphp
+                        <select name="rating" id="rating" class="form-control select2" style="width: 100%;">
+                            <option value="" {{ $ratingVal === null || $ratingVal === '' ? 'selected' : '' }}>Pilih rating</option>
+                            <option value="G" {{ $ratingVal === 'G' ? 'selected' : '' }}>G / SU (Semua Umur)</option>
+                            <option value="PG" {{ $ratingVal === 'PG' ? 'selected' : '' }}>PG (Parental Guidance)</option>
+                            <option value="PG-13" {{ $ratingVal === 'PG-13' ? 'selected' : '' }}>PG-13 / 13+</option>
+                            <option value="R" {{ $ratingVal === 'R' ? 'selected' : '' }}>R / 17+</option>
+                            <option value="NC-17" {{ $ratingVal === 'NC-17' ? 'selected' : '' }}>NC-17 / 21+</option>
+                        </select>
                     </div>
                 </div>
 
@@ -106,27 +104,22 @@
 
             <div class="col-md-6">
                 <div class="mb-3 w-100 upload-block">
-                    <label class="font-weight-bold d-block mb-2">Thumbnail</label>
-                    @if ($movie && $movie->thumbnail)
-                        <input type="hidden" name="old_thumbnail" value="{{ $movie->thumbnail }}">
+                    @if ($movie && $movie->imageMedia)
+                        <div class="mt-2">
+                            <small class="text-muted d-block">Current cover:</small>
+                            <img src="{{ getMediaImageUrl($movie->imageMedia->storage_path, 200, 200) }}" alt="Current cover"
+                                class="img-thumbnail shadow-sm" style="object-fit: cover;">
+                        </div>
                     @endif
-                    <input type="file" name="thumbnail" id="thumbnail" class="form-control-file" accept="image/*">
-                    <small class="text-muted d-block mt-1" style="font-style: normal;">Jpg, Png, Jpeg. Max
-                        1024KB.</small>
-                    @error('thumbnail')
-                        <div class="text-danger">{{ $message }}</div>
-                    @enderror
-                </div>
-
-                <div class="mb-3 w-100 upload-block">
-                    <label class="font-weight-bold d-block mb-2">Banner</label>
-                    @if ($movie && $movie->banner_image)
-                        <input type="hidden" name="old_banner_image" value="{{ $movie->banner_image }}">
-                    @endif
-                    <input type="file" name="banner_image" id="banner_image" class="form-control-file"
-                        accept="image/*">
+                    <label class="font-weight-bold d-block mb-2">Cover Image</label>
+                    <input type="file" name="image" id="image" class="form-control-file" accept="image/*"
+                        {{ $movie ? '' : 'required' }}>
                     <small class="text-muted d-block mt-1" style="font-style: normal;">Jpg, Png, Jpeg. Max 2MB.</small>
-                    @error('banner_image')
+                    <div class="mt-2 d-none" id="imagePreviewWrap">
+                        <small class="text-muted d-block">Preview:</small>
+                        <img id="imagePreview" class="img-thumbnail shadow-sm" style="max-height: 200px; object-fit: cover;" alt="Preview">
+                    </div>
+                    @error('image')
                         <div class="text-danger">{{ $message }}</div>
                     @enderror
                 </div>
@@ -135,11 +128,19 @@
                     <label class="font-weight-bold d-block mb-2">File Video</label>
                     <input type="file" name="video" id="video" class="form-control-file" accept="video/*"
                         {{ $movie ? '' : 'required' }}>
-                    <small class="text-muted d-block mt-1" style="font-style: normal;">Format: MP4/MOV/MKV/WEBM/AVI.
-                        Maks ~1GB.</small>
+                    <input type="hidden" name="uploaded_video_filename" id="uploaded_video_filename"
+                        value="{{ old('uploaded_video_filename') }}">
+                    <input type="hidden" name="video_media_id" id="video_media_id" value="{{ old('video_media_id') }}">
+                    <small class="text-muted d-block mt-1" id="videoHelp" style="font-style: normal;">Format: MP4/MOV/MKV/WEBM/AVI.
+                        Maks ~1GB. Upload besar otomatis dipecah chunk.</small>
+                    <div class="progress mt-2 d-none" id="chunkProgressWrap" style="height: 18px;">
+                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
+                            style="width: 0%;" id="chunkProgressBar">0%</div>
+                    </div>
                     @error('video')
                         <div class="text-danger">{{ $message }}</div>
                     @enderror
+                    <input type="hidden" name="duration" id="duration" value="{{ $movie->duration ?? old('duration') }}">
                 </div>
             </div>
         </div>
@@ -258,6 +259,7 @@
 
 @section('js')
     @parent
+    <script src="https://cdn.jsdelivr.net/npm/resumablejs@1.1.0/resumable.js"></script>
     <script>
         function initMovieForm() {
             ['#category_ids', '#is_active'].forEach(selector => {
@@ -338,20 +340,115 @@
             // auto-set duration from selected video (client-side) to avoid ffprobe dependency
             const videoInput = document.getElementById('video');
             const durationInput = document.getElementById('duration');
+            const hiddenUploaded = document.getElementById('uploaded_video_filename');
+            const hiddenVideoMediaId = document.getElementById('video_media_id');
+            const progressWrap = document.getElementById('chunkProgressWrap');
+            const progressBar = document.getElementById('chunkProgressBar');
+            const saveBtn = document.querySelector('button[type="submit"]');
+            const formEl = document.querySelector('form');
+
+            function setDurationFromFile(file) {
+                if (!file || !durationInput) return;
+                const url = URL.createObjectURL(file);
+                const videoEl = document.createElement('video');
+                videoEl.preload = 'metadata';
+                videoEl.src = url;
+                videoEl.onloadedmetadata = function() {
+                    if (videoEl.duration && isFinite(videoEl.duration)) {
+                        durationInput.value = Math.round(videoEl.duration);
+                    }
+                    URL.revokeObjectURL(url);
+                };
+            }
+
             if (videoInput && durationInput) {
                 videoInput.addEventListener('change', function() {
                     const file = this.files?.[0];
                     if (!file) return;
-                    const url = URL.createObjectURL(file);
-                    const videoEl = document.createElement('video');
-                    videoEl.preload = 'metadata';
-                    videoEl.src = url;
-                    videoEl.onloadedmetadata = function() {
-                        if (videoEl.duration && isFinite(videoEl.duration)) {
-                            durationInput.value = Math.round(videoEl.duration);
+                    setDurationFromFile(file);
+                });
+            }
+
+            // Chunk upload with Resumable.js
+            if (videoInput && window.Resumable) {
+                const r = new Resumable({
+                    target: "{{ route('movies.uploadChunk', [], false) }}", // relative to keep same origin/cookie
+                    chunkSize: 5 * 1024 * 1024, // 5MB
+                    simultaneousUploads: 3,
+                    testChunks: false, // skip preflight GET to avoid 404 noise
+                    throttleProgressCallbacks: 1,
+                    withCredentials: true,
+                    query: {
+                        _token: "{{ csrf_token() }}"
+                    },
+                    headers: {
+                        'X-CSRF-TOKEN': "{{ csrf_token() }}"
+                    }
+                });
+
+                if (!r.support) {
+                    console.warn('Resumable.js not supported in this browser.');
+                } else {
+                    r.assignBrowse(videoInput);
+
+                    r.on('fileAdded', function(file) {
+                        if (hiddenUploaded) hiddenUploaded.value = '';
+                        if (progressWrap) progressWrap.classList.remove('d-none');
+                        if (saveBtn) saveBtn.disabled = true;
+                        setDurationFromFile(file.file);
+                        r.upload();
+                    });
+
+                    r.on('fileProgress', function(file) {
+                        if (!progressBar) return;
+                        const pct = Math.floor(file.progress() * 100);
+                        progressBar.style.width = pct + '%';
+                        progressBar.textContent = pct + '%';
+                    });
+
+                    r.on('fileSuccess', function(file, message) {
+                        try {
+                            const res = JSON.parse(message);
+                            if (hiddenUploaded) hiddenUploaded.value = res.filename || '';
+                            if (hiddenVideoMediaId) hiddenVideoMediaId.value = res.media_id || '';
+                            // apply duration from resumable metadata if available
+                            if (file.file && file.file.duration && isFinite(file.file.duration)) {
+                                const secs = Math.round(file.file.duration);
+                                durationInput.value = secs;
+                            }
+                            // stash relative path if needed later (not stored in form)
+                            if (progressBar) {
+                                progressBar.style.width = '100%';
+                                progressBar.textContent = '100%';
+                            }
+                            if (videoInput) {
+                                videoInput.value = ''; // jangan upload ulang via form
+                                videoInput.removeAttribute('required');
+                            }
+                            if (saveBtn) saveBtn.disabled = false;
+                            const help = document.getElementById('videoHelp');
+                            if (help) help.textContent = 'Video terunggah via chunk. Lanjutkan simpan form.';
+                        } catch (e) {
+                            console.error('Invalid response', e);
+                            alert('Upload selesai tapi response server tidak valid.');
                         }
-                        URL.revokeObjectURL(url);
-                    };
+                    });
+
+                    r.on('fileError', function(file, message) {
+                        console.error('Upload error', message);
+                        alert('Gagal upload video: ' + message);
+                        if (saveBtn) saveBtn.disabled = false;
+                    });
+                }
+            }
+
+            // Prevent submit if duration still empty
+            if (formEl) {
+                formEl.addEventListener('submit', function(e) {
+                    if (durationInput && (!durationInput.value || durationInput.value === '')) {
+                        e.preventDefault();
+                        alert('Durasi video belum terdeteksi. Tunggu proses hitung durasi selesai atau pilih ulang videonya.');
+                    }
                 });
             }
         }
@@ -363,5 +460,24 @@
                 setTimeout(waitForjQuery, 50);
             }
         })();
+
+        // image preview for cover input
+        const imageInput = document.getElementById('image');
+        const imagePreviewWrap = document.getElementById('imagePreviewWrap');
+        const imagePreview = document.getElementById('imagePreview');
+        if (imageInput && imagePreviewWrap && imagePreview) {
+            imageInput.addEventListener('change', function() {
+                const file = this.files?.[0];
+                if (!file) {
+                    imagePreviewWrap.classList.add('d-none');
+                    imagePreview.src = '';
+                    return;
+                }
+                const url = URL.createObjectURL(file);
+                imagePreview.src = url;
+                imagePreviewWrap.classList.remove('d-none');
+                imagePreview.onload = () => URL.revokeObjectURL(url);
+            });
+        }
     </script>
 @endsection

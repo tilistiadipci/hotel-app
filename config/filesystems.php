@@ -29,6 +29,10 @@ return [
     */
 
     'disks' => [
+         'media' => [
+            'driver' => 'local',
+            'root' => env('MEDIA_STORAGE_PATH', 'D:/MEDIA-HOTEL-APP-STORAGE'),
+        ],
 
         'local' => [
             'driver' => 'local',

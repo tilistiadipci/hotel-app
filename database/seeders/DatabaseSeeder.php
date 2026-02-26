@@ -16,13 +16,16 @@ class DatabaseSeeder extends Seeder
             UserSeeder::class,
             TVChannelSeeder::class,
             MusicSeeder::class,
-            MovieSeeder::class,
+            // MediaSeeder::class,
+            // MovieSeeder::class,
             PlaceCategorySeeder::class,
             PlaceSeeder::class,
             MenuCategorySeeder::class,
             MenuItemSeeder::class,
             GuideCategorySeeder::class,
             GuideItemSeeder::class,
+            PlayerSeeder::class,
+            SettingSeeder::class,
         ]);
     }
 }

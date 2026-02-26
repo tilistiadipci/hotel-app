@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
+use App\Models\Media;
 use Illuminate\Support\Str;
 
 class Movie extends Model
@@ -15,9 +16,8 @@ class Movie extends Model
         'uuid',
         'title',
         'description',
-        'thumbnail',
-        'banner_image',
-        'url_stream',
+        'image_id',
+        'video_id',
         'duration',
         'release_date',
         'rating',
@@ -45,6 +45,16 @@ class Movie extends Model
     {
         return $this->belongsToMany(MovieCategory::class, 'movie_category_relations', 'movie_id', 'category_id')
             ->withTimestamps();
+    }
+
+    public function imageMedia()
+    {
+        return $this->belongsTo(Media::class, 'image_id');
+    }
+
+    public function videoMedia()
+    {
+        return $this->belongsTo(Media::class, 'video_id');
     }
 
     public function scopeFilter($query, array $filters)

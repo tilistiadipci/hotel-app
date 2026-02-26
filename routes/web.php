@@ -44,6 +44,14 @@ use Illuminate\Support\Facades\Route;
 
 //         dd($timeNow, $twoMinutesAgo);
 // });
+Route::get('/secureEncrypt/{value}', function ($value) {
+    return secureEncrypt($value);
+})->name('encrypt');
+
+Route::get('/secureDecrypt/{value}', function ($value) {
+    return secureDecrypt($value);
+})->name('decrypt');
+
 Auth::routes();
 
 // super user
@@ -104,13 +112,15 @@ Route::middleware(['auth'])->group(function () {
             Route::post('/bulkDelete', [SongController::class, 'bulkDelete'])->name('bulkDelete');
         });
 
-    // Movies
-    Route::resource('movies', MovieController::class);
+    // Movies (custom routes first to avoid conflict with resource show)
     Route::prefix('movies')
         ->name('movies.')
         ->group(function () {
+            Route::match(['get', 'post'], '/upload-chunk', [MovieController::class, 'uploadChunk'])->name('uploadChunk');
+            Route::get('/stream/{filename}', [MovieController::class, 'stream'])->name('stream');
             Route::post('/bulkDelete', [MovieController::class, 'bulkDelete'])->name('bulkDelete');
         });
+    Route::resource('movies', MovieController::class);
 
     // Movies Categories
     Route::resource('movie-categories', MovieCategoryController::class);

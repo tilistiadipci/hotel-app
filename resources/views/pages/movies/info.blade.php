@@ -38,9 +38,7 @@
         </table>
     </div>
     <div class="col-md-6 text-center">
-        @php
-            $thumbPath = $movie->thumbnail ?? '/images/avatar.png';
-        @endphp
-        <img src="{{ asset($thumbPath) }}" alt="Thumbnail" class="img-fluid rounded shadow-sm" style="max-height: 220px; object-fit: cover;">
+        <div class="mb-2 font-weight-bold">Cover</div>
+        <img src="{{ getMediaImageUrl($movie->imageMedia->storage_path, 100, 100) }}" alt="Cover" class="img-fluid rounded shadow-sm" style="max-height: 220px; object-fit: cover;">
     </div>
 </div>
