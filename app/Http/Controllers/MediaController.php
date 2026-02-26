@@ -24,13 +24,45 @@ class MediaController extends Controller
 
     public function index(Request $request)
     {
-        if ($request->ajax()) {
-            return $this->mediaRepository->getDatatable();
+        $imagesPage = $this->mediaRepository->query()->where('type', 'image')->latest()->paginate(10);
+        $videosPage = $this->mediaRepository->query()->where('type', 'video')->latest()->paginate(10);
+        $audiosPage = $this->mediaRepository->query()->where('type', 'audio')->latest()->paginate(10);
+
+        $images = collect($imagesPage->items())->map(fn ($m) => $this->transformMedia($m));
+        $videos = collect($videosPage->items())->map(fn ($m) => $this->transformMedia($m));
+        $audios = collect($audiosPage->items())->map(fn ($m) => $this->transformMedia($m));
+
+        $usageBytes = $this->getDiskUsageBytes(config('filesystems.disks.media.root'));
+        $quotaEnvBytes = env('MEDIA_STORAGE_QUOTA_BYTES', 500 * 1024 * 1024 * 1024); // default 500GB
+        $quotaEnvGb = env('MEDIA_STORAGE_QUOTA_GB', null);
+        $quotaBytes = $quotaEnvBytes ?: ($quotaEnvGb ? $quotaEnvGb * 1024 * 1024 * 1024 : null);
+        $usagePercent = $quotaBytes ? min(100, ($usageBytes / $quotaBytes) * 100) : null;
+        $usagePercentLabel = null;
+        if ($usagePercent !== null) {
+            if ($usagePercent >= 0.1) {
+                $usagePercentLabel = round($usagePercent, 1) . '%';
+            } elseif ($usagePercent > 0) {
+                $usagePercentLabel = '<0.1%';
+            } else {
+                $usagePercentLabel = '0%';
+            }
         }
 
         return view('pages.media.index', [
             'page' => $this->page,
             'icon' => $this->icon,
+            'images' => $images,
+            'videos' => $videos,
+            'audios' => $audios,
+            'nextImage' => $imagesPage->appends(['type' => 'image'])->nextPageUrl(),
+            'nextVideo' => $videosPage->appends(['type' => 'video'])->nextPageUrl(),
+            'nextAudio' => $audiosPage->appends(['type' => 'audio'])->nextPageUrl(),
+            'usageBytes' => $usageBytes,
+            'quotaBytes' => $quotaBytes,
+            'usagePercent' => $usagePercent,
+            'usagePercentLabel' => $usagePercentLabel,
+            'usageHuman' => $this->humanBytes($usageBytes),
+            'quotaHuman' => $quotaBytes ? $this->humanBytes($quotaBytes) : null,
         ]);
     }
 
@@ -43,20 +75,16 @@ class MediaController extends Controller
         $media = $this->mediaRepository->query()
             ->when($type, fn($q) => $q->where('type', $type))
             ->latest()
-            ->paginate(24);
+            ->paginate(10);
 
-        $html = view('pages.media.library', [
-            'items' => $media,
-            'type' => $type,
-        ])->render();
+        $items = collect($media->items())->map(fn ($m) => $this->transformMedia($m))->values();
 
         return response()->json([
             'status' => true,
-            'html' => $html,
-            'links' => [
-                'next' => $media->nextPageUrl(),
-                'prev' => $media->previousPageUrl(),
-            ],
+            'items' => $items,
+            'next_url' => $media->appends(['type' => $type])->nextPageUrl(),
+            'current_page' => $media->currentPage(),
+            'last_page' => $media->lastPage(),
         ]);
     }
 
@@ -69,6 +97,8 @@ class MediaController extends Controller
         $filename = $request->input('resumableFilename', $request->input('filename', 'video.mp4'));
         $chunkNumber = (int) $request->input('resumableChunkNumber', 0);
         $totalChunks = (int) $request->input('resumableTotalChunks', 0);
+        $customName = trim($request->input('name', '')) ?: null;
+        $duration = max(0, (int) $request->input('duration', 0));
 
         if (!$identifier || $chunkNumber < 1 || $totalChunks < 1) {
             return response('Invalid request', 400);
@@ -130,8 +160,9 @@ class MediaController extends Controller
             'extension' => pathinfo($safeFilename, PATHINFO_EXTENSION),
             'mime' => $this->guessMimeFromExtension(pathinfo($safeFilename, PATHINFO_EXTENSION)),
             'size' => filesize($finalPath) ?: null,
-            'name' => pathinfo($safeFilename, PATHINFO_FILENAME),
+            'name' => $customName ?? pathinfo($safeFilename, PATHINFO_FILENAME),
             'original' => $filename,
+            'duration' => $duration,
         ]);
 
         // Clean temp
@@ -149,12 +180,18 @@ class MediaController extends Controller
         $validated = $request->validate([
             'file' => 'required|file|max:2048000', // ~2GB cap
             'type' => 'nullable|in:image,video,audio',
+            'name' => 'nullable|string|max:255',
             'duration' => 'nullable|integer|min:0',
         ]);
 
         /** @var UploadedFile $file */
         $file = $validated['file'];
         $resolvedType = $this->resolveType($file, $validated['type'] ?? null);
+
+        $customName = trim($validated['name'] ?? '') ?: null;
+        $duration = ($resolvedType === 'video' || $resolvedType === 'audio')
+            ? max(0, (int) ($validated['duration'] ?? 0))
+            : null;
 
         $relativePath = $this->storeUploadedFile($request, $file, $resolvedType);
         if (empty($relativePath)) {
@@ -167,8 +204,9 @@ class MediaController extends Controller
             'extension' => $file->getClientOriginalExtension(),
             'mime' => $file->getMimeType(),
             'size' => $file->getSize(),
-            'name' => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
+            'name' => $customName ?? pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
             'original' => $file->getClientOriginalName(),
+            'duration' => $duration,
         ];
 
         if ($resolvedType === 'image') {
@@ -176,22 +214,11 @@ class MediaController extends Controller
             $meta = array_merge($meta, $dimensions);
         }
 
-        if ($resolvedType === 'video' || $resolvedType === 'audio') {
-            $meta['duration'] = $validated['duration'] ?? null;
-        }
-
         $media = $this->mediaRepository->createFromUpload($resolvedType, $relativePath, $meta);
 
         return response()->json([
             'status' => true,
-            'media' => [
-                'id' => $media->id,
-                'uuid' => $media->uuid,
-                'name' => $media->name,
-                'type' => $media->type,
-                'url' => $this->publicUrl($media->storage_path, $media->type),
-                'thumb' => $media->type === 'image' ? getMediaImageUrl($media->storage_path, 200, 200) : null,
-            ],
+            'media' => $this->transformMedia($media),
         ]);
     }
 
@@ -311,6 +338,56 @@ class MediaController extends Controller
             default => null,
         };
     }
+
+    private function transformMedia($m)
+    {
+        return [
+            'id' => $m->id,
+            'uuid' => $m->uuid,
+            'name' => $m->name,
+            'original_filename' => $m->original_filename,
+            'type' => $m->type,
+            'storage_path' => $m->storage_path,
+            'url' => $this->publicUrl($m->storage_path, $m->type),
+            'thumb' => $m->type === 'image' ? getMediaImageUrl($m->storage_path, 200, 200) : null,
+            'thumb_url' => $m->type === 'image' ? getMediaImageUrl($m->storage_path, 300, 300) : null,
+            'size' => $m->size,
+            'extension' => $m->extension,
+            'width' => $m->width,
+            'height' => $m->height,
+            'duration' => $m->duration,
+            'created_at' => $m->created_at,
+        ];
+    }
+
+    private function getDiskUsageBytes(string $root): int
+    {
+        $root = rtrim($root, "/\\");
+        if (!is_dir($root)) {
+            return 0;
+        }
+        $size = 0;
+        $iterator = new \RecursiveIteratorIterator(new \RecursiveDirectoryIterator($root, \FilesystemIterator::SKIP_DOTS));
+        foreach ($iterator as $file) {
+            if ($file->isFile()) {
+                $size += $file->getSize();
+            }
+        }
+        return $size;
+    }
+
+    private function humanBytes(int $bytes): string
+    {
+        $units = ['B', 'KB', 'MB', 'GB', 'TB'];
+        $i = 0;
+        $value = $bytes;
+        while ($value >= 1024 && $i < count($units) - 1) {
+            $value /= 1024;
+            $i++;
+        }
+        return round($value, 2) . ' ' . $units[$i];
+    }
+
     private function publicUrl(string $relativePath, string $type): string
     {
         if (empty($relativePath)) {

@@ -378,8 +378,11 @@
                     testChunks: false, // skip preflight GET to avoid 404 noise
                     throttleProgressCallbacks: 1,
                     withCredentials: true,
-                    query: {
-                        _token: "{{ csrf_token() }}"
+                    query: function(file) {
+                        return {
+                            _token: "{{ csrf_token() }}",
+                            duration: file?.durationSeconds ?? ''
+                        };
                     },
                     headers: {
                         'X-CSRF-TOKEN': "{{ csrf_token() }}"
@@ -395,8 +398,25 @@
                         if (hiddenUploaded) hiddenUploaded.value = '';
                         if (progressWrap) progressWrap.classList.remove('d-none');
                         if (saveBtn) saveBtn.disabled = true;
+                        // compute duration before upload so it can be sent with chunks
                         setDurationFromFile(file.file);
-                        r.upload();
+                        const probe = new Promise((resolve) => {
+                            const el = document.createElement('video');
+                            el.preload = 'metadata';
+                            const url = URL.createObjectURL(file.file);
+                            el.src = url;
+                            el.onloadedmetadata = function() {
+                                file.durationSeconds = isFinite(el.duration) ? Math.round(el.duration) : null;
+                                URL.revokeObjectURL(url);
+                                resolve();
+                            };
+                            el.onerror = function() {
+                                file.durationSeconds = null;
+                                URL.revokeObjectURL(url);
+                                resolve();
+                            };
+                        });
+                        probe.then(() => r.upload());
                     });
 
                     r.on('fileProgress', function(file) {

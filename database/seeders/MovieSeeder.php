@@ -13,32 +13,32 @@ class MovieSeeder extends Seeder
     public function run(): void
     {
         // Ensure media samples exist (depends on MediaSeeder)
-        $cover = Media::firstOrCreate(
-            ['storage_path' => 'images/movies/sample_cover.jpg'],
-            [
-                'uuid' => (string) Str::uuid(),
-                'name' => 'Sample Cover',
-                'original_filename' => 'sample_cover.jpg',
-                'type' => 'image',
-                'extension' => 'jpg',
-                'mime_type' => 'image/jpeg',
-                'size' => null,
-            ]
-        );
+        // $cover = Media::firstOrCreate(
+        //     ['storage_path' => 'images/movies/sample_cover.jpg'],
+        //     [
+        //         'uuid' => (string) Str::uuid(),
+        //         'name' => 'Sample Cover',
+        //         'original_filename' => 'sample_cover.jpg',
+        //         'type' => 'image',
+        //         'extension' => 'jpg',
+        //         'mime_type' => 'image/jpeg',
+        //         'size' => null,
+        //     ]
+        // );
 
-        $video = Media::firstOrCreate(
-            ['storage_path' => 'movies/sample_video.mp4'],
-            [
-                'uuid' => (string) Str::uuid(),
-                'name' => 'Sample Video',
-                'original_filename' => 'sample_video.mp4',
-                'type' => 'video',
-                'extension' => 'mp4',
-                'mime_type' => 'video/mp4',
-                'size' => null,
-                'duration' => 0,
-            ]
-        );
+        // $video = Media::firstOrCreate(
+        //     ['storage_path' => 'movies/sample_video.mp4'],
+        //     [
+        //         'uuid' => (string) Str::uuid(),
+        //         'name' => 'Sample Video',
+        //         'original_filename' => 'sample_video.mp4',
+        //         'type' => 'video',
+        //         'extension' => 'mp4',
+        //         'mime_type' => 'video/mp4',
+        //         'size' => null,
+        //         'duration' => 0,
+        //     ]
+        // );
 
         // Categories
         $categories = [
