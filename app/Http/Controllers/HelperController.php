@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Http\UploadedFile;
 
 class HelperController extends Controller
 {
@@ -88,5 +89,39 @@ class HelperController extends Controller
         $request->merge(['avatar' => $pathFile]);
 
         return $request;
+    }
+
+    /**
+     * Upload media file ke disk tertentu (default: media).
+     * Membuat nama file slug + timestamp, fallback manual jika realpath kosong.
+     * Mengembalikan path relatif (tanpa prefix storage/).
+     */
+    public function uploadMediaFile(UploadedFile $file, string $folder = 'media', string $disk = 'media'): string
+    {
+        if (!$file->isValid()) {
+            throw new \Exception("File upload tidak valid.");
+        }
+
+        $folder = trim($folder, '/');
+        $nameWithoutExt = \Illuminate\Support\Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME));
+        $ext = $file->getClientOriginalExtension();
+        $fileName = now()->format('YmdHis') . '_' . $nameWithoutExt . ($ext ? '.' . $ext : '');
+        $relativePath = ($folder ? $folder . '/' : '') . $fileName;
+
+        if ($file->getRealPath()) {
+            $stored = $file->storeAs($folder, $fileName, $disk);
+        } else {
+            $contents = @file_get_contents($file->getPathname());
+            if ($contents === false) {
+                throw new \Exception("Gagal membaca file upload.");
+            }
+            $stored = Storage::disk($disk)->put($relativePath, $contents);
+        }
+
+        if (!$stored) {
+            throw new \Exception("Gagal menyimpan file.");
+        }
+
+        return ltrim($relativePath, '/');
     }
 }

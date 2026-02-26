@@ -6,6 +6,7 @@ use App\Models\Media;
 use App\Repositories\MediaRepository;
 use App\Repositories\MovieCategoryRepository;
 use App\Repositories\MovieRepository;
+use App\Http\Controllers\HelperController;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -216,7 +217,7 @@ class MovieController extends Controller
         $existing = $request->route('movie') ? $this->movieRepository->findUid($request->route('movie')) : null;
 
         if ($file && $file->isValid()) {
-            $media = $this->storeImageFile($file);
+            $media = $this->storeImageFile($request, $file);
             $data['image_id'] = $media->id;
             $createdMediaIds[] = $media->id;
             $storedPaths[] = $media->storage_path;
@@ -268,19 +269,11 @@ class MovieController extends Controller
             throw new \Exception('File video tidak valid.');
         }
 
-        $fileName = now()->format('YmdHis') . '_' . Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) . '.' . $file->getClientOriginalExtension();
-        $disk = Storage::disk('media');
-        $relativePath = 'movies/' . $fileName;
-
-        if ($file->getRealPath()) {
-            $stored = $file->storeAs('movies', $fileName, 'media');
-        } else {
-            $contents = @file_get_contents($file->getPathname());
-            if ($contents === false) {
-                throw new \Exception('Gagal membaca file video yang diunggah.');
-            }
-            $disk->put($relativePath, $contents);
-            $stored = $relativePath;
+        /** @var HelperController $helper */
+        $helper = app(HelperController::class);
+        $relativePath = $helper->uploadMediaFile($file, 'videos', 'media');
+        if (empty($relativePath)) {
+            throw new \Exception('Gagal menentukan path penyimpanan video.');
         }
 
         $media = $this->mediaRepository->createFromUpload('video', $relativePath, [
@@ -299,26 +292,20 @@ class MovieController extends Controller
         ];
     }
 
-    private function storeImageFile(UploadedFile $file): Media
+    private function storeImageFile(Request $request, UploadedFile $file): Media
     {
         if (!$file->isValid()) {
             throw new \Exception('File gambar tidak valid.');
         }
 
-        $fileName = now()->format('YmdHis') . '_' . Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME)) . '.' . $file->getClientOriginalExtension();
-        $relativePath = 'images/movies/' . $fileName;
-
-        if ($file->getRealPath()) {
-            $file->storeAs('images/movies', $fileName, 'media');
-        } else {
-            $contents = @file_get_contents($file->getPathname());
-            if ($contents === false) {
-                throw new \Exception('Gagal membaca file gambar yang diunggah.');
-            }
-            Storage::disk('media')->put($relativePath, $contents);
+        /** @var HelperController $helper */
+        $helper = app(HelperController::class);
+        $relativePath = $helper->uploadMediaFile($file, 'images', 'media');
+        if (empty($relativePath)) {
+            throw new \Exception('Gagal menentukan path penyimpanan gambar.');
         }
 
-        $dimensions = $this->getImageDimensions($file);
+        $dimensions = $this->getImageDimensionsFromPath($relativePath, $file);
 
         return $this->mediaRepository->createFromUpload('image', $relativePath, [
             'extension' => $file->getClientOriginalExtension(),
@@ -332,96 +319,11 @@ class MovieController extends Controller
     }
 
     /**
-     * Chunk upload handler (Resumable.js compatible).
-     */
-    public function uploadChunk(Request $request)
-    {
-        $identifier = $this->sanitizeIdentifier($request->input('resumableIdentifier', ''));
-        $filename = $request->input('resumableFilename', $request->input('filename', 'video.mp4'));
-        $chunkNumber = (int) $request->input('resumableChunkNumber', 0);
-        $totalChunks = (int) $request->input('resumableTotalChunks', 0);
-
-        if (!$identifier || $chunkNumber < 1 || $totalChunks < 1) {
-            return response('Invalid request', 400);
-        }
-
-        $tempDir = storage_path('app/chunks/movies/' . $identifier);
-        // Handle edge case when a file exists at the expected directory path
-        if (is_file($tempDir)) {
-            File::delete($tempDir);
-        }
-        if (!is_dir($tempDir)) {
-            File::makeDirectory($tempDir, 0755, true);
-        }
-
-        // Handle chunk check (GET) used by Resumable.js
-        if ($request->isMethod('get')) {
-            $chunkPath = $tempDir . '/chunk_' . $chunkNumber;
-            return is_file($chunkPath) ? response('OK', 200) : response('Not Found', 404);
-        }
-
-        // Store current chunk
-        $chunk = $request->file('file');
-        if (!$chunk || !$chunk->isValid()) {
-            return response('Invalid chunk', 400);
-        }
-        $chunk->move($tempDir, 'chunk_' . $chunkNumber);
-
-        // If not last chunk, return progress
-        if ($chunkNumber < $totalChunks) {
-            return response()->json(['uploaded' => $chunkNumber, 'total' => $totalChunks]);
-        }
-
-        // Combine chunks
-        $safeFilename = now()->format('YmdHis') . '_' . Str::slug(pathinfo($filename, PATHINFO_FILENAME)) . '.' . pathinfo($filename, PATHINFO_EXTENSION);
-        $finalRelative = 'movies/' . $safeFilename;
-        $finalPath = $this->mediaAbsolutePath($finalRelative);
-
-        // Ensure destination directory exists
-        File::ensureDirectoryExists(dirname($finalPath), 0755, true);
-
-        $out = fopen($finalPath, 'wb');
-        if (!$out) {
-            return response('Cannot create file', 500);
-        }
-
-        for ($i = 1; $i <= $totalChunks; $i++) {
-            $chunkFile = $tempDir . '/chunk_' . $i;
-            $in = fopen($chunkFile, 'rb');
-            if ($in) {
-                stream_copy_to_stream($in, $out);
-                fclose($in);
-            } else {
-                fclose($out);
-                return response("Missing chunk {$i}", 500);
-            }
-        }
-        fclose($out);
-
-        $media = $this->mediaRepository->createFromUpload('video', $finalRelative, [
-            'extension' => pathinfo($safeFilename, PATHINFO_EXTENSION),
-            'mime' => $this->guessMimeFromExtension(pathinfo($safeFilename, PATHINFO_EXTENSION)),
-            'size' => filesize($finalPath) ?: null,
-            'name' => pathinfo($safeFilename, PATHINFO_FILENAME),
-            'original' => $filename,
-        ]);
-
-        // Clean temp
-        File::deleteDirectory($tempDir);
-
-        return response()->json([
-            'filename' => $safeFilename,
-            'media_id' => $media->id,
-            'relative_path' => $finalRelative,
-        ]);
-    }
-
-    /**
      * Stream video file from media disk (supports Range requests).
      */
     public function stream(string $filename)
     {
-        $path = $this->mediaAbsolutePath('movies/' . $filename);
+        $path = $this->mediaAbsolutePath('videos/' . $filename);
         abort_unless(is_file($path), 404);
 
         $mime = mime_content_type($path) ?: 'application/octet-stream';
@@ -440,38 +342,17 @@ class MovieController extends Controller
         return rtrim($root, "/\\") . DIRECTORY_SEPARATOR . ltrim($relativePath, "/\\");
     }
 
-    private function sanitizeIdentifier(string $identifier): string
+    private function getImageDimensionsFromPath(string $relativePath, UploadedFile $file): array
     {
-        return preg_replace('/[^A-Za-z0-9_\\-]/', '', $identifier);
-    }
-
-    private function getImageDimensions(UploadedFile $file): array
-    {
-        $path = $file->getRealPath() ?: $file->getPathname();
+        $path = $this->mediaAbsolutePath($relativePath);
+        if (!is_file($path)) {
+            $path = $file->getRealPath() ?: $file->getPathname();
+        }
         $size = @getimagesize($path);
         return [
             'width' => $size[0] ?? null,
             'height' => $size[1] ?? null,
         ];
-    }
-
-    private function guessMimeFromExtension(string $ext): ?string
-    {
-        $ext = strtolower($ext);
-        return match ($ext) {
-            'mp4' => 'video/mp4',
-            'mov' => 'video/quicktime',
-            'mkv' => 'video/x-matroska',
-            'webm' => 'video/webm',
-            'avi' => 'video/x-msvideo',
-            'mp3' => 'audio/mpeg',
-            'wav' => 'audio/wav',
-            'flac' => 'audio/flac',
-            'aac' => 'audio/aac',
-            'm4a' => 'audio/mp4',
-            'ogg' => 'audio/ogg',
-            default => null,
-        };
     }
 
 }

@@ -372,7 +372,7 @@
             // Chunk upload with Resumable.js
             if (videoInput && window.Resumable) {
                 const r = new Resumable({
-                    target: "{{ route('movies.uploadChunk', [], false) }}", // relative to keep same origin/cookie
+                    target: "{{ route('media.uploadChunk', [], false) }}", // relative to keep same origin/cookie
                     chunkSize: 5 * 1024 * 1024, // 5MB
                     simultaneousUploads: 3,
                     testChunks: false, // skip preflight GET to avoid 404 noise

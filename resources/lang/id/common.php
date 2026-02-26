@@ -233,6 +233,15 @@ return [
         'title_singular' => 'Kategori Film',
     ],
 
+    'media' => [
+        'title' => 'Perpustakaan Media',
+        'title_singular' => 'Media',
+        'file' => 'File',
+        'type' => 'Tipe',
+        'size' => 'Ukuran',
+        'url' => 'URL',
+    ],
+
     'profile' => [
         'title_singular' => 'Profil',
         'change_password' => 'Ubah Password',

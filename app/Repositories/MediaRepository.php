@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\Media;
+use Yajra\DataTables\Facades\DataTables;
 
 class MediaRepository extends BaseRepository
 {
@@ -37,5 +38,27 @@ class MediaRepository extends BaseRepository
         }
 
         return $this->model->create($payload);
+    }
+
+    public function getDatatable()
+    {
+        $query = $this->query()->filter(request(['search', 'filters']));
+
+        return DataTables::of($this->paginateDatatable($query))
+            ->addIndexColumn()
+            ->addColumn('thumbnail', function ($row) {
+                if ($row->type === 'image') {
+                    return '<img src="' . e(getMediaImageUrl($row->storage_path, 120, 120)) . '" alt="' . e($row->name) . '" class="img-fluid rounded shadow-sm" style="max-height:80px;">';
+                }
+                $icon = $row->type === 'video' ? 'fa-film' : 'fa-music';
+                return '<span class="badge badge-primary"><i class="fa ' . $icon . '"></i> ' . e(strtoupper($row->type)) . '</span>';
+            })
+            ->addColumn('action', function ($row) {
+                return view('partials.datatable.action2', [
+                    'row' => $row
+                ])->render();
+            })
+            ->rawColumns(['thumbnail', 'action'])
+            ->make(true);
     }
 }

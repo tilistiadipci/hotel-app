@@ -74,6 +74,14 @@
                     </a>
                 </li>
 
+                {{-- media --}}
+                <li class="{{ $page == 'media-library' ? 'mm-active' : '' }}">
+                    <a href="{{ url('/media') }}" class="{{ $page == 'media-library' ? 'mm-active' : '' }}">
+                        <i class="metismenu-icon pe-7s-photo"></i>
+                        {{ trans('common.media.title') }}
+                    </a>
+                </li>
+
                 <li class="{{ in_array($page, ['menu-categories', 'guide-categories', 'place-categories', 'movie-categories']) ? 'mm-active' : '' }}">
                     <a href="#">
                         <i class="metismenu-icon pe-7s-folder"></i> {{ trans('common.category') }}

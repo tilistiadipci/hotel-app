@@ -623,6 +623,8 @@
         });
     </script>
 
+    @include('partials.media-picker')
+
     @yield('js')
 </body>
 

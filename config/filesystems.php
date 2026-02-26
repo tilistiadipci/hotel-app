@@ -32,6 +32,8 @@ return [
          'media' => [
             'driver' => 'local',
             'root' => env('MEDIA_STORAGE_PATH', 'D:/MEDIA-HOTEL-APP-STORAGE'),
+            'visibility' => 'public',
+            'throw' => false,
         ],
 
         'local' => [

@@ -242,6 +242,15 @@ return [
         'title_singular' => 'Movie Category',
     ],
 
+    'media' => [
+        'title' => 'Media Library',
+        'title_singular' => 'Media',
+        'file' => 'File',
+        'type' => 'Type',
+        'size' => 'Size',
+        'url' => 'URL',
+    ],
+
     'profile' => [
         'title_singular' => 'Profile',
         'change_password' => 'Change Password',

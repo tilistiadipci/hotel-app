@@ -16,6 +16,7 @@ use App\Http\Controllers\MenuController;
 use App\Http\Controllers\MenuCategoryController;
 use App\Http\Controllers\GuideItemController;
 use App\Http\Controllers\GuideCategoryController;
+use App\Http\Controllers\MediaController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -116,7 +117,6 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('movies')
         ->name('movies.')
         ->group(function () {
-            Route::match(['get', 'post'], '/upload-chunk', [MovieController::class, 'uploadChunk'])->name('uploadChunk');
             Route::get('/stream/{filename}', [MovieController::class, 'stream'])->name('stream');
             Route::post('/bulkDelete', [MovieController::class, 'bulkDelete'])->name('bulkDelete');
         });
@@ -175,6 +175,18 @@ Route::middleware(['auth'])->group(function () {
         ->group(function () {
             Route::post('/bulkDelete', [MenuCategoryController::class, 'bulkDelete'])->name('bulkDelete');
         });
+
+    // Media Library
+    Route::prefix('media')
+        ->name('media.')
+        ->group(function () {
+            Route::get('/library', [MediaController::class, 'library'])->name('library');
+            Route::post('/bulkDelete', [MediaController::class, 'bulkDelete'])->name('bulkDelete');
+            Route::match(['get', 'post'], '/upload-chunk', [MediaController::class, 'uploadChunk'])->name('uploadChunk');
+        });
+    Route::resource('media', MediaController::class)
+        ->parameters(['media' => 'uuid'])
+        ->only(['index', 'store', 'destroy']);
 
 
     // website
