@@ -7,12 +7,12 @@
         <div class="text-muted small" id="selectedImageLabel">{{ trans('common.no_file_selected') }}</div>
     </div>
     <input type="hidden" name="image_media_id" id="image_media_id"
-        value="{{ old('image_media_id', $movie->imageMedia->id ?? '') }}">
+        value="{{ old('image_media_id', $data->imageMedia->id ?? '') }}">
     <input type="file" name="image" id="image" class="form-control-file d-none" accept="image/*">
-    @if ($movie && $movie->imageMedia)
+    @if ($data && $data->imageMedia)
         <div class="mt-2" id="currentCoverPreview">
             <small class="text-muted d-block">Current cover:</small>
-            <img src="{{ getMediaImageUrl($movie->imageMedia->storage_path, 200, 200) }}" alt="Current cover"
+            <img src="{{ getMediaImageUrl($data->imageMedia->storage_path, 200, 200) }}" alt="Current cover"
                 class="img-thumbnail shadow-sm" style="object-fit: cover;">
         </div>
     @endif

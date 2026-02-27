@@ -32,10 +32,23 @@ class HelperController extends Controller
         }
     }
 
-    private function mediaAbsolutePath(string $relativePath): string
+    public function mediaAbsolutePath(string $relativePath): string
     {
         $root = config('filesystems.disks.media.root');
         return rtrim($root, "/\\") . DIRECTORY_SEPARATOR . ltrim($relativePath, "/\\");
+    }
+
+    public function getImageDimensionsFromPath(string $relativePath, UploadedFile $file): array
+    {
+        $path = $this->mediaAbsolutePath($relativePath);
+        if (!is_file($path)) {
+            $path = $file->getRealPath() ?: $file->getPathname();
+        }
+        $size = @getimagesize($path);
+        return [
+            'width' => $size[0] ?? null,
+            'height' => $size[1] ?? null,
+        ];
     }
 
     public function uploadFile($request, string $name = 'profile', string $path = 'profile'): string

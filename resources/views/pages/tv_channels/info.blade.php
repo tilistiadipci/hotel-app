@@ -1,6 +1,5 @@
-@php
-    $logoPath = $channel->logo ?? '/images/avatar.png';
-    $logoUrl = asset(str_replace(' ', '%20', $logoPath));
+﻿@php
+    $imageUrl = getMediaImageUrl($channel->imageMedia->storage_path ?? 'images/no-image.png');
     $items = [
         'Nama' => $channel->name,
         // 'Slug' => $channel->slug,
@@ -30,9 +29,9 @@
     <div class="col-sm-4 text-center">
         <div class="card shadow-sm">
             <div class="card-body">
-                <img src="{{ $logoUrl }}" alt="{{ $channel->name ?? '' }}" class="img-fluid rounded mb-2"
+                <img src="{{ $imageUrl }}" alt="{{ $channel->name ?? '' }}" class="img-fluid rounded mb-2"
                     style="max-height: 220px; object-fit: cover;">
-                <div class="small text-muted">Logo</div>
+                <div class="small text-muted">{{ trans('common.image') }}</div>
             </div>
         </div>
     </div>

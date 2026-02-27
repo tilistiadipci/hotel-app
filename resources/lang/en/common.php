@@ -93,6 +93,7 @@ return [
     'no_media_found' => 'No media found.',
     'upload_file' => 'Upload File',
     'supported_formats' => 'Please upload files with the following formats.',
+    'stream_url_information' => 'Fill in the HLS/DASH URL or deep link. Example: <code>https://example.com/stream.m3u8</code> or <code>tvapp://channel/123</code>',
 
     'list_month' => [
         'january' => 'January',

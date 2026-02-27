@@ -14,99 +14,98 @@ class TVChannelSeeder extends Seeder
         $now = Carbon::now();
 
         $channels = [
-            // Digital TV
             [
-                'uuid'        => (string) Str::uuid(),
                 'name'        => 'SCTV',
                 'slug'        => 'sctv',
-                'logo'        => '/images/tv/sctv.png',
+                'logo_path'   => 'images/no-image.png',
                 'type'        => 'digital',
                 'region'      => 'national',
                 'stream_url'  => null,
                 'frequency'   => 'UHF 24',
                 'quality'     => 'HD',
                 'sort_order'  => 1,
-                'is_active'   => true,
-                'created_at'  => $now,
-                'updated_at'  => $now,
             ],
             [
-                'uuid'        => (string) Str::uuid(),
                 'name'        => 'TVRI',
                 'slug'        => 'tvri',
-                'logo'        => '/images/tv/tvri.png',
+                'logo_path'   => 'images/no-image.png',
                 'type'        => 'digital',
                 'region'      => 'national',
                 'stream_url'  => null,
                 'frequency'   => 'UHF 43',
                 'quality'     => 'HD',
                 'sort_order'  => 2,
-                'is_active'   => true,
-                'created_at'  => $now,
-                'updated_at'  => $now,
             ],
-            // Streaming services
             [
-                'uuid'        => (string) Str::uuid(),
                 'name'        => 'Netflix',
                 'slug'        => 'netflix',
-                'logo'        => '/images/tv/netflix.png',
+                'logo_path'   => 'images/no-image.png',
                 'type'        => 'streaming',
                 'region'      => 'international',
                 'stream_url'  => 'netflix.com',
                 'frequency'   => null,
                 'quality'     => 'HD',
                 'sort_order'  => 10,
-                'is_active'   => true,
-                'created_at'  => $now,
-                'updated_at'  => $now,
             ],
             [
-                'uuid'        => (string) Str::uuid(),
                 'name'        => 'Disney+',
                 'slug'        => 'disney-plus',
-                'logo'        => '/images/tv/disney.png',
+                'logo_path'   => 'images/no-image.png',
                 'type'        => 'streaming',
                 'region'      => 'international',
                 'stream_url'  => 'disneyplus.com',
                 'frequency'   => null,
                 'quality'     => 'HD',
                 'sort_order'  => 11,
-                'is_active'   => true,
-                'created_at'  => $now,
-                'updated_at'  => $now,
             ],
             [
-                'uuid'        => (string) Str::uuid(),
                 'name'        => 'Vidio',
                 'slug'        => 'vidio',
-                'logo'        => '/images/tv/vidio.png',
+                'logo_path'   => 'images/no-image.png',
                 'type'        => 'streaming',
                 'region'      => 'national',
                 'stream_url'  => 'vidio.com',
                 'frequency'   => null,
                 'quality'     => 'HD',
                 'sort_order'  => 12,
-                'is_active'   => true,
-                'created_at'  => $now,
-                'updated_at'  => $now,
             ],
         ];
 
-        DB::table('tv_channels')->upsert(
-            $channels,
-            ['slug'],
-            [
-                'logo',
-                'type',
-                'region',
-                'stream_url',
-                'frequency',
-                'quality',
-                'sort_order',
-                'is_active',
-                'updated_at',
-            ]
-        );
+        $rows = [];
+        foreach ($channels as $ch) {
+            $mediaId = DB::table('medias')->insertGetId([
+                'uuid' => (string) Str::uuid(),
+                'name' => $ch['name'] . ' Logo',
+                'original_filename' => basename($ch['logo_path']),
+                'type' => 'image',
+                'extension' => pathinfo($ch['logo_path'], PATHINFO_EXTENSION),
+                'storage_path' => $ch['logo_path'],
+                'mime_type' => 'image/png',
+                'size' => null,
+                'duration' => null,
+                'width' => null,
+                'height' => null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+
+            $rows[] = [
+                'uuid'        => (string) Str::uuid(),
+                'name'        => $ch['name'],
+                'slug'        => $ch['slug'],
+                'type'        => $ch['type'],
+                'region'      => $ch['region'],
+                'stream_url'  => $ch['stream_url'],
+                'frequency'   => $ch['frequency'],
+                'quality'     => $ch['quality'],
+                'sort_order'  => $ch['sort_order'],
+                'is_active'   => true,
+                'image_id'    => $mediaId,
+                'created_at'  => $now,
+                'updated_at'  => $now,
+            ];
+        }
+
+        DB::table('tv_channels')->insert($rows);
     }
 }

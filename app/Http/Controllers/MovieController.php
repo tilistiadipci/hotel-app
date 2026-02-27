@@ -326,7 +326,7 @@ class MovieController extends Controller
 
         return [
             'media_id' => $media->id,
-            'absolute_path' => $this->mediaAbsolutePath($relativePath),
+            'absolute_path' => $helper->mediaAbsolutePath($relativePath),
             'relative_path' => $relativePath,
         ];
     }
@@ -344,7 +344,7 @@ class MovieController extends Controller
             throw new \Exception('Gagal menentukan path penyimpanan gambar.');
         }
 
-        $dimensions = $this->getImageDimensionsFromPath($relativePath, $file);
+        $dimensions = $helper->getImageDimensionsFromPath($relativePath, $file);
 
         return $this->mediaRepository->createFromUpload('image', $relativePath, [
             'extension' => $file->getClientOriginalExtension(),
@@ -356,43 +356,5 @@ class MovieController extends Controller
             'height' => $dimensions['height'],
         ]);
     }
-
-    /**
-     * Stream video file from media disk (supports Range requests).
-     */
-    public function stream(string $filename)
-    {
-        $path = $this->mediaAbsolutePath('videos/' . $filename);
-        abort_unless(is_file($path), 404);
-
-        $mime = mime_content_type($path) ?: 'application/octet-stream';
-
-        return response()->file($path, [
-            'Content-Type' => $mime,
-        ]);
-    }
-
-    /**
-     * Resolve absolute path for a file inside media disk.
-     */
-    private function mediaAbsolutePath(string $relativePath): string
-    {
-        $root = config('filesystems.disks.media.root');
-        return rtrim($root, "/\\") . DIRECTORY_SEPARATOR . ltrim($relativePath, "/\\");
-    }
-
-    private function getImageDimensionsFromPath(string $relativePath, UploadedFile $file): array
-    {
-        $path = $this->mediaAbsolutePath($relativePath);
-        if (!is_file($path)) {
-            $path = $file->getRealPath() ?: $file->getPathname();
-        }
-        $size = @getimagesize($path);
-        return [
-            'width' => $size[0] ?? null,
-            'height' => $size[1] ?? null,
-        ];
-    }
-
 }
 

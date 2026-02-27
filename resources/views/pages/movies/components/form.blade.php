@@ -103,11 +103,15 @@
 
             <div class="col-md-6">
                 <!-- START Cover Image Upload -->
-                @include('partials.components.media_picker_upload_image')
+                @include('partials.components.media_picker_upload_image', [
+                    'data' => $movie ?? null,
+                ])
                 <!-- END Cover Image Upload -->
 
                 <!-- START Video Upload -->
-                @include('partials.components.media_picker_upload_video')
+                @include('partials.components.media_picker_upload_video', [
+                    'data' => $movie ?? null,
+                ])
                 <!-- END Video Upload -->
             </div>
         </div>

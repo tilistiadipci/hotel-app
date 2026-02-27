@@ -1,4 +1,4 @@
-@php
+﻿@php
     $channel = $channel ?? null;
 @endphp
 
@@ -13,7 +13,7 @@
         <div class="row">
             <div class="col-md-6">
                 <div class="position-relative row form-group">
-                    <label class="col-sm-4 col-form-label text-sm-right">Nama Channel</label>
+                    <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.name') }}</label>
                     <div class="col-sm-8">
                         @include('partials.forms.input', [
                             'elementId' => 'name',
@@ -70,7 +70,7 @@
                             'value' => $channel->stream_url ?? old('stream_url'),
                             'type' => 'text',
                         ])
-                        <small class="text-muted">{{ trans('common.stream_url_information') }}</small>
+                        <small class="text-muted">{!! trans('common.stream_url_information') !!}</small>
                     </div>
                 </div>
 
@@ -88,17 +88,19 @@
                 <div class="position-relative row form-group">
                     <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.tv.quality') }}</label>
                     <div class="col-sm-8">
-                        @include('partials.forms.input', [
-                            'elementId' => 'quality',
-                            'value' => $channel->quality ?? old('quality'),
-                            'type' => 'text',
-                        ])
-                        <small class="text-muted">Misal: HD / SD / 4K.</small>
+                        @php
+                            $quality = $channel->quality ?? old('quality');
+                        @endphp
+                        <select name="quality" id="quality" class="form-control select2">
+                            <option value="HD" {{ $quality == 'HD' ? 'selected' : '' }}>HD</option>
+                            <option value="SD" {{ $quality == 'SD' ? 'selected' : '' }}>SD</option>
+                            <option value="4K" {{ $quality == '4K' ? 'selected' : '' }}>4K</option>
+                        </select>
                     </div>
                 </div>
 
                 <div class="position-relative row form-group">
-                    <label class="col-sm-4 col-form-label text-sm-right">Urutan</label>
+                    <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.sort_order') }}</label>
                     <div class="col-sm-8">
                         @include('partials.forms.input', [
                             'elementId' => 'sort_order',
@@ -123,28 +125,9 @@
             </div>
 
             <div class="col-md-6">
-                @php
-                    $logoPath = $channel->logo ?? '/images/avatar.png';
-                    $logoUrl = asset(str_replace(' ', '%20', $logoPath));
-                @endphp
-                <div class="mb-3 w-100 text-center">
-                    <div class="avatar-preview mb-2">
-                        <img id="avatarPreview"
-                            src="{{ $logoUrl }}"
-                            alt="Preview" class="img-fluid rounded shadow-sm"
-                            style="max-height: 220px; object-fit: cover;">
-                    </div>
-                    <small class="text-muted d-block">Preview</small>
-                </div>
-                <div class="w-100">
-                    @include('partials.forms.image', [
-                        'name' => 'logo',
-                        'label' => 'Logo',
-                        'data' => $channel ?? null,
-                        'image' => $channel->logo ?? null,
-                        'size' => 'Max 300 x 300 px',
-                    ])
-                </div>
+                @include('partials.components.media_picker_upload_image', [
+                    'data' => $channel ?? null,
+                ])
             </div>
         </div>
     </div>
@@ -158,7 +141,20 @@
     </div>
 </form>
 
-<script>
+{{-- START Custom Modal Media Picker --}}
+@include('partials.components.media_picker_modal')
+{{-- END Custom Modal Media Picker --}}
+
+@section('css')
+    @parent
+    @include('partials.components.media_picker_style')
+@endsection
+
+@section('js')
+    @parent
+    @include('partials.components.media_picker_script')
+@endsection
+{{-- <script>
     // image preview handler used in forms image partial
     function previewImage(event) {
         const [file] = event.target.files;
@@ -169,4 +165,6 @@
             }
         }
     }
-</script>
+</script> --}}
+
+

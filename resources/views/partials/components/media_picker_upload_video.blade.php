@@ -18,5 +18,5 @@
     @error('video')
         <div class="text-danger">{{ $message }}</div>
     @enderror
-    <input type="hidden" name="duration" id="duration" value="{{ $movie->duration ?? old('duration') }}">
+    <input type="hidden" name="duration" id="duration" value="{{ $data->duration ?? old('duration') }}">
 </div>

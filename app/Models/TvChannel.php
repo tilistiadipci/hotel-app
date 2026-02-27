@@ -15,7 +15,6 @@ class TvChannel extends Model
         'uuid',
         'name',
         'slug',
-        'logo',
         'type',
         'region',
         'stream_url',
@@ -23,6 +22,7 @@ class TvChannel extends Model
         'quality',
         'sort_order',
         'is_active',
+        'image_id',
         'created_by',
         'updated_by',
         'deleted_by',
@@ -55,5 +55,10 @@ class TvChannel extends Model
         $query->when($filter['type'] ?? false, fn ($q, $type) => $q->where('type', $type));
         $query->when($filter['region'] ?? false, fn ($q, $region) => $q->where('region', $region));
         $query->when(isset($filter['is_active']), fn ($q) => $q->where('is_active', $filter['is_active']));
+    }
+
+    public function imageMedia()
+    {
+        return $this->belongsTo(Media::class, 'image_id');
     }
 }
