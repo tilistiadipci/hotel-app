@@ -1,53 +1,38 @@
 @php
     $song = $song ?? null;
+    $imageUrl = getMediaImageUrl($song->imageMedia->storage_path ?? 'images/no-image.png');
+    $duration = $song->duration ?? 0;
+    $mins = floor($duration / 60);
+    $secs = $duration % 60;
+    $time = $mins . ':' . str_pad($secs, 2, '0', STR_PAD_LEFT);
+    $items = [
+        trans('common.title') => $song->title ?? '-',
+        trans('common.song.artist') => $song->artist->name ?? '-',
+        trans('common.song.album') => $song->album->title ?? 'Single',
+        trans('common.song.duration') => $time,
+        trans('common.status') => $song->is_active ? trans('common.active') : trans('common.inactive'),
+        trans('common.created_at') => $channel->created_at ?? '-',
+    ];
 @endphp
 
-<div class="row">
-    <div class="col-md-6">
-        <table class="table table-sm table-borderless">
-            <tr>
-                <th style="width: 140px;">{{ trans('common.title') }}</th>
-                <td>{{ $song->title ?? '-' }}</td>
-            </tr>
-            <tr>
-                <th>{{ trans('common.song.artist') }}</th>
-                <td>{{ $song->artist->name ?? '-' }}</td>
-            </tr>
-            <tr>
-                <th>{{ trans('common.song.album') }}</th>
-                <td>{{ $song->album->title ?? 'Single' }}</td>
-            </tr>
-            <tr>
-                <th>{{ trans('common.song.duration') }}</th>
-                <td>
-                    @php
-                        $duration = $song->duration ?? 0;
-                        $mins = floor($duration / 60);
-                        $secs = $duration % 60;
-                    @endphp
-                    {{ $mins }}:{{ str_pad($secs, 2, '0', STR_PAD_LEFT) }}
-                </td>
-            </tr>
-            <tr>
-                <th>{{ trans('common.song.stream_url') }}</th>
-                <td>{{ $song->url_stream ?? '-' }}</td>
-            </tr>
-            <tr>
-                <th>{{ trans('common.status') }}</th>
-                <td>
-                    @if (($song->is_active ?? false) == 1)
-                        <span class="badge badge-success">{{ trans('common.active') }}</span>
-                    @else
-                        <span class="badge badge-secondary">{{ trans('common.inactive') }}</span>
-                    @endif
-                </td>
-            </tr>
-        </table>
+<div class="row mb-5">
+    <div class="col-sm-8">
+        <ul class="list-group list-group-flush shadow-sm rounded">
+            @foreach ($items as $label => $value)
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span class="text-muted">{{ $label }}</span>
+                    <span class="font-weight-bold">{{ $value }}</span>
+                </li>
+            @endforeach
+        </ul>
     </div>
-    <div class="col-md-6 text-center">
-        @php
-            $coverPath = $song->cover_image ?? '/images/avatar.png';
-        @endphp
-        <img src="{{ asset($coverPath) }}" alt="Cover" class="img-fluid rounded shadow-sm" style="max-height: 260px; object-fit: cover;">
+    <div class="col-sm-4 text-center">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <img src="{{ $imageUrl }}" alt="{{ $channel->name ?? '' }}" class="img-fluid rounded mb-2"
+                    style="max-height: 220px; object-fit: cover;">
+                <div class="small text-muted">{{ trans('common.image') }}</div>
+            </div>
+        </div>
     </div>
 </div>

@@ -64,18 +64,6 @@
                     </div>
                 </div>
 
-                <div class="position-relative row form-group">
-                    <label class="col-sm-4 col-form-label text-sm-right">Audio File</label>
-                    <div class="col-sm-8">
-                        <input type="file" name="audio" id="audio" class="form-control-file" accept="audio/*" {{ $song ? '' : 'required' }}>
-                        <small class="text-muted d-block mt-1">
-                            {{ trans('common.song.audio_information') }}
-                        </small>
-                        @error('audio')
-                            <div class="text-danger">{{ $message }}</div>
-                        @enderror
-                    </div>
-                </div>
 
                 {{-- Durasi otomatis dihitung backend dari file audio --}}
 
@@ -105,30 +93,13 @@
             </div>
 
             <div class="col-md-6">
-                @php
-                    $coverPath = $song->cover_image ?? '/images/avatar.png';
-                    $coverUrl = asset(str_replace(' ', '%20', $coverPath));
-                @endphp
-                <div class="mb-3 w-100 text-center">
-                    <div class="avatar-preview mb-2">
-                        <img id="coverPreview"
-                            src="{{ $coverUrl }}"
-                            alt="Preview" class="img-fluid rounded shadow-sm"
-                            style="max-height: 220px; object-fit: cover;">
-                    </div>
-                    <small class="text-muted d-block">Preview cover</small>
-                </div>
-                <div class="w-100">
-                    @include('partials.forms.image', [
-                        'name' => 'cover_image',
-                        'label' => 'Cover Image',
-                        'data' => $song ?? null,
-                        'image' => $song->cover_image ?? null,
-                        'size' => 'Max 500 x 500 px',
-                        'colClassLabel' => 'col-sm-4 text-center',
-                        'colClass' => 'col-sm-8',
-                    ])
-                </div>
+                @include('partials.components.media_picker_upload_image', [
+                    'data' => $song ?? null,
+                ])
+
+                @include('partials.components.media_picker_upload_audio', [
+                    'data' => $song ?? null,
+                ])
             </div>
         </div>
     </div>
@@ -141,3 +112,17 @@
         </div>
     </div>
 </form>
+
+{{-- START Custom Modal Media Picker --}}
+@include('partials.components.media_picker_modal')
+{{-- END Custom Modal Media Picker --}}
+
+@section('css')
+    @parent
+    @include('partials.components.media_picker_style')
+@endsection
+
+@section('js')
+    @parent
+    @include('partials.components.media_picker_script')
+@endsection

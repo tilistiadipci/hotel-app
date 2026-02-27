@@ -154,17 +154,4 @@
     @parent
     @include('partials.components.media_picker_script')
 @endsection
-{{-- <script>
-    // image preview handler used in forms image partial
-    function previewImage(event) {
-        const [file] = event.target.files;
-        if (file) {
-            const preview = document.getElementById('avatarPreview');
-            if (preview) {
-                preview.src = URL.createObjectURL(file);
-            }
-        }
-    }
-</script> --}}
-
 

@@ -173,3 +173,18 @@ if (!function_exists('getMediaVideoUrl')) {
         return rtrim(config('app.app_service_api'), '/') . '/media?type=video&path=' . urlencode($path);
     }
 }
+
+if (!function_exists('getMediaAudioUrl')) {
+    function getMediaAudioUrl($path)
+    {
+        if (empty($path)) {
+            return null;
+        }
+
+        if (filter_var($path, FILTER_VALIDATE_URL)) {
+            return $path;
+        }
+
+        return rtrim(config('app.app_service_api'), '/') . '/media?type=audio&path=' . urlencode($path);
+    }
+}

@@ -59,7 +59,7 @@ class SongRepository extends BaseRepository
     public function getDatatable()
     {
         $query = $this->query()
-            ->with(['artist', 'album'])
+            ->with(['artist', 'album', 'audioMedia'])
             ->filter(request(['search', 'filters']));
 
         return DataTables::of($this->paginateDatatable($query))
@@ -68,7 +68,8 @@ class SongRepository extends BaseRepository
             ->addColumn('album', fn ($row) => optional($row->album)->title)
             ->addColumn('action', function ($row) {
                 return view('partials.datatable.action2', [
-                    'row' => $row
+                    'row' => $row,
+                    'audio' => true
                 ])->render();
             })
             ->rawColumns(['action'])

@@ -7,6 +7,14 @@
             <i class="fa fa-film"></i>
         </button>
     @endif
+    @if (isset($audio))
+        <button type="button" class="action-pill neutral bg-primary text-white" title="{{ trans('common.audio.play_audio') }}"
+            data-uid="{{ $row->uuid ?? ($row->id ?? '') }}"
+            data-audio="{{ getMediaAudioUrl($row->audioMedia->storage_path ?? '') }}"
+            onclick="playAudio(this)">
+            <i class="fa fa-play"></i>
+        </button>
+    @endif
     <button type="button" class="action-pill neutral bg-primary text-white" title="{{ trans('common.detail') }}"
         data-uid="{{ $row->uuid ?? ($row->id ?? '') }}"
         onclick="show('{{ $row->uuid ?? ($row->id ?? '') }}')">

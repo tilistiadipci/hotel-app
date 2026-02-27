@@ -6,11 +6,16 @@ use App\Models\Album;
 use App\Models\Artist;
 use App\Models\Song;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
+use Carbon\Carbon;
 
 class MusicSeeder extends Seeder
 {
     public function run(): void
     {
+        $now = Carbon::now();
+
         // Artists
         $johnMayer = Artist::firstOrCreate(['name' => 'John Mayer']);
         $adele     = Artist::firstOrCreate(['name' => 'Adele']);
@@ -35,9 +40,9 @@ class MusicSeeder extends Seeder
         Song::firstOrCreate(
             ['artist_id' => $johnMayer->id, 'album_id' => $continuum->id, 'title' => 'Gravity'],
             [
-                'url_stream' => 'https://stream.example.com/john-mayer/gravity.mp3',
+                'song_id'    => $this->createAudioMedia('Gravity Audio', 'audios/gravity.mp3', $now),
                 'duration'   => 246,
-                'cover_image'=> '/images/songs/gravity.jpg',
+                'image_id'   => $this->createImageMedia('Gravity Cover', 'images/songs/gravity.jpg', $now),
                 'sort_order' => 1,
                 'is_active'  => true,
             ]
@@ -46,9 +51,9 @@ class MusicSeeder extends Seeder
         Song::firstOrCreate(
             ['artist_id' => $johnMayer->id, 'album_id' => $sobRock->id, 'title' => 'Last Train Home'],
             [
-                'url_stream' => 'https://stream.example.com/john-mayer/last-train-home.mp3',
+                'song_id'    => $this->createAudioMedia('Last Train Home Audio', 'audios/last_train_home.mp3', $now),
                 'duration'   => 189,
-                'cover_image'=> '/images/songs/last_train_home.jpg',
+                'image_id'   => $this->createImageMedia('Last Train Home Cover', 'images/songs/last_train_home.jpg', $now),
                 'sort_order' => 1,
                 'is_active'  => true,
             ]
@@ -57,12 +62,56 @@ class MusicSeeder extends Seeder
         Song::firstOrCreate(
             ['artist_id' => $adele->id, 'album_id' => $twentyOne->id, 'title' => 'Rolling in the Deep'],
             [
-                'url_stream' => 'https://stream.example.com/adele/rolling-in-the-deep.mp3',
+                'song_id'    => $this->createAudioMedia('Rolling in the Deep Audio', 'audios/rolling_in_the_deep.mp3', $now),
                 'duration'   => 228,
-                'cover_image'=> '/images/songs/rolling_in_the_deep.jpg',
+                'image_id'   => $this->createImageMedia('Rolling in the Deep Cover', 'images/songs/rolling_in_the_deep.jpg', $now),
                 'sort_order' => 1,
                 'is_active'  => true,
             ]
         );
+    }
+
+    private function createImageMedia(string $name, string $path, Carbon $now): int
+    {
+        $relativePath = ltrim($path, '/');
+        $extension = pathinfo($relativePath, PATHINFO_EXTENSION);
+
+        return DB::table('medias')->insertGetId([
+            'uuid' => (string) Str::uuid(),
+            'name' => $name,
+            'original_filename' => basename($relativePath),
+            'type' => 'image',
+            'extension' => $extension,
+            'storage_path' => $relativePath,
+            'mime_type' => 'image/' . ($extension ?: 'jpeg'),
+            'size' => null,
+            'duration' => null,
+            'width' => null,
+            'height' => null,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+    }
+
+    private function createAudioMedia(string $name, string $path, Carbon $now): int
+    {
+        $relativePath = ltrim($path, '/');
+        $extension = pathinfo($relativePath, PATHINFO_EXTENSION) ?: 'mp3';
+
+        return DB::table('medias')->insertGetId([
+            'uuid' => (string) Str::uuid(),
+            'name' => $name,
+            'original_filename' => basename($relativePath),
+            'type' => 'audio',
+            'extension' => $extension,
+            'storage_path' => $relativePath,
+            'mime_type' => 'audio/' . $extension,
+            'size' => null,
+            'duration' => null,
+            'width' => null,
+            'height' => null,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
     }
 }

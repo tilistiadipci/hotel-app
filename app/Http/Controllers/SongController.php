@@ -5,10 +5,10 @@ namespace App\Http\Controllers;
 use App\Http\Controllers\HelperController;
 use App\Repositories\AlbumRepository;
 use App\Repositories\ArtistRepository;
+use App\Repositories\MediaRepository;
 use App\Repositories\SongRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\ValidationException;
 
@@ -17,17 +17,20 @@ class SongController extends Controller
     protected $songRepository;
     protected $artistRepository;
     protected $albumRepository;
+    protected MediaRepository $mediaRepository;
     private $page;
     private $icon = 'fa fa-music';
 
     public function __construct(
         SongRepository $songRepository,
         ArtistRepository $artistRepository,
-        AlbumRepository $albumRepository
+        AlbumRepository $albumRepository,
+        MediaRepository $mediaRepository
     ) {
         $this->songRepository = $songRepository;
         $this->artistRepository = $artistRepository;
         $this->albumRepository = $albumRepository;
+        $this->mediaRepository = $mediaRepository;
         $this->page = 'songs';
     }
 
@@ -58,14 +61,14 @@ class SongController extends Controller
     public function store(Request $request)
     {
         $data = $this->validateRequest($request);
+        $createdMediaIds = [];
+        $storedPaths = [];
 
         try {
             DB::beginTransaction();
-            $this->handleUploadCover($request, $data);
-
-            $file = $request->file('audio');
-            $payload = $this->buildSongPayload($data, $file);
-
+            $this->handleUploadCover($request, $data, null, $createdMediaIds, $storedPaths);
+            $this->handleUploadAudio($request, $data, null, $createdMediaIds, $storedPaths);
+            $payload = $this->finalizePayload($data);
             $this->songRepository->create($payload);
 
             DB::commit();
@@ -73,6 +76,7 @@ class SongController extends Controller
             return redirect()->route('songs.index')->with('success', trans('common.success.create'));
         } catch (\Exception $e) {
             DB::rollBack();
+            app(HelperController::class)->cleanupMedia($createdMediaIds, $storedPaths);
             $this->debugError($e);
             return redirect()->back()->with('error', trans('common.error.500'));
         }
@@ -94,7 +98,7 @@ class SongController extends Controller
                 'status' => true,
                 'data' => view('pages.songs.info', [
                     'page' => $this->page,
-                    'song' => $song->load(['artist', 'album']),
+                    'song' => $song->load(['artist', 'album', 'imageMedia', 'audioMedia']),
                 ])->render(),
                 'return_type' => 'json',
             ]);
@@ -106,7 +110,7 @@ class SongController extends Controller
 
         return view('pages.songs.show', [
             'page' => $this->page,
-            'song' => $song->load(['artist', 'album']),
+            'song' => $song->load(['artist', 'album', 'imageMedia', 'audioMedia']),
         ]);
     }
 
@@ -120,7 +124,7 @@ class SongController extends Controller
         return view('pages.songs.edit', [
             'page' => $this->page,
             'icon' => $this->icon,
-            'song' => $song,
+            'song' => $song->load('imageMedia', 'audioMedia'),
             'artists' => $this->artistRepository->all(),
             'albums' => $this->albumRepository->all(),
         ]);
@@ -129,20 +133,21 @@ class SongController extends Controller
     public function update(Request $request, string $uid)
     {
         $data = $this->validateRequest($request, $uid);
+        $createdMediaIds = [];
+        $storedPaths = [];
 
         try {
             DB::beginTransaction();
-            $this->handleUploadCover($request, $data);
-
-            $file = $request->file('audio');
-            $payload = $this->buildSongPayload($data, $file, $uid);
-
+            $this->handleUploadCover($request, $data, $uid, $createdMediaIds, $storedPaths);
+            $this->handleUploadAudio($request, $data, $uid, $createdMediaIds, $storedPaths);
+            $payload = $this->finalizePayload($data, $uid);
             $this->songRepository->updateByUid($uid, $payload);
             DB::commit();
 
             return redirect()->route('songs.index')->with('success', trans('common.success.update'));
         } catch (\Exception $e) {
             DB::rollBack();
+            app(HelperController::class)->cleanupMedia($createdMediaIds, $storedPaths);
             $this->debugError($e);
             return redirect()->back()->with('error', trans('common.error.500'));
         }
@@ -179,12 +184,30 @@ class SongController extends Controller
         }
     }
 
-    private function handleUploadCover(Request $request, array &$data): void
+    private function handleUploadCover(Request $request, array &$data, ?string $uid = null, array &$createdMediaIds = [], array &$storedPaths = []): void
     {
-        if ($request->hasFile('cover_image')) {
-            app(HelperController::class)->storeImage($request, 'cover_image', 'songs', 'cover_image');
-            $data['cover_image'] = $request->input('cover_image');
+        $file = $request->file('image');
+        $selectedMediaId = $request->input('image_media_id');
+        $existing = $uid ? $this->songRepository->findUid($uid) : null;
+
+        if ($file && $file->isValid()) {
+            $stored = $this->storeImageFile($file);
+            $data['image_id'] = $stored['media_id'];
+            $createdMediaIds[] = $stored['media_id'];
+            $storedPaths[] = $stored['relative_path'];
+        } elseif ($selectedMediaId) {
+            $media = $this->mediaRepository->find($selectedMediaId);
+            if (!$media || $media->type !== 'image') {
+                throw ValidationException::withMessages([
+                    'image' => 'Media gambar tidak ditemukan atau bukan gambar.',
+                ]);
+            }
+            $data['image_id'] = $media->id;
+        } elseif ($existing) {
+            $data['image_id'] = $existing->image_id;
         }
+
+        unset($data['image_media_id']);
     }
 
     private function validateRequest(Request $request, ?string $uid = null): array
@@ -198,9 +221,11 @@ class SongController extends Controller
             'artist_id' => 'required',
             'album_id' => 'nullable',
             'title' => 'nullable|max:200|unique:songs,title' . ($songId ? ',' . $songId : ''),
-            'audio' => ($uid ? 'nullable' : 'required') . '|file|mimes:mp3,wav,flac,aac,m4a,ogg|max:307200', // 300MB
-            'duration' => 'nullable|integer|min:1',
-            'cover_image' => 'nullable|image|mimes:jpeg,png,jpg|max:1024',
+            'audio' => 'nullable|file|mimes:mp3,wav,flac,aac,m4a,ogg|max:307200', // 300MB
+            'duration' => 'nullable|integer|min:0',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:1024',
+            'image_media_id' => 'nullable|integer|exists:medias,id',
+            'audio_media_id' => 'nullable|integer|exists:medias,id',
             'sort_order' => 'nullable|integer|min:0',
             'is_active' => 'required|boolean',
         ];
@@ -238,47 +263,108 @@ class SongController extends Controller
             }
         }
 
+        // ensure at least one audio source provided
+        if (!$request->hasFile('audio') && !$request->filled('audio_media_id')) {
+            if (!$uid || !$this->songRepository->findUid($uid)?->song_id) {
+                throw ValidationException::withMessages([
+                    'audio' => 'File audio wajib diunggah atau pilih dari media.',
+                ]);
+            }
+        }
+
         return $validated;
     }
 
-    /**
-     * Build payload; when file present upload and fill url_stream, duration (if provided) and title fallback.
-     */
-    private function buildSongPayload(array $baseData, ?UploadedFile $file, ?string $uid = null): array
+    private function storeImageFile(UploadedFile $file): array
     {
-        $payload = $baseData;
+        if (!$file->isValid()) {
+            throw new \Exception('File gambar tidak valid.');
+        }
+
+        /** @var HelperController $helper */
+        $helper = app(HelperController::class);
+        $relativePath = $helper->uploadMediaFile($file, 'images', 'media');
+        if (empty($relativePath)) {
+            throw new \Exception('Gagal menentukan path penyimpanan gambar.');
+        }
+
+        $dimensions = $helper->getImageDimensionsFromPath($relativePath, $file);
+
+        $media = $this->mediaRepository->createFromUpload('image', $relativePath, [
+            'extension' => $file->getClientOriginalExtension(),
+            'mime' => $file->getMimeType(),
+            'size' => $file->getSize(),
+            'width' => $dimensions['width'] ?? null,
+            'height' => $dimensions['height'] ?? null,
+        ]);
+
+        return [
+            'media_id' => $media->id,
+            'relative_path' => $relativePath,
+        ];
+    }
+
+    private function handleUploadAudio(Request $request, array &$data, ?string $uid = null, array &$createdMediaIds = [], array &$storedPaths = []): void
+    {
+        $file = $request->file('audio');
+        $selectedMediaId = $request->input('audio_media_id');
         $existing = $uid ? $this->songRepository->findUid($uid) : null;
 
         if ($file && $file->isValid()) {
             $stored = $this->storeAudioFile($file);
-            $payload['url_stream'] = $stored['public_path'];
-            // duration expected from frontend; keep provided value
-
-            // Use filename as title if not provided
-            if (empty($payload['title'])) {
-                $payload['title'] = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+            $data['song_id'] = $stored['media_id'];
+            $createdMediaIds[] = $stored['media_id'];
+            $storedPaths[] = $stored['relative_path'];
+            if (empty($data['title'])) {
+                $data['title'] = pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME);
+            }
+            if (!isset($data['duration']) || $data['duration'] === null || $data['duration'] === '') {
+                $data['duration'] = $stored['duration'] ?? 0;
+            }
+        } elseif ($selectedMediaId) {
+            $media = $this->mediaRepository->find($selectedMediaId);
+            if (!$media || $media->type !== 'audio') {
+                throw ValidationException::withMessages([
+                    'audio' => 'Media audio tidak ditemukan atau bukan audio.',
+                ]);
+            }
+            $data['song_id'] = $media->id;
+            if (!isset($data['duration']) || $data['duration'] === null || $data['duration'] === '') {
+                $data['duration'] = $media->duration ?? 0;
             }
         } elseif ($existing) {
-            $payload['url_stream'] = $existing->url_stream;
-            $payload['title'] = $payload['title'] ?? $existing->title;
-            $payload['duration'] = $payload['duration'] ?? $existing->duration;
+            $data['song_id'] = $existing->song_id;
+            $data['duration'] = $data['duration'] ?? $existing->duration;
+            $data['title'] = $data['title'] ?? $existing->title;
         }
 
-        // duration should come from frontend; keep 0 or provided
-        if (!isset($payload['duration'])) {
-            $payload['duration'] = 0;
+        unset($data['audio_media_id']);
+
+        if (empty($data['song_id'])) {
+            throw ValidationException::withMessages([
+                'audio' => 'File audio wajib diunggah atau pilih dari media.',
+            ]);
+        }
+    }
+
+    private function finalizePayload(array $baseData, ?string $uid = null): array
+    {
+        $payload = $baseData;
+        $existing = $uid ? $this->songRepository->findUid($uid) : null;
+
+        if (!isset($payload['duration']) || $payload['duration'] === null || $payload['duration'] === '') {
+            $payload['duration'] = $existing->duration ?? 0;
         }
 
-        // ensure title required
         if (empty($payload['title'])) {
-            $payload['title'] = 'Untitled';
+            $payload['title'] = $existing->title ?? 'Untitled';
         }
 
         return $payload;
     }
 
     /**
-     * Store audio file into public storage (local CDN volume) and return public path.
+     * Store audio file into media storage and create media record.
      */
     private function storeAudioFile(UploadedFile $file): array
     {
@@ -286,25 +372,26 @@ class SongController extends Controller
             throw new \Exception('File audio tidak valid.');
         }
 
-        $fileName = now()->format('YmdHis') . '_' . str_replace(' ', '_', $file->getClientOriginalName());
-        $disk = Storage::disk('public');
-        $relativePath = 'audios/' . $fileName;
-
-        // Prefer native storeAs when real path available; otherwise manual put (Windows temp sometimes returns false).
-        if ($file->getRealPath()) {
-            $stored = $file->storeAs('audios', $fileName, 'public');
-        } else {
-            $contents = @file_get_contents($file->getPathname());
-            if ($contents === false) {
-                throw new \Exception('Gagal membaca file audio yang diupload.');
-            }
-            $disk->put($relativePath, $contents);
-            $stored = $relativePath;
+        /** @var HelperController $helper */
+        $helper = app(HelperController::class);
+        $relativePath = $helper->uploadMediaFile($file, 'audios', 'media');
+        if (empty($relativePath)) {
+            throw new \Exception('Gagal menentukan path penyimpanan audio.');
         }
 
+        $media = $this->mediaRepository->createFromUpload('audio', $relativePath, [
+            'extension' => $file->getClientOriginalExtension(),
+            'mime' => $file->getMimeType(),
+            'size' => $file->getSize(),
+            'name' => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
+            'original' => $file->getClientOriginalName(),
+            'duration' => null,
+        ]);
+
         return [
-            'public_path' => 'storage/' . $stored,
-            'absolute_path' => storage_path('app/public/' . $stored),
+            'media_id' => $media->id,
+            'relative_path' => $relativePath,
+            'duration' => $media->duration,
         ];
     }
 

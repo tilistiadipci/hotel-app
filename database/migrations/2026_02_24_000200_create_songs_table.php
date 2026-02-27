@@ -14,9 +14,9 @@ return new class extends Migration
             $table->foreignId('artist_id')->constrained('artists')->cascadeOnDelete();
             $table->foreignId('album_id')->nullable()->constrained('albums')->nullOnDelete();
             $table->string('title', 200);
-            $table->string('url_stream', 255); // URL to stream the song
-            $table->integer('duration'); // seconds
-            $table->string('cover_image', 255)->nullable();
+            $table->foreignId('song_id')->nullable()->constrained('medias')->nullOnDelete(); // audio file in medias
+            $table->integer('duration')->default(0); // seconds
+            $table->foreignId('image_id')->nullable()->constrained('medias')->nullOnDelete(); // cover image from medias
             $table->integer('sort_order')->nullable(); // for album songs
             $table->boolean('is_active')->default(true);
             $table->integer('created_by')->nullable();

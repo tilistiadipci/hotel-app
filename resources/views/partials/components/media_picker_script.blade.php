@@ -5,6 +5,7 @@
         const durationInput = document.getElementById('duration');
         const hiddenUploaded = document.getElementById('uploaded_video_filename');
         const hiddenVideoMediaId = document.getElementById('video_media_id');
+        const audioMediaId = document.getElementById('audio_media_id');
         const progressWrap = document.getElementById('chunkProgressWrap');
         const progressBar = document.getElementById('chunkProgressBar');
         const saveBtn = document.querySelector('button[type="submit"]');
@@ -12,8 +13,10 @@
         const imageMediaId = document.getElementById('image_media_id');
         const imageLabel = document.getElementById('selectedImageLabel');
         const videoLabel = document.getElementById('selectedVideoLabel');
+        const audioLabel = document.getElementById('selectedAudioLabel');
         const btnPickImage = document.getElementById('btnPickImage');
         const btnPickVideo = document.getElementById('btnPickVideo');
+        const btnPickAudio = document.getElementById('btnPickAudio');
         const modalPicker = $('#modalMediaPicker');
         const pickerList = $('#mediaPickerList');
         const pickerLoading = $('#mediaPickerLoading');
@@ -259,6 +262,9 @@
                 videoLabel && (videoLabel.textContent = name);
                 hiddenUploaded && (hiddenUploaded.value = '');
                 durationInput && (durationInput.value = $(this).data('duration') || durationInput.value);
+            } else if (type === 'audio') {
+                audioMediaId && (audioMediaId.value = id);
+                audioLabel && (audioLabel.textContent = name);
             }
             closePicker();
         });
@@ -381,6 +387,9 @@
                         }
                         const currentCover = document.getElementById('currentCoverPreview');
                         currentCover && currentCover.classList.add('d-none');
+                    } else if (pickerType === 'audio') {
+                        audioMediaId && (audioMediaId.value = m.id);
+                        audioLabel && (audioLabel.textContent = m.name || m.original_filename);
                     }
                     closePicker();
                 } else {
@@ -397,6 +406,7 @@
 
         btnPickImage && btnPickImage.addEventListener('click', () => openPicker('image'));
         btnPickVideo && btnPickVideo.addEventListener('click', () => openPicker('video'));
+        btnPickAudio && btnPickAudio.addEventListener('click', () => openPicker('audio'));
 
         const imageInput = document.getElementById('image');
         const imagePreviewWrap = document.getElementById('imagePreviewWrap');

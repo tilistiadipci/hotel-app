@@ -102,6 +102,11 @@
             return `${mins}:${secs.toString().padStart(2, '0')}`;
         }
 
+        function playAudio(el) {
+            const audioUrl = $(el).data('audio');
+            window.open(audioUrl, '_blank');
+        }
+
         var columns = [
             {
                 data: 'checkbox',

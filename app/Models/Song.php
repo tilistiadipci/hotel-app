@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
+use App\Models\Media;
 
 class Song extends Model
 {
@@ -16,9 +17,9 @@ class Song extends Model
         'artist_id',
         'album_id',
         'title',
-        'url_stream',
+        'song_id',
         'duration',
-        'cover_image',
+        'image_id',
         'sort_order',
         'is_active',
         'created_by',
@@ -64,5 +65,15 @@ class Song extends Model
     public function album()
     {
         return $this->belongsTo(Album::class);
+    }
+
+    public function imageMedia()
+    {
+        return $this->belongsTo(Media::class, 'image_id');
+    }
+
+    public function audioMedia()
+    {
+        return $this->belongsTo(Media::class, 'song_id');
     }
 }
