@@ -348,7 +348,14 @@ class MediaController extends Controller
         if (!$media) {
             return;
         }
-        // delete file if exists
+        // skip shared placeholder to avoid deleting the default asset
+        if (stripos($media->storage_path, 'default/no-image') !== false) {
+            $media->deleted_by = auth()->id();
+            $media->deleted_at = now();
+            $media->save();
+            return;
+        }
+
         $abs = $this->mediaAbsolutePath($media->storage_path);
         if (is_file($abs)) {
             @unlink($abs);

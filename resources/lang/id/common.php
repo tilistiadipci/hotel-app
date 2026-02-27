@@ -90,6 +90,10 @@ return [
     'no_media_found' => 'Tidak ada media ditemukan.',
     'upload_file' => 'Unggah File',
     'supported_formats' => 'Silahkan unggah file format yang mendukung',
+    'region' => 'Region',
+    'stream_url' => 'Stream URL',
+    'frequency' => 'Frekuensi',
+    'quality' => 'Kualitas',
 
     'list_month' => [
         'january' => 'Januari',

@@ -94,6 +94,10 @@ return [
     'upload_file' => 'Upload File',
     'supported_formats' => 'Please upload files with the following formats.',
     'stream_url_information' => 'Fill in the HLS/DASH URL or deep link. Example: <code>https://example.com/stream.m3u8</code> or <code>tvapp://channel/123</code>',
+    'region' => 'Region',
+    'stream_url' => 'Stream URL',
+    'frequency' => 'Frequency',
+    'quality' => 'Quality',
 
     'list_month' => [
         'january' => 'January',

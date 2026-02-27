@@ -52,7 +52,7 @@
                                         </label>
                                     </th>
                                     <th style="width:60px">No</th>
-                                    <th>{{ trans('common.user.name') }}</th>
+                                    <th>{{ trans('common.name') }}</th>
                                     <th>{{ trans('common.phone') }}</th>
                                     <th>{{ trans('common.email') }}</th>
                                     <th>{{ trans('common.user.username') }}</th>

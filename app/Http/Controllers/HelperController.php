@@ -15,6 +15,10 @@ class HelperController extends Controller
     {
         // remove files
         foreach (array_filter($relativePaths) as $relative) {
+            // skip shared default placeholder
+            if (stripos($relative, 'default/no-image') !== false) {
+                continue;
+            }
             $abs = $this->mediaAbsolutePath($relative);
             if (is_file($abs)) {
                 @unlink($abs);
