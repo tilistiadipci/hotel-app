@@ -8,8 +8,8 @@
         <div class="custom-modal__body">
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <div class="small text-muted">{{ trans('common.click_item_to_select_or_upload') }}</div>
-                <button class="btn btn-sm btn-outline-secondary" id="btnRefreshMedia"><i
-                        class="fa fa-sync"></i></button>
+                {{-- <button class="btn btn-sm btn-outline-secondary" id="btnRefreshMedia"><i
+                        class="fa fa-sync"></i></button> --}}
             </div>
             <div id="mediaPickerList" class="media-picker-list"></div>
             <div class="text-center mt-2 d-none" id="mediaPickerLoading">Loading...</div>

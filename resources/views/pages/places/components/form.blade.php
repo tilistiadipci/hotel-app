@@ -68,7 +68,8 @@
                         @include('partials.forms.input', [
                             'elementId' => 'latitude',
                             'value' => $place->latitude ?? old('latitude'),
-                            'type' => 'text',
+                            'type' => 'number',
+                            'step' => '0.000001',
                         ])
                     </div>
                 </div>
@@ -79,7 +80,8 @@
                         @include('partials.forms.input', [
                             'elementId' => 'longitude',
                             'value' => $place->longitude ?? old('longitude'),
-                            'type' => 'text',
+                            'type' => 'number',
+                            'step' => '0.000001',
                         ])
                     </div>
                 </div>
@@ -123,23 +125,9 @@
             </div>
 
             <div class="col-md-6">
-                <div class="mb-3 w-100 upload-block">
-                    <label class="font-weight-bold d-block mb-2">Image<span class="text-danger">*</span></label>
-                    @if ($place && $place->image)
-                        <input type="hidden" name="old_image" value="{{ $place->image }}">
-                        <div class="mb-2">
-                            <img src="{{ asset($place->image) }}" alt="Current Image" class="img-fluid rounded shadow-sm" style="max-height: 160px; object-fit: cover;">
-                        </div>
-                    @endif
-                    <input type="file" name="image" id="image" class="form-control-file" accept="image/*" {{ $place ? '' : 'required' }}>
-                    <div class="mt-2" id="imagePreviewWrapper" style="display: none;">
-                        <img id="imagePreview" src="" alt="Preview" class="img-fluid rounded shadow-sm" style="max-height: 160px; object-fit: cover;">
-                    </div>
-                    <small class="text-muted d-block mt-1" style="font-style: normal;">Jpg, Png, Jpeg. Max 2MB.</small>
-                    @error('image')
-                        <div class="text-danger">{{ $message }}</div>
-                    @enderror
-                </div>
+                 @include('partials.components.media_picker_upload_image', [
+                    'data' => $place ?? null,
+                ])
             </div>
         </div>
     </div>
@@ -165,21 +153,23 @@
             @csrf
             <div class="custom-modal__body">
                 <div class="form-group">
-                    <label for="newPlaceCategoryName">Name</label>
+                    <label for="newPlaceCategoryName">{{ trans('common.name') }}</label>
                     <input type="text" name="name" id="newPlaceCategoryName" class="form-control" required maxlength="100">
                 </div>
                 <div class="form-group">
-                    <label for="newPlaceCategorySort">Sort Order</label>
+                    <label for="newPlaceCategorySort">{{ trans('common.sort_order') }}</label>
                     <input type="number" name="sort_order" id="newPlaceCategorySort" class="form-control" min="0" step="1" value="0">
                 </div>
             </div>
             <div class="custom-modal__footer">
-                <button type="button" class="btn btn-secondary" data-modal-close>Close</button>
-                <button type="submit" class="btn btn-primary" id="savePlaceCategoryBtn">Save</button>
+                <button type="button" class="btn btn-secondary" data-modal-close>{{ trans('common.close') }}</button>
+                <button type="submit" class="btn btn-primary" id="savePlaceCategoryBtn">{{ trans('common.save') }}</button>
             </div>
         </form>
     </div>
 </div>
+
+@include('partials.components.media_picker_modal')
 
 
 @section('css')
@@ -244,10 +234,15 @@
             overflow: hidden;
         }
     </style>
+
+    @include('partials.components.media_picker_style')
 @endsection
 
 @section('js')
     @parent
+
+    @include('partials.components.media_picker_script')
+
     <script>
         (function waitForjQuery() {
             if (window.jQuery) {

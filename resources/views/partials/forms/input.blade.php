@@ -1,4 +1,7 @@
 <input name="{{ $elementId }}" id="{{ $elementId }}" type="{{ $type }}"
+    @if (isset($step))
+    step="{{ $step }}"
+    @endif
     class="form-control  @error($elementId) is-invalid @enderror" value="{{ $value }}"
     @if (isset($readonly)) readonly @endif>
 @error($elementId)

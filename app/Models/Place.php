@@ -6,6 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
+use App\Models\Media;
 
 class Place extends Model
 {
@@ -73,5 +74,10 @@ class Place extends Model
         $query->when($filter['category_id'] ?? false, function ($q, $categoryId) {
             $q->where('category_id', $categoryId);
         });
+    }
+
+    public function imageMedia()
+    {
+        return $this->belongsTo(Media::class, 'image_id');
     }
 }

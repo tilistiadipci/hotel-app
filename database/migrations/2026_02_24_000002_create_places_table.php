@@ -14,7 +14,7 @@ return new class extends Migration
             $table->string('name', 150);
             $table->foreignId('category_id')->constrained('places_categories')->cascadeOnDelete();
             $table->text('description')->nullable();
-            $table->string('image', 255);
+            $table->foreignId('image_id')->nullable()->constrained('medias')->nullOnDelete();
             $table->string('address', 255)->nullable();
             $table->decimal('latitude', 10, 8)->nullable();
             $table->decimal('longitude', 11, 8)->nullable();
