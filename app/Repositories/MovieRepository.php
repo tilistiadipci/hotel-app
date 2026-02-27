@@ -79,8 +79,11 @@ class MovieRepository extends BaseRepository
                 return $row->categories->pluck('name')->implode(', ');
             })
             ->addColumn('action', function ($row) {
+                $row = $row->load('imageMedia', 'videoMedia');
+                // dd($row->videoMedia->storage_path);
                 return view('partials.datatable.action2', [
-                    'row' => $row
+                    'row' => $row,
+                    'movie' => true,
                 ])->render();
             })
             ->rawColumns(['action'])

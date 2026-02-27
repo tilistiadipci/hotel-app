@@ -10,9 +10,6 @@ use App\Http\Controllers\HelperController;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
 
 class MovieController extends Controller
@@ -185,10 +182,8 @@ class MovieController extends Controller
 
     private function validateRequest(Request $request, ?string $uid = null): array
     {
-        $movieId = null;
-        if ($uid) {
-            $movieId = optional($this->movieRepository->findUid($uid))->id;
-        }
+        $movie = $uid ? $this->movieRepository->findUid($uid) : null;
+        $movieId = $movie->id ?? null;
 
         $rules = [
             'title' => 'required|max:200|unique:movies,title' . ($movieId ? ',' . $movieId : ''),
@@ -214,8 +209,10 @@ class MovieController extends Controller
 
         $validated = $request->validate($rules);
 
-        // Pastikan video tersedia dari salah satu sumber (upload baru, upload chunk, atau pilih media)
+        // Pastikan video hanya wajib saat create atau film belum punya video sama sekali
+        $needsVideo = !$uid || !$movie?->video_id;
         if (
+            $needsVideo &&
             !$request->file('video') &&
             !$request->filled('uploaded_video_filename') &&
             !$request->filled('video_media_id')
@@ -398,3 +395,4 @@ class MovieController extends Controller
     }
 
 }
+

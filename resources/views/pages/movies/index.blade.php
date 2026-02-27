@@ -108,6 +108,11 @@
             return parts.join(':');
         }
 
+        function showMovie(el) {
+            const videoUrl = $(el).data('movie');
+            window.open(videoUrl, '_blank');
+        }
+
         var columns = [
             {
                 data: 'checkbox',

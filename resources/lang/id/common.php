@@ -182,6 +182,7 @@ return [
         'title_singular' => 'Film',
         'director' => 'Sutradara',
         'release_date' => 'Tanggal Rilis',
+        'show_movie' => 'Tampilkan Film',
     ],
 
     'place' => [

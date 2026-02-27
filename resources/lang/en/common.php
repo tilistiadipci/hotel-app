@@ -84,6 +84,8 @@ return [
     'contact' => 'Contact',
     'select_an_option' => 'Select an option',
     'add_category' => 'Add Category',
+    'categories' => 'Categories',
+    'release_date' => 'Release Date',
 
     'list_month' => [
         'january' => 'January',
@@ -183,6 +185,7 @@ return [
         'release_date' => 'Release Date',
         'rating' => 'Rating',
         'duration' => 'Duration',
+        'show_movie' => 'Show Movie',
     ],
 
     'place' => [

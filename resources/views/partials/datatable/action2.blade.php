@@ -1,12 +1,20 @@
 <div class="d-inline-flex align-items-center action-compact">
+    @if (isset($movie))
+        <button type="button" class="action-pill neutral bg-primary text-white" title="{{ trans('common.movie.show_movie') }}"
+            data-uid="{{ $row->uuid ?? ($row->id ?? '') }}"
+            data-movie="{{ getMediaVideoUrl($row->videoMedia->storage_path ?? '') }}"
+            onclick="showMovie(this)">
+            <i class="fa fa-film"></i>
+        </button>
+    @endif
     <button type="button" class="action-pill neutral bg-primary text-white" title="{{ trans('common.detail') }}"
-        data-uid="{{ $row->uuid ?? $row->id ?? '' }}"
-        onclick="show('{{ $row->uuid ?? $row->id ?? '' }}')">
+        data-uid="{{ $row->uuid ?? ($row->id ?? '') }}"
+        onclick="show('{{ $row->uuid ?? ($row->id ?? '') }}')">
         <i class="fa fa-eye"></i>
     </button>
     <button type="button" class="action-pill neutral" title="{{ trans('common.edit') }}"
-        data-uid="{{ $row->uuid ?? $row->id ?? '' }}"
-        onclick="edit('{{ $row->uuid ?? $row->id ?? '' }}')">
+        data-uid="{{ $row->uuid ?? ($row->id ?? '') }}"
+        onclick="edit('{{ $row->uuid ?? ($row->id ?? '') }}')">
         <i class="fa fa-edit"></i>
     </button>
     {{-- <button type="button" class="action-pill danger" title="{{ trans('common.delete') }}"
