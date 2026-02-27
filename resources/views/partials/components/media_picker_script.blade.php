@@ -21,14 +21,44 @@
         const pickerList = $('#mediaPickerList');
         const pickerLoading = $('#mediaPickerLoading');
         const pickerEmpty = $('#mediaPickerEmpty');
-        const pickerInput = document.getElementById('mediaPickerInput');
+        const pickerInput = document.getElementById('mediaPickerInput'); // image & audio
+        const pickerVideoInput = document.getElementById('mediaPickerVideoInput'); // video only
+        const btnChooseVideoInModal = document.getElementById('btnChooseVideoInModal');
         const pickerProgress = $('#mediaPickerProgress');
         const pickerProgressBar = $('#mediaPickerProgressBar');
         const uploadNameInput = document.getElementById('uploadName');
+        const pickerHelp = document.getElementById('mediaPickerHelp');
+        const pickerAcceptMap = {
+            image: 'image/*',
+            audio: 'audio/*',
+            video: 'video/*'
+        };
+        const pickerMaxSize = 5 * 1024 * 1024; // 5MB limit (server validate 5,242,880 bytes)
         let pickerType = 'image';
         let pickerResumable = null;
         let pickerNext = null;
         let pickerBusy = false;
+
+        // utility: get duration (seconds) for video/audio file using HTML5 metadata
+        function getFileDuration(file) {
+            return new Promise(resolve => {
+                if (!file) return resolve(null);
+                const isVideo = file.type && file.type.startsWith('video/');
+                const el = isVideo ? document.createElement('video') : document.createElement('audio');
+                el.preload = 'metadata';
+                const url = URL.createObjectURL(file);
+                el.src = url;
+                el.onloadedmetadata = () => {
+                    const dur = isFinite(el.duration) ? Math.round(el.duration) : null;
+                    URL.revokeObjectURL(url);
+                    resolve(dur);
+                };
+                el.onerror = () => {
+                    URL.revokeObjectURL(url);
+                    resolve(null);
+                };
+            });
+        }
 
         function setDurationFromFile(file) {
             if (!file || !durationInput) return;
@@ -62,8 +92,7 @@
                 withCredentials: true,
                 query: file => ({
                     _token: "{{ csrf_token() }}",
-                    duration: file && typeof file.durationSeconds !== 'undefined' ? file
-                        .durationSeconds : ''
+                    duration: file && typeof file.durationSeconds !== 'undefined' ? file.durationSeconds : ''
                 }),
                 headers: {
                     'X-CSRF-TOKEN': "{{ csrf_token() }}"
@@ -117,6 +146,15 @@
                             progressBar.style.width = '100%';
                             progressBar.textContent = '100%';
                         }
+                        if (progressWrap) {
+                            setTimeout(() => {
+                                progressWrap.classList.add('d-none');
+                                if (progressBar) {
+                                    progressBar.style.width = '0%';
+                                    progressBar.textContent = '0%';
+                                }
+                            }, 300);
+                        }
                         if (videoInput) {
                             videoInput.value = '';
                             videoInput.removeAttribute('required');
@@ -127,6 +165,12 @@
                     } catch (e) {
                         console.error('Invalid response', e);
                         alert('Upload selesai tapi response server tidak valid.');
+                    } finally {
+                        if (progressWrap) progressWrap.classList.add('d-none');
+                        if (progressBar) {
+                            progressBar.style.width = '0%';
+                            progressBar.textContent = '0%';
+                        }
                     }
                 });
 
@@ -134,6 +178,11 @@
                     console.error('Upload error', message);
                     alert('Gagal upload video: ' + message);
                     saveBtn && (saveBtn.disabled = false);
+                    if (progressWrap) progressWrap.classList.add('d-none');
+                    if (progressBar) {
+                        progressBar.style.width = '0%';
+                        progressBar.textContent = '0%';
+                    }
                 });
             } else {
                 console.warn('Resumable.js not supported in this browser.');
@@ -215,9 +264,29 @@
             $('#modalMediaPickerTitle').text('Pilih ' + type.charAt(0).toUpperCase() + type.slice(1));
             modalPicker.attr('data-type', type).addClass('is-open').attr('aria-hidden', 'false');
             $('body').addClass('custom-modal-open');
-            pickerInput.value = '';
+            pickerInput && (pickerInput.value = '');
+            pickerVideoInput && (pickerVideoInput.value = '');
             pickerProgress.addClass('d-none');
             pickerProgressBar.css('width', '0%').text('0%');
+            // set accept & help text sesuai tipe
+            if (pickerInput) pickerInput.setAttribute('accept', pickerAcceptMap[type] || 'image/*,audio/*,video/*');
+            if (pickerHelp) {
+                pickerHelp.textContent = type === 'image'
+                    ? 'Format: JPG, JPEG, PNG'
+                    : (type === 'audio'
+                        ? 'Format: MP3, WAV, FLAC, AAC, M4A, OGG'
+                        : 'Format: MP4, MOV, MKV, WEBM, AVI');
+            }
+            // toggle inputs
+            if (pickerVideoInput && pickerInput) {
+                if (type === 'video') {
+                    pickerInput.classList.add('d-none');
+                    btnChooseVideoInModal && btnChooseVideoInModal.classList.remove('d-none');
+                } else {
+                    pickerInput.classList.remove('d-none');
+                    btnChooseVideoInModal && btnChooseVideoInModal.classList.add('d-none');
+                }
+            }
             loadPickerList(type, null, true);
         }
 
@@ -269,82 +338,111 @@
             closePicker();
         });
 
-        pickerInput.addEventListener('change', function() {
-            const file = this.files && this.files[0];
-            if (!file) return;
-
-            const getVideoDuration = f => new Promise(resolve => {
-                const url = URL.createObjectURL(f);
-                const el = document.createElement('video');
-                el.preload = 'metadata';
-                el.src = url;
-                el.onloadedmetadata = () => {
-                    resolve(isFinite(el.duration) ? Math.round(el.duration) : 0);
-                    URL.revokeObjectURL(url);
-                };
-                el.onerror = () => {
-                    resolve(0);
-                    URL.revokeObjectURL(url);
-                };
+        // Init resumable for video uploads in modal picker
+        if (window.Resumable && pickerVideoInput) {
+            pickerResumable = new Resumable({
+                target: "{{ route('media.uploadChunk', [], false) }}",
+                chunkSize: 5 * 1024 * 1024,
+                simultaneousUploads: 3,
+                testChunks: false,
+                throttleProgressCallbacks: 1,
+                withCredentials: true,
+                query: (file) => ({
+                    _token: "{{ csrf_token() }}",
+                    duration: file && typeof file.durationSeconds !== 'undefined' ? file.durationSeconds : '',
+                    name: (uploadNameInput ? uploadNameInput.value : '') || (file ? file.fileName : ''),
+                    filename: file ? file.fileName : '',
+                }),
+                headers: {
+                    'X-CSRF-TOKEN': "{{ csrf_token() }}"
+                }
             });
 
-            if (pickerType === 'video') {
-                pickerProgress.removeClass('d-none');
-                pickerProgressBar.css('width', '5%').text('5%');
+            if (pickerResumable.support) {
+                // single browse trigger: button (preferred) or hidden input fallback
+                const browseTargets = [];
+                if (btnChooseVideoInModal) browseTargets.push(btnChooseVideoInModal);
+                browseTargets.push(pickerVideoInput);
+                pickerResumable.assignBrowse(browseTargets, false, false, { accept: 'video/*' });
 
-                getVideoDuration(file).then(durationVal => {
-                    const formData = new FormData();
-                    formData.append('_token', "{{ csrf_token() }}");
-                    formData.append('file', file);
-                    formData.append('type', 'video');
-                    formData.append('name', (uploadNameInput ? uploadNameInput.value : '') || file
-                        .name);
-                    formData.append('duration', durationVal || '');
+                pickerResumable.on('fileAdded', function(file) {
+                    pickerProgress.removeClass('d-none');
+                    pickerProgressBar.css('width', '5%').text('5%');
+                    videoLabel && (videoLabel.textContent = file.fileName || file.name || 'Video');
+                    getFileDuration(file.file).then(durationVal => {
+                        file.durationSeconds = durationVal || null;
+                        pickerResumable.upload();
+                    });
+                });
 
-                    $.ajax({
-                        url: "{{ route('media.store') }}",
-                        method: 'POST',
-                        data: formData,
-                        processData: false,
-                        contentType: false,
-                        xhr: function() {
-                            const xhr = $.ajaxSettings.xhr();
-                            if (xhr.upload) {
-                                xhr.upload.addEventListener('progress', function(ev) {
-                                    if (ev.lengthComputable) {
-                                        const pct = Math.floor((ev.loaded / ev
-                                            .total) * 100);
-                                        pickerProgressBar.css('width', pct +
-                                            '%').text(pct + '%');
-                                    }
-                                });
-                            }
-                            return xhr;
-                        }
-                    }).done(function(res) {
+                pickerResumable.on('fileProgress', function(file) {
+                    if (!pickerProgressBar) return;
+                    const pct = Math.floor(file.progress() * 100);
+                    pickerProgressBar.css('width', pct + '%').text(pct + '%');
+                });
+
+                pickerResumable.on('fileSuccess', function(file, message) {
+                    try {
+                        const res = JSON.parse(message);
                         if (res.status && res.media) {
                             const m = res.media;
                             hiddenVideoMediaId && (hiddenVideoMediaId.value = m.id);
-                            videoLabel && (videoLabel.textContent = m.name || m
-                                .original_filename);
-                            durationInput && (durationInput.value = m.duration ||
-                                durationInput.value);
+                            videoLabel && (videoLabel.textContent = m.name || m.original_filename);
+                            durationInput && (durationInput.value = m.duration || durationInput.value);
                             closePicker();
                         } else {
                             alert('Upload gagal.');
                         }
-                    }).fail(function() {
-                        alert('Upload gagal.');
-                    }).always(function() {
+                    } catch (e) {
+                        console.error('Invalid response', e);
+                        alert('Upload selesai tapi response server tidak valid.');
+                    } finally {
                         pickerProgress.addClass('d-none');
                         pickerProgressBar.css('width', '0%').text('0%');
                         pickerInput.value = '';
-                    });
+                        if (pickerVideoInput) pickerVideoInput.value = '';
+                        if (btnChooseVideoInModal && pickerType !== 'video') btnChooseVideoInModal.classList.add('d-none');
+                    }
                 });
 
+                pickerResumable.on('fileError', function(file, message) {
+                    console.error('Upload chunk error', message);
+                    alert('Gagal upload video.');
+                    pickerProgress.addClass('d-none');
+                    pickerProgressBar.css('width', '0%').text('0%');
+                    pickerInput.value = '';
+                    if (pickerVideoInput) pickerVideoInput.value = '';
+                    if (btnChooseVideoInModal && pickerType === 'video') btnChooseVideoInModal.classList.remove('d-none');
+                });
+            }
+        }
+
+        // video input (resumable)
+        // change handler not needed; handled by Resumable assignBrowse above
+
+        // image & audio input
+        pickerInput && pickerInput.addEventListener('change', function() {
+            const file = this.files && this.files[0];
+            if (!file) return;
+
+            if (pickerType === 'video' && pickerResumable && pickerResumable.support) {
+                // ignore here; video input will trigger its own change
                 return;
             }
 
+            // image & audio upload via simple POST
+            if (pickerType === 'image' && file.type && !file.type.startsWith('image/')) {
+                alert('File bukan gambar.');
+                return;
+            }
+            if (pickerType === 'audio' && file.type && !file.type.startsWith('audio/')) {
+                alert('File bukan audio.');
+                return;
+            }
+            if (file.size && file.size > pickerMaxSize) {
+                alert('Ukuran file melebihi 5MB.');
+                return;
+            }
             const formData = new FormData();
             formData.append('_token', "{{ csrf_token() }}");
             formData.append('file', file);

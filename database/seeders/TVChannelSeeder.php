@@ -17,7 +17,7 @@ class TVChannelSeeder extends Seeder
             [
                 'name'        => 'SCTV',
                 'slug'        => 'sctv',
-                'logo_path'   => 'images/no-image.png',
+                'logo_path'   => 'default/no-image.png',
                 'type'        => 'digital',
                 'region'      => 'national',
                 'stream_url'  => null,
@@ -28,7 +28,7 @@ class TVChannelSeeder extends Seeder
             [
                 'name'        => 'TVRI',
                 'slug'        => 'tvri',
-                'logo_path'   => 'images/no-image.png',
+                'logo_path'   => 'default/no-image.png',
                 'type'        => 'digital',
                 'region'      => 'national',
                 'stream_url'  => null,
@@ -39,7 +39,7 @@ class TVChannelSeeder extends Seeder
             [
                 'name'        => 'Netflix',
                 'slug'        => 'netflix',
-                'logo_path'   => 'images/no-image.png',
+                'logo_path'   => 'default/no-image.png',
                 'type'        => 'streaming',
                 'region'      => 'international',
                 'stream_url'  => 'netflix.com',
@@ -50,7 +50,7 @@ class TVChannelSeeder extends Seeder
             [
                 'name'        => 'Disney+',
                 'slug'        => 'disney-plus',
-                'logo_path'   => 'images/no-image.png',
+                'logo_path'   => 'default/no-image.png',
                 'type'        => 'streaming',
                 'region'      => 'international',
                 'stream_url'  => 'disneyplus.com',
@@ -61,7 +61,7 @@ class TVChannelSeeder extends Seeder
             [
                 'name'        => 'Vidio',
                 'slug'        => 'vidio',
-                'logo_path'   => 'images/no-image.png',
+                'logo_path'   => 'default/no-image.png',
                 'type'        => 'streaming',
                 'region'      => 'national',
                 'stream_url'  => 'vidio.com',

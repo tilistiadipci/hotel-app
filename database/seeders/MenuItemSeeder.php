@@ -105,7 +105,7 @@ class MenuItemSeeder extends Seeder
                     'is_available' => $item['is_available'],
                     'sort_order' => $item['sort_order'] ?? 0,
                     'preparation_time' => $item['preparation_time'],
-                    'image' => $item['image'] ?? 'images/menu/placeholder.jpg',
+                    'image' => $item['image'] ?? 'default/no-image.png',
                 ]
             );
         }

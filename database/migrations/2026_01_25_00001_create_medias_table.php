@@ -24,7 +24,7 @@ return new class extends Migration
             $table->string('extension', 16)->nullable();
 
             // relative path inside media storage (e.g., movies/ironman.mp4)
-            $table->string('storage_path', 255);
+            $table->string('storage_path', 255)->default('default/no-image.png');
 
             // optional metadata
             $table->string('mime_type', 100)->nullable();

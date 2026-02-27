@@ -105,12 +105,12 @@ class MediaController extends Controller
         }
 
         $tempDir = storage_path('app/chunks/videos/' . $identifier);
+        // ensure directory exists (idempotent)
+        // guard: if path is a file, remove it then recreate dir
         if (is_file($tempDir)) {
             File::delete($tempDir);
         }
-        if (!is_dir($tempDir)) {
-            File::makeDirectory($tempDir, 0755, true);
-        }
+        File::ensureDirectoryExists($tempDir, 0755, true);
 
         // Handle chunk check (GET) used by Resumable.js
         if ($request->isMethod('get')) {
@@ -123,6 +123,7 @@ class MediaController extends Controller
         if (!$chunk || !$chunk->isValid()) {
             return response('Invalid chunk', 400);
         }
+        // overwrite if exists to avoid partial conflicts
         $chunk->move($tempDir, 'chunk_' . $chunkNumber);
 
         // If not last chunk, return progress
@@ -151,6 +152,7 @@ class MediaController extends Controller
                 fclose($in);
             } else {
                 fclose($out);
+                File::deleteDirectory($tempDir);
                 return response("Missing chunk {$i}", 500);
             }
         }
@@ -171,6 +173,7 @@ class MediaController extends Controller
         File::deleteDirectory($tempDir);
 
         return response()->json([
+            'status' => true,
             'filename' => $safeFilename,
             'media_id' => $media->id,
             'relative_path' => $finalRelative,

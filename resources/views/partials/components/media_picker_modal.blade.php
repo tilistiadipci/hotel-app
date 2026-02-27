@@ -17,7 +17,13 @@
             <hr>
             <div class="form-group mb-2" id="mediaUploadGroup">
                 <label class="small mb-1">{{ trans('common.upload_file') }}</label>
-                <input type="file" class="form-control-file" id="mediaPickerInput" accept="image/*,audio/*,video/*">
+                <div class="d-flex align-items-center mb-1">
+                    <input type="file" class="form-control-file" id="mediaPickerInput" accept="image/*,audio/*">
+                    <input type="file" class="form-control-file d-none" id="mediaPickerVideoInput" accept="video/*">
+                    <button type="button" class="btn btn-primary btn-sm d-none" id="btnChooseVideoInModal">
+                        <i class="fa fa-upload mr-1"></i> Pilih Video
+                    </button>
+                </div>
                 <small class="text-muted d-block" id="mediaPickerHelp">{{ trans('common.supported_formats') }}</small>
                 <div class="progress mt-2 d-none" id="mediaPickerProgress" style="height: 10px;">
                     <div class="progress-bar bg-success" role="progressbar" style="width: 0%;"
