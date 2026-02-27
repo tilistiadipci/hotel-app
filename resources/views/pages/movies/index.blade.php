@@ -54,6 +54,7 @@
                                     <th style="width:60px">No</th>
                                     <th>{{ trans('common.title') }}</th>
                                     <th>{{ trans('common.category') }}</th>
+                                    <th>{{ trans('common.movie.title_video') }}</th>
                                     <th>{{ trans('common.movie.release_date') }}</th>
                                     <th>{{ trans('common.movie.duration') }}</th>
                                     <th>{{ trans('common.status') }}</th>
@@ -147,6 +148,16 @@
                 data: 'categories',
                 name: 'categories',
                 defaultContent: ''
+            },
+            {
+                sortable: false,
+                searchable: false,
+                data: 'movie_name',
+                name: 'movie_name',
+                defaultContent: '',
+                render: function(data) {
+                    return data || '';
+                }
             },
             {
                 data: 'release_date',

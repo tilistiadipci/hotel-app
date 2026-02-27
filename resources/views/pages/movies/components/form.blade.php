@@ -50,17 +50,16 @@
                                 <i class="fa fa-plus"></i>
                             </button>
                         </div>
-                        <small class="text-muted d-block mt-1">Bisa pilih lebih dari satu.</small>
+                        <small class="text-muted d-block mt-1">{{ trans('common.can_select_multiple') }}</small>
                     </div>
                 </div>
 
                 <div class="position-relative row form-group">
-                    <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.release_date') }}</label>
+                    <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.movie.release_date') }}</label>
                     <div class="col-sm-8">
                         @include('partials.forms.input', [
                             'elementId' => 'release_date',
-                            'value' =>
-                                optional($movie->release_date ?? null)->format('Y-m-d') ?? old('release_date'),
+                            'value' => optional($movie->release_date ?? null)->format('Y-m-d') ?? old('release_date'),
                             'type' => 'date',
                         ])
                     </div>
@@ -104,56 +103,12 @@
 
             <div class="col-md-6">
                 <!-- START Cover Image Upload -->
-                <div class="mb-3 w-100 upload-block">
-                    <label class="font-weight-bold d-block mb-2">Cover Image</label>
-                    <div class="d-flex align-items-center mb-2">
-                        <button type="button" class="btn btn-outline-primary btn-sm mr-2" id="btnPickImage">
-                            <i class="fa fa-image mr-1"></i>Pilih / Upload
-                        </button>
-                        <div class="text-muted small" id="selectedImageLabel">Belum ada image dipilih</div>
-                    </div>
-                    <input type="hidden" name="image_media_id" id="image_media_id" value="{{ old('image_media_id', $movie->imageMedia->id ?? '') }}">
-                    <input type="file" name="image" id="image" class="form-control-file d-none" accept="image/*">
-                    @if ($movie && $movie->imageMedia)
-                        <div class="mt-2" id="currentCoverPreview">
-                            <small class="text-muted d-block">Current cover:</small>
-                            <img src="{{ getMediaImageUrl($movie->imageMedia->storage_path, 200, 200) }}" alt="Current cover"
-                                class="img-thumbnail shadow-sm" style="object-fit: cover;">
-                        </div>
-                    @endif
-                    <div class="mt-2 d-none" id="imagePreviewWrap">
-                        <small class="text-muted d-block">Preview:</small>
-                        <img id="imagePreview" class="img-thumbnail shadow-sm" style="max-height: 200px; object-fit: cover;" alt="Preview">
-                    </div>
-                    @error('image')
-                        <div class="text-danger">{{ $message }}</div>
-                    @enderror
-                </div>
+                @include('partials.components.media_picker_upload_image')
                 <!-- END Cover Image Upload -->
 
                 <!-- START Video Upload -->
-                <div class="mb-3 w-100 upload-block">
-                    <label class="font-weight-bold d-block mb-2">File Video</label>
-                    <div class="d-flex align-items-center mb-2">
-                        <button type="button" class="btn btn-outline-primary btn-sm mr-2" id="btnPickVideo">
-                            <i class="fa fa-film mr-1"></i>Pilih / Upload
-                        </button>
-                        <div class="text-muted small" id="selectedVideoLabel">Belum ada video dipilih</div>
-                    </div>
-                    <input type="hidden" name="uploaded_video_filename" id="uploaded_video_filename"
-                        value="{{ old('uploaded_video_filename') }}">
-                    <input type="hidden" name="video_media_id" id="video_media_id" value="{{ old('video_media_id') }}">
-                    <small class="text-muted d-block mt-1" id="videoHelp" style="font-style: normal;">Format: MP4/MOV/MKV/WEBM/AVI</small>
-                    <div class="progress mt-2 d-none" id="chunkProgressWrap" style="height: 18px;">
-                        <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar"
-                            style="width: 0%;" id="chunkProgressBar">0%</div>
-                    </div>
-                    @error('video')
-                        <div class="text-danger">{{ $message }}</div>
-                    @enderror
-                    <input type="hidden" name="duration" id="duration" value="{{ $movie->duration ?? old('duration') }}">
-                </div>
-
+                @include('partials.components.media_picker_upload_video')
+                <!-- END Video Upload -->
             </div>
         </div>
     </div>
@@ -172,25 +127,25 @@
     <div class="custom-modal__backdrop" data-modal-close></div>
     <div class="custom-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="modalAddCategoryLabel">
         <div class="custom-modal__header">
-            <h5 class="custom-modal__title" id="modalAddCategoryLabel">Add Category</h5>
+            <h5 class="custom-modal__title" id="modalAddCategoryLabel">{{ trans('common.add_category') }}</h5>
             <button type="button" class="custom-modal__close" data-modal-close aria-label="Close">&times;</button>
         </div>
         <form id="formAddCategory">
             @csrf
             <div class="custom-modal__body">
                 <div class="form-group">
-                    <label for="newCategoryName">Name</label>
+                    <label for="newCategoryName">{{ trans('common.name') }}</label>
                     <input type="text" name="name" id="newCategoryName" class="form-control" required
                         maxlength="100">
                 </div>
                 <div class="form-group">
-                    <label for="newCategoryDescription">Description</label>
+                    <label for="newCategoryDescription">{{ trans('common.description') }}</label>
                     <textarea name="description" id="newCategoryDescription" class="form-control" rows="2"></textarea>
                 </div>
             </div>
             <div class="custom-modal__footer">
-                <button type="button" class="btn btn-secondary" data-modal-close>Close</button>
-                <button type="submit" class="btn btn-primary" id="saveCategoryBtn">Save</button>
+                <button type="button" class="btn btn-secondary" data-modal-close>{{ trans('common.close') }}</button>
+                <button type="submit" class="btn btn-primary" id="saveCategoryBtn">{{ trans('common.save') }}</button>
             </div>
         </form>
     </div>
@@ -198,156 +153,16 @@
 {{-- END Custom Modal Add Category (non-Bootstrap) --}
 
 {{-- START Custom Modal Media Picker --}}
-<div id="modalMediaPicker" class="custom-modal" aria-hidden="true" data-type="">
-    <div class="custom-modal__backdrop" data-modal-close></div>
-    <div class="custom-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="modalMediaPickerTitle">
-        <div class="custom-modal__header">
-            <h5 class="custom-modal__title" id="modalMediaPickerTitle">Pilih Media</h5>
-            <button type="button" class="custom-modal__close" data-modal-close aria-label="Close">&times;</button>
-        </div>
-        <div class="custom-modal__body">
-            <div class="d-flex justify-content-between align-items-center mb-2">
-                <div class="small text-muted">Klik item untuk memilih, atau unggah baru.</div>
-                <button class="btn btn-sm btn-outline-secondary" id="btnRefreshMedia"><i class="fa fa-sync"></i></button>
-            </div>
-            <div id="mediaPickerList" class="media-picker-list"></div>
-            <div class="text-center mt-2 d-none" id="mediaPickerLoading">Loading...</div>
-            <div class="text-center text-muted mt-2 d-none" id="mediaPickerEmpty">Belum ada media.</div>
-            <hr>
-            <div class="form-group mb-2" id="mediaUploadGroup">
-                <label class="small mb-1">Upload baru</label>
-                <input type="file" class="form-control-file" id="mediaPickerInput" accept="image/*,audio/*,video/*">
-                <small class="text-muted d-block" id="mediaPickerHelp">Pilih file sesuai tipe.</small>
-                <div class="progress mt-2 d-none" id="mediaPickerProgress" style="height: 10px;">
-                    <div class="progress-bar bg-success" role="progressbar" style="width: 0%;" id="mediaPickerProgressBar">0%</div>
-                </div>
-            </div>
-        </div>
-        <div class="custom-modal__footer d-flex justify-content-end mt-3">
-            <button type="button" class="btn btn-secondary mr-2" data-modal-close>Close</button>
-        </div>
-    </div>
-</div>
+@include('partials.components.media_picker_modal')
 {{-- END Custom Modal Media Picker --}}
+
 @section('css')
     @parent
-    <style>
-        /* Custom modal (independent from Bootstrap) */
-        .custom-modal {
-            position: fixed;
-            inset: 0;
-            display: none;
-            align-items: center;
-            justify-content: center;
-            z-index: 5000;
-        }
-
-        .custom-modal.is-open {
-            display: flex;
-        }
-
-        .custom-modal__backdrop {
-            position: absolute;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.45);
-        }
-
-        .custom-modal__dialog {
-            position: relative;
-            background: #fff;
-            border-radius: 8px;
-            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.25);
-            max-width: 520px;
-            width: 92%;
-            max-height: 85vh;
-            overflow-y: auto;
-            z-index: 1;
-            padding: 16px;
-        }
-
-        .custom-modal__header {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            margin-bottom: 8px;
-        }
-
-        .custom-modal__title {
-            margin: 0;
-            font-size: 18px;
-            font-weight: 600;
-        }
-
-        .custom-modal__close {
-            border: none;
-            background: transparent;
-            font-size: 24px;
-            line-height: 1;
-            padding: 0 4px;
-            cursor: pointer;
-        }
-
-        .custom-modal__body {
-            padding: 4px 0 8px;
-        }
-
-        .custom-modal__footer {
-            display: flex;
-            justify-content: flex-end;
-            gap: 8px;
-            padding-top: 8px;
-        }
-
-        body.custom-modal-open {
-            overflow: hidden;
-        }
-
-        /* Media picker grid */
-        .media-picker-list {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
-            gap: 12px;
-            max-height: 300px;
-            min-height: 300px;
-            overflow-y: auto;
-        }
-        .media-picker-item {
-            border: 1px solid #e5e5e5;
-            border-radius: 8px;
-            padding: 8px;
-            cursor: pointer;
-            transition: all 0.15s ease;
-            background: #fafafa;
-        }
-        .media-picker-item:hover {
-            border-color: #4d79f6;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-        }
-        .media-picker-thumb {
-            width: 100%;
-            height: 80px;
-            object-fit: cover;
-            border-radius: 4px;
-            background: #f2f2f2;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #6c757d;
-        }
-        .media-picker-title {
-            font-size: 12px;
-            margin-top: 6px;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-    </style>
+    @include('partials.components.media_picker_style')
 @endsection
 
 @section('js')
     @parent
-    <script src="{{ asset('js/resumable.js') }}"></script>
-
     {{-- START Base Form & Category Modal Scripts --}}
     <script>
         (function movieFormBase() {
@@ -425,404 +240,6 @@
     {{-- END Base Form & Category Modal Scripts --}}
 
     {{-- START Media Picker & Upload Scripts --}}
-    <script>
-        (function movieMediaPicker() {
-            const videoInput = document.getElementById('video');
-            const durationInput = document.getElementById('duration');
-            const hiddenUploaded = document.getElementById('uploaded_video_filename');
-            const hiddenVideoMediaId = document.getElementById('video_media_id');
-            const progressWrap = document.getElementById('chunkProgressWrap');
-            const progressBar = document.getElementById('chunkProgressBar');
-            const saveBtn = document.querySelector('button[type="submit"]');
-            const formEl = document.querySelector('form');
-            const imageMediaId = document.getElementById('image_media_id');
-            const imageLabel = document.getElementById('selectedImageLabel');
-            const videoLabel = document.getElementById('selectedVideoLabel');
-            const btnPickImage = document.getElementById('btnPickImage');
-            const btnPickVideo = document.getElementById('btnPickVideo');
-            const modalPicker = $('#modalMediaPicker');
-            const pickerList = $('#mediaPickerList');
-            const pickerLoading = $('#mediaPickerLoading');
-            const pickerEmpty = $('#mediaPickerEmpty');
-            const pickerInput = document.getElementById('mediaPickerInput');
-            const pickerProgress = $('#mediaPickerProgress');
-            const pickerProgressBar = $('#mediaPickerProgressBar');
-            const uploadNameInput = document.getElementById('uploadName');
-            let pickerType = 'image';
-            let pickerResumable = null;
-            let pickerNext = null;
-            let pickerBusy = false;
-
-            function setDurationFromFile(file) {
-                if (!file || !durationInput) return;
-                const url = URL.createObjectURL(file);
-                const videoEl = document.createElement('video');
-                videoEl.preload = 'metadata';
-                videoEl.src = url;
-                videoEl.onloadedmetadata = function() {
-                    if (videoEl.duration && isFinite(videoEl.duration)) {
-                        durationInput.value = Math.round(videoEl.duration);
-                    }
-                    URL.revokeObjectURL(url);
-                };
-            }
-
-            if (videoInput && durationInput) {
-                videoInput.addEventListener('change', function() {
-                    const file = this.files && this.files[0];
-                    if (!file) return;
-                    setDurationFromFile(file);
-                });
-            }
-
-            if (videoInput && window.Resumable) {
-                const r = new Resumable({
-                    target: "{{ route('media.uploadChunk', [], false) }}",
-                    chunkSize: 5 * 1024 * 1024,
-                    simultaneousUploads: 3,
-                    testChunks: false,
-                    throttleProgressCallbacks: 1,
-                    withCredentials: true,
-                    query: file => ({
-                        _token: "{{ csrf_token() }}",
-                        duration: file && typeof file.durationSeconds !== 'undefined' ? file.durationSeconds : ''
-                    }),
-                    headers: { 'X-CSRF-TOKEN': "{{ csrf_token() }}" }
-                });
-
-                if (r.support) {
-                    r.assignBrowse(videoInput);
-
-                    r.on('fileAdded', function(file) {
-                        hiddenUploaded && (hiddenUploaded.value = '');
-                        progressWrap && progressWrap.classList.remove('d-none');
-                        saveBtn && (saveBtn.disabled = true);
-                        setDurationFromFile(file.file);
-                        const probe = new Promise(resolve => {
-                            const el = document.createElement('video');
-                            el.preload = 'metadata';
-                            const url = URL.createObjectURL(file.file);
-                            el.src = url;
-                            el.onloadedmetadata = function() {
-                                file.durationSeconds = isFinite(el.duration) ? Math.round(el.duration) : null;
-                                URL.revokeObjectURL(url);
-                                resolve();
-                            };
-                            el.onerror = function() {
-                                file.durationSeconds = null;
-                                URL.revokeObjectURL(url);
-                                resolve();
-                            };
-                        });
-                        probe.then(() => r.upload());
-                    });
-
-                    r.on('fileProgress', function(file) {
-                        if (!progressBar) return;
-                        const pct = Math.floor(file.progress() * 100);
-                        progressBar.style.width = pct + '%';
-                        progressBar.textContent = pct + '%';
-                    });
-
-                    r.on('fileSuccess', function(file, message) {
-                        try {
-                            const res = JSON.parse(message);
-                            hiddenUploaded && (hiddenUploaded.value = res.filename || '');
-                            hiddenVideoMediaId && (hiddenVideoMediaId.value = res.media_id || '');
-                            if (file.file && file.file.duration && isFinite(file.file.duration)) {
-                                durationInput.value = Math.round(file.file.duration);
-                            }
-                            if (progressBar) {
-                                progressBar.style.width = '100%';
-                                progressBar.textContent = '100%';
-                            }
-                            if (videoInput) {
-                                videoInput.value = '';
-                                videoInput.removeAttribute('required');
-                            }
-                            saveBtn && (saveBtn.disabled = false);
-                            const help = document.getElementById('videoHelp');
-                            help && (help.textContent = 'Video terunggah via chunk. Lanjutkan simpan form.');
-                        } catch (e) {
-                            console.error('Invalid response', e);
-                            alert('Upload selesai tapi response server tidak valid.');
-                        }
-                    });
-
-                    r.on('fileError', function(file, message) {
-                        console.error('Upload error', message);
-                        alert('Gagal upload video: ' + message);
-                        saveBtn && (saveBtn.disabled = false);
-                    });
-                } else {
-                    console.warn('Resumable.js not supported in this browser.');
-                }
-            }
-
-            if (formEl) {
-                formEl.addEventListener('submit', function(e) {
-                    if (durationInput && (!durationInput.value || durationInput.value === '')) {
-                        e.preventDefault();
-                        alert('Durasi video belum terdeteksi. Tunggu proses hitung durasi selesai atau pilih ulang videonya.');
-                    }
-                });
-            }
-
-            function maybeFillList() {
-                const el = pickerList[0];
-                if (!el || !pickerNext || pickerBusy) return;
-                if (el.scrollHeight <= el.clientHeight + 10) {
-                    loadPickerList(pickerType, pickerNext, false);
-                }
-            }
-
-            function renderItems(items, reset = false) {
-                if (reset) pickerList.empty();
-                if (!items.length && reset) {
-                    pickerEmpty.removeClass('d-none');
-                    return;
-                }
-                pickerEmpty.addClass('d-none');
-                items.forEach(it => {
-                    const thumb = it.thumb_url || '';
-                    const icon = it.type === 'video' ? 'fa-film' : (it.type === 'audio' ? 'fa-music' : 'fa-image');
-                    pickerList.append(`
-                        <div class="media-picker-item" data-uuid="${it.uuid}" data-id="${it.id}" data-type="${it.type}"
-                             data-name="${it.name}" data-original="${it.original_filename}" data-path="${it.storage_path}" data-thumb="${thumb}">
-                            <div class="media-picker-thumb">
-                                ${thumb ? `<img src="${thumb}" alt="${it.name}" style="width:100%;height:100%;object-fit:cover;border-radius:4px;">` : `<i class="fa ${icon} fa-2x"></i>`}
-                            </div>
-                            <div class="media-picker-title" title="${it.name}">${it.name}</div>
-                            <div class="text-muted" style="font-size:11px;">${(it.extension || '').toUpperCase()}</div>
-                        </div>
-                    `);
-                });
-            }
-
-            function loadPickerList(type, url = null, reset = false) {
-                if (pickerBusy) return;
-                pickerBusy = true;
-                pickerLoading.removeClass('d-none');
-                if (reset) {
-                    pickerEmpty.addClass('d-none');
-                    pickerList.empty();
-                }
-                const params = url ? {} : { type, per_page: 6 };
-                $.get(url || "{{ route('media.library') }}", params, function(res) {
-                    if (res.status) {
-                        renderItems(res.items || [], reset);
-                        pickerNext = res.next_url || null;
-                        setTimeout(maybeFillList, 0);
-                    } else {
-                        pickerEmpty.removeClass('d-none');
-                    }
-                }).fail(function() {
-                    pickerEmpty.removeClass('d-none').text('Gagal memuat media.');
-                }).always(function() {
-                    pickerLoading.addClass('d-none');
-                    pickerBusy = false;
-                });
-            }
-
-            function openPicker(type) {
-                pickerType = type;
-                $('#modalMediaPickerTitle').text('Pilih ' + type.charAt(0).toUpperCase() + type.slice(1));
-                modalPicker.attr('data-type', type).addClass('is-open').attr('aria-hidden', 'false');
-                $('body').addClass('custom-modal-open');
-                pickerInput.value = '';
-                pickerProgress.addClass('d-none');
-                pickerProgressBar.css('width', '0%').text('0%');
-                loadPickerList(type, null, true);
-            }
-
-            function closePicker() {
-                modalPicker.removeClass('is-open').attr('aria-hidden', 'true');
-                $('body').removeClass('custom-modal-open');
-            }
-
-            modalPicker.find('[data-modal-close]').on('click', closePicker);
-            modalPicker.find('.custom-modal__backdrop').on('click', closePicker);
-            $('#btnRefreshMedia').on('click', function(e) {
-                e.preventDefault();
-                loadPickerList(pickerType);
-            });
-
-            pickerList.on('scroll', function() {
-                const el = this;
-                if (!pickerNext || pickerBusy) return;
-                if (el.scrollTop + el.clientHeight >= el.scrollHeight - 40) {
-                    loadPickerList(pickerType, pickerNext, false);
-                }
-            });
-
-            pickerList.on('click', '.media-picker-item', function() {
-                const id = $(this).data('id');
-                const name = $(this).data('name');
-                const type = $(this).data('type');
-                const thumb = $(this).data('thumb') || '';
-                if (type === 'image') {
-                    imageMediaId && (imageMediaId.value = id);
-                    imageLabel && (imageLabel.textContent = name);
-                    const wrap = document.getElementById('imagePreviewWrap');
-                    const img = document.getElementById('imagePreview');
-                    if (img && wrap && thumb) {
-                        img.src = thumb;
-                        wrap.classList.remove('d-none');
-                    }
-                    const currentCover = document.getElementById('currentCoverPreview');
-                    currentCover && currentCover.classList.add('d-none');
-                } else if (type === 'video') {
-                    hiddenVideoMediaId && (hiddenVideoMediaId.value = id);
-                    videoLabel && (videoLabel.textContent = name);
-                    hiddenUploaded && (hiddenUploaded.value = '');
-                    durationInput && (durationInput.value = $(this).data('duration') || durationInput.value);
-                }
-                closePicker();
-            });
-
-            pickerInput.addEventListener('change', function() {
-                const file = this.files && this.files[0];
-                if (!file) return;
-
-                const getVideoDuration = f => new Promise(resolve => {
-                    const url = URL.createObjectURL(f);
-                    const el = document.createElement('video');
-                    el.preload = 'metadata';
-                    el.src = url;
-                    el.onloadedmetadata = () => { resolve(isFinite(el.duration) ? Math.round(el.duration) : 0); URL.revokeObjectURL(url); };
-                    el.onerror = () => { resolve(0); URL.revokeObjectURL(url); };
-                });
-
-                if (pickerType === 'video') {
-                    pickerProgress.removeClass('d-none');
-                    pickerProgressBar.css('width', '5%').text('5%');
-
-                    getVideoDuration(file).then(durationVal => {
-                        const formData = new FormData();
-                        formData.append('_token', "{{ csrf_token() }}");
-                        formData.append('file', file);
-                        formData.append('type', 'video');
-                        formData.append('name', (uploadNameInput ? uploadNameInput.value : '') || file.name);
-                        formData.append('duration', durationVal || '');
-
-                        $.ajax({
-                            url: "{{ route('media.store') }}",
-                            method: 'POST',
-                            data: formData,
-                            processData: false,
-                            contentType: false,
-                            xhr: function() {
-                                const xhr = $.ajaxSettings.xhr();
-                                if (xhr.upload) {
-                                    xhr.upload.addEventListener('progress', function(ev) {
-                                        if (ev.lengthComputable) {
-                                            const pct = Math.floor((ev.loaded / ev.total) * 100);
-                                            pickerProgressBar.css('width', pct + '%').text(pct + '%');
-                                        }
-                                    });
-                                }
-                                return xhr;
-                            }
-                        }).done(function(res) {
-                            if (res.status && res.media) {
-                                const m = res.media;
-                                hiddenVideoMediaId && (hiddenVideoMediaId.value = m.id);
-                                videoLabel && (videoLabel.textContent = m.name || m.original_filename);
-                                durationInput && (durationInput.value = m.duration || durationInput.value);
-                                closePicker();
-                            } else {
-                                alert('Upload gagal.');
-                            }
-                        }).fail(function() {
-                            alert('Upload gagal.');
-                        }).always(function() {
-                            pickerProgress.addClass('d-none');
-                            pickerProgressBar.css('width', '0%').text('0%');
-                            pickerInput.value = '';
-                        });
-                    });
-
-                    return;
-                }
-
-                const formData = new FormData();
-                formData.append('_token', "{{ csrf_token() }}");
-                formData.append('file', file);
-                formData.append('type', pickerType);
-                formData.append('name', (uploadNameInput ? uploadNameInput.value : '') || file.name);
-                pickerProgress.removeClass('d-none');
-                pickerProgressBar.css('width', '5%').text('5%');
-                $.ajax({
-                    url: "{{ route('media.store') }}",
-                    method: 'POST',
-                    data: formData,
-                    processData: false,
-                    contentType: false,
-                    xhr: function() {
-                        const xhr = $.ajaxSettings.xhr();
-                        if (xhr.upload) {
-                            xhr.upload.addEventListener('progress', function(ev) {
-                                if (ev.lengthComputable) {
-                                    const pct = Math.floor((ev.loaded / ev.total) * 100);
-                                    pickerProgressBar.css('width', pct + '%').text(pct + '%');
-                                }
-                            });
-                        }
-                        return xhr;
-                    }
-                }).done(function(res) {
-                    if (res.status && res.media) {
-                        const m = res.media;
-                        if (pickerType === 'image') {
-                            imageMediaId && (imageMediaId.value = m.id);
-                            imageLabel && (imageLabel.textContent = m.name || m.original_filename);
-                            if (m.thumb_url) {
-                                const wrap = document.getElementById('imagePreviewWrap');
-                                const img = document.getElementById('imagePreview');
-                                if (img && wrap) {
-                                    img.src = m.thumb_url;
-                                    wrap.classList.remove('d-none');
-                                }
-                            }
-                            const currentCover = document.getElementById('currentCoverPreview');
-                            currentCover && currentCover.classList.add('d-none');
-                        }
-                        closePicker();
-                    } else {
-                        alert('Upload gagal.');
-                    }
-                }).fail(function() {
-                    alert('Upload gagal.');
-                }).always(function() {
-                    pickerProgress.addClass('d-none');
-                    pickerProgressBar.css('width', '0%').text('0%');
-                    pickerInput.value = '';
-                });
-            });
-
-            btnPickImage && btnPickImage.addEventListener('click', () => openPicker('image'));
-            btnPickVideo && btnPickVideo.addEventListener('click', () => openPicker('video'));
-
-            const imageInput = document.getElementById('image');
-            const imagePreviewWrap = document.getElementById('imagePreviewWrap');
-            const imagePreview = document.getElementById('imagePreview');
-            if (imageInput && imagePreviewWrap && imagePreview) {
-                imageInput.addEventListener('change', function() {
-                    const file = this.files && this.files[0];
-                    if (!file) {
-                        imagePreviewWrap.classList.add('d-none');
-                        imagePreview.src = '';
-                        return;
-                    }
-                    const url = URL.createObjectURL(file);
-                    imagePreview.src = url;
-                    imagePreviewWrap.classList.remove('d-none');
-                    imagePreview.onload = () => URL.revokeObjectURL(url);
-                });
-            }
-
-            $(maybeFillList);
-        })();
-    </script>
+    @include('partials.components.media_picker_script')
     {{-- END Media Picker & Upload Scripts --}}
 @endsection

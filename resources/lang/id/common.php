@@ -83,6 +83,13 @@ return [
     'contact' => 'Kontak',
     'select_an_option' => 'Pilih Opsi',
     'add_category' => 'Tambah Kategori',
+    'can_select_multiple' => 'Anda bisa memilih lebih dari satu.',
+    'no_file_selected' => 'Belum ada file dipilih',
+    'pick_file' => 'Pilih / Upload File',
+    'click_item_to_select_or_upload' => 'Klik item untuk memilih, atau unggah baru.',
+    'no_media_found' => 'Tidak ada media ditemukan.',
+    'upload_file' => 'Unggah File',
+    'supported_formats' => 'Silahkan unggah file format yang mendukung',
 
     'list_month' => [
         'january' => 'Januari',
@@ -180,6 +187,7 @@ return [
         'list_of_movie' => 'Daftar Film',
         'title' => 'Film',
         'title_singular' => 'Film',
+        'title_video' => 'Judul Video',
         'director' => 'Sutradara',
         'release_date' => 'Tanggal Rilis',
         'show_movie' => 'Tampilkan Film',

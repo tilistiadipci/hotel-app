@@ -86,6 +86,13 @@ return [
     'add_category' => 'Add Category',
     'categories' => 'Categories',
     'release_date' => 'Release Date',
+    'can_select_multiple' => 'You can select more than one.',
+    'no_file_selected' => 'No file selected',
+    'pick_file' => 'Pick / Upload File',
+    'click_item_to_select_or_upload' => 'Click item to select, or upload new.',
+    'no_media_found' => 'No media found.',
+    'upload_file' => 'Upload File',
+    'supported_formats' => 'Please upload files with the following formats.',
 
     'list_month' => [
         'january' => 'January',
@@ -181,6 +188,7 @@ return [
         'list_of_movie' => 'List of Movies',
         'title' => 'Movies',
         'title_singular' => 'Movie',
+        'title_video' => 'Video Title',
         'slug' => 'Slug',
         'release_date' => 'Release Date',
         'rating' => 'Rating',

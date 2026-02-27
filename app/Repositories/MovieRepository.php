@@ -71,7 +71,7 @@ class MovieRepository extends BaseRepository
 
     public function getDatatable()
     {
-        $query = $this->query()->with('categories')->filter(request(['search', 'filters']));
+        $query = $this->query()->with(['categories', 'imageMedia', 'videoMedia'])->filter(request(['search', 'filters']));
 
         return DataTables::of($this->paginateDatatable($query))
             ->addIndexColumn()
@@ -79,12 +79,14 @@ class MovieRepository extends BaseRepository
                 return $row->categories->pluck('name')->implode(', ');
             })
             ->addColumn('action', function ($row) {
-                $row = $row->load('imageMedia', 'videoMedia');
                 // dd($row->videoMedia->storage_path);
                 return view('partials.datatable.action2', [
                     'row' => $row,
                     'movie' => true,
                 ])->render();
+            })
+            ->addColumn('movie_name', function ($row) {
+                return $row->videoMedia->name ?? '-';
             })
             ->rawColumns(['action'])
             ->make(true);
