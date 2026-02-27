@@ -4,24 +4,29 @@ namespace App\Http\Controllers;
 
 use App\Repositories\MenuCategoryRepository;
 use App\Repositories\MenuItemRepository;
+use App\Repositories\MediaRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Validation\ValidationException;
+use App\Http\Controllers\HelperController;
 
 class MenuController extends Controller
 {
     protected $itemRepository;
     protected $categoryRepository;
+    protected MediaRepository $mediaRepository;
     private $page;
     private $icon = 'fa fa-utensils';
 
     public function __construct(
         MenuItemRepository $itemRepository,
-        MenuCategoryRepository $categoryRepository
+        MenuCategoryRepository $categoryRepository,
+        MediaRepository $mediaRepository
     ) {
         $this->itemRepository = $itemRepository;
         $this->categoryRepository = $categoryRepository;
+        $this->mediaRepository = $mediaRepository;
         $this->page = 'menu-items';
     }
 
@@ -51,10 +56,13 @@ class MenuController extends Controller
     {
         $data = $this->validateRequest($request);
 
+        $createdMediaIds = [];
+        $storedPaths = [];
+
         try {
             DB::beginTransaction();
 
-            $this->handleUploadImage($request, $data);
+            $this->handleUploadImage($request, $data, null, $createdMediaIds, $storedPaths);
 
             $this->itemRepository->create($data);
 
@@ -62,6 +70,7 @@ class MenuController extends Controller
             return redirect()->route('menu.index')->with('success', trans('common.success.create'));
         } catch (\Exception $e) {
             DB::rollBack();
+            app(HelperController::class)->cleanupMedia($createdMediaIds, $storedPaths);
             $this->debugError($e);
             return redirect()->back()->with('error', $e->getMessage());
         }
@@ -77,7 +86,7 @@ class MenuController extends Controller
         return view('pages.menu.edit', [
             'page' => $this->page,
             'icon' => $this->icon,
-            'item' => $item->load('category'),
+            'item' => $item->load('category', 'imageMedia'),
             'categories' => $this->categoryRepository->all(),
         ]);
     }
@@ -85,11 +94,13 @@ class MenuController extends Controller
     public function update(Request $request, string $uid)
     {
         $data = $this->validateRequest($request, $uid);
+        $createdMediaIds = [];
+        $storedPaths = [];
 
         try {
             DB::beginTransaction();
 
-            $this->handleUploadImage($request, $data);
+            $this->handleUploadImage($request, $data, $uid, $createdMediaIds, $storedPaths);
 
             $this->itemRepository->updateByUid($uid, $data);
 
@@ -97,6 +108,7 @@ class MenuController extends Controller
             return redirect()->route('menu.index')->with('success', trans('common.success.update'));
         } catch (\Exception $e) {
             DB::rollBack();
+            app(HelperController::class)->cleanupMedia($createdMediaIds, $storedPaths);
             $this->debugError($e);
             return redirect()->back()->with('error', $e->getMessage());
         }
@@ -135,7 +147,7 @@ class MenuController extends Controller
                 'status' => true,
                 'data' => view('pages.menu.info', [
                     'page' => $this->page,
-                    'item' => $item->load('category'),
+                    'item' => $item->load('category', 'imageMedia'),
                 ])->render(),
                 'return_type' => 'json',
             ]);
@@ -147,7 +159,7 @@ class MenuController extends Controller
 
         return view('pages.menu.show', [
             'page' => $this->page,
-            'item' => $item->load('category'),
+            'item' => $item->load('category', 'imageMedia'),
             'icon' => $this->icon,
         ]);
     }
@@ -177,7 +189,8 @@ class MenuController extends Controller
             'name' => 'required|max:150|unique:menu_items,name' . ($itemId ? ',' . $itemId : ''),
             'category_id' => 'required|integer|exists:menu_categories,id',
             'description' => 'nullable|string',
-            'image' => ($uid ? 'nullable' : 'required') . '|image|mimes:jpeg,png,jpg|max:2048',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'image_media_id' => 'nullable|integer|exists:medias,id',
             'price' => 'required|numeric|min:0',
             'discount_price' => 'nullable|numeric|min:0',
             'is_available' => 'required|boolean',
@@ -185,14 +198,69 @@ class MenuController extends Controller
             'preparation_time' => 'nullable|integer|min:0',
         ];
 
-        return $request->validate($rules);
+        $validated = $request->validate($rules);
+
+        if (!$uid && !$request->file('image') && !$request->filled('image_media_id')) {
+            throw ValidationException::withMessages([
+                'image' => 'Silakan unggah gambar atau pilih dari media yang sudah ada.',
+            ]);
+        }
+
+        return $validated;
     }
 
-    private function handleUploadImage(Request $request, array &$data): void
+    private function handleUploadImage(Request $request, array &$data, ?string $uid = null, array &$createdMediaIds = [], array &$storedPaths = []): void
     {
-        if ($request->hasFile('image')) {
-            app(HelperController::class)->storeImage($request, 'image', 'menu/images', 'image');
-            $data['image'] = $request->input('image');
+        $file = $request->file('image');
+        $selectedMediaId = $request->input('image_media_id');
+        $existing = $uid ? $this->itemRepository->findUid($uid) : null;
+
+        if ($file && $file->isValid()) {
+            $stored = $this->storeImageFile($file);
+            $data['image_id'] = $stored['media_id'];
+            $createdMediaIds[] = $stored['media_id'];
+            $storedPaths[] = $stored['relative_path'];
+        } elseif ($selectedMediaId) {
+            $media = $this->mediaRepository->find($selectedMediaId);
+            if (!$media || $media->type !== 'image') {
+                throw ValidationException::withMessages([
+                    'image' => 'Media gambar tidak ditemukan atau bukan gambar.',
+                ]);
+            }
+            $data['image_id'] = $media->id;
+        } elseif ($existing) {
+            $data['image_id'] = $existing->image_id;
         }
+    }
+
+    private function storeImageFile(UploadedFile $file): array
+    {
+        if (!$file->isValid()) {
+            throw new \Exception('File gambar tidak valid.');
+        }
+
+        /** @var HelperController $helper */
+        $helper = app(HelperController::class);
+        $relativePath = $helper->uploadMediaFile($file, 'images', 'media');
+        if (empty($relativePath)) {
+            throw new \Exception('Gagal menentukan path penyimpanan gambar.');
+        }
+
+        $dimensions = $helper->getImageDimensionsFromPath($relativePath, $file);
+
+        $media = $this->mediaRepository->createFromUpload('image', $relativePath, [
+            'extension' => $file->getClientOriginalExtension(),
+            'mime' => $file->getMimeType(),
+            'size' => $file->getSize(),
+            'name' => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
+            'original' => $file->getClientOriginalName(),
+            'width' => $dimensions['width'],
+            'height' => $dimensions['height'],
+        ]);
+
+        return [
+            'media_id' => $media->id,
+            'relative_path' => $relativePath,
+        ];
     }
 }

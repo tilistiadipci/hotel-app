@@ -37,7 +37,7 @@ class MenuItemRepository extends BaseRepository
         return false;
     }
 
-    public function delete($uid, $fieldName = 'image', $destroyImage = true)
+    public function delete($uid, $fieldName = 'image_id', $destroyImage = true)
     {
         $item = $this->findUid($uid);
         if ($item) {
@@ -48,7 +48,7 @@ class MenuItemRepository extends BaseRepository
         return false;
     }
 
-    public function bulkDeleteByUid(array $uids, $fieldName = 'image', $destroyImage = true)
+    public function bulkDeleteByUid(array $uids, $fieldName = 'image_id', $destroyImage = true)
     {
         if (empty($uids)) {
             return 0;
@@ -63,7 +63,7 @@ class MenuItemRepository extends BaseRepository
     public function getDatatable()
     {
         $query = $this->query()
-            ->with('category')
+            ->with(['category', 'imageMedia'])
             ->filter(request(['search', 'filters']));
 
         return DataTables::of($this->paginateDatatable($query))

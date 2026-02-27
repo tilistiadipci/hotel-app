@@ -14,7 +14,7 @@ return new class extends Migration
             $table->foreignId('category_id')->constrained('menu_categories')->cascadeOnDelete();
             $table->string('name', 150);
             $table->text('description')->nullable();
-            $table->string('image', 255)->nullable();
+            $table->foreignId('image_id')->nullable()->constrained('medias')->nullOnDelete();
             $table->decimal('price', 12, 2);
             $table->decimal('discount_price', 12, 2)->nullable();
             $table->boolean('is_available')->default(true);

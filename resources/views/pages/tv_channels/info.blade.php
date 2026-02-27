@@ -1,14 +1,13 @@
 ﻿@php
     $imageUrl = getMediaImageUrl($channel->imageMedia->storage_path ?? 'images/no-image.png');
     $items = [
-        'Nama' => $channel->name,
-        // 'Slug' => $channel->slug,
-        'Jenis' => ucfirst($channel->type),
-        'Region' => ucfirst($channel->region),
-        'Stream URL' => $channel->stream_url ?? '-',
-        'Frequency' => $channel->frequency ?? '-',
-        'Quality' => $channel->quality ?? '-',
-        'Sort Order' => $channel->sort_order ?? '-',
+        trans('common.name') => $channel->name,
+        trans('common.type') => ucfirst($channel->type),
+        trans('common.region') => ucfirst($channel->region),
+        trans('common.stream_url') => $channel->stream_url ?? '-',
+        trans('common.frequency') => $channel->frequency ?? '-',
+        trans('common.quality') => $channel->quality ?? '-',
+        trans('common.sort_order') => $channel->sort_order ?? '-',
         'Status' => $channel->is_active ? trans('common.active') : trans('common.inactive'),
         trans('common.created_at') => $channel->created_at ?? '-',
         // trans('common.updated_at') => $channel->updated_at ?? '-',

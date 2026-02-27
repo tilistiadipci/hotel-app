@@ -120,26 +120,9 @@
             </div>
 
             <div class="col-md-6">
-                <div class="mb-3 w-100 upload-block">
-                    <label class="font-weight-bold d-block mb-2">{{ trans('common.image') }}</label>
-                    @if ($item && $item->image)
-                        <input type="hidden" name="old_image" value="{{ $item->image }}">
-                        <div class="mb-2">
-                            <img src="{{ asset($item->image) }}" alt="Current Image"
-                                class="img-fluid rounded shadow-sm" style="max-height: 160px; object-fit: cover;">
-                        </div>
-                    @endif
-                    <input type="file" name="image" id="image" class="form-control-file" accept="image/*"
-                        {{ $item ? '' : 'required' }}>
-                    <div class="mt-2" id="imagePreviewWrapper" style="display: none;">
-                        <img id="imagePreview" src="" alt="Preview" class="img-fluid rounded shadow-sm"
-                            style="max-height: 160px; object-fit: cover;">
-                    </div>
-                    <small class="text-muted d-block mt-1" style="font-style: normal;">Jpg, Png, Jpeg. Max 2MB.</small>
-                    @error('image')
-                        <div class="text-danger">{{ $message }}</div>
-                    @enderror
-                </div>
+                @include('partials.components.media_picker_upload_image', [
+                    'data' => $item ?? null,
+                ])
             </div>
         </div>
     </div>
@@ -182,6 +165,8 @@
         </form>
     </div>
 </div>
+
+@include('partials.components.media_picker_modal')
 
 @section('css')
     @parent
@@ -254,10 +239,14 @@
             overflow: hidden;
         }
     </style>
+
+    @include('partials.components.media_picker_style')
 @endsection
 
 @section('js')
     @parent
+    @include('partials.components.media_picker_script')
+
     <script>
         (function waitForjQuery() {
             if (window.jQuery) {

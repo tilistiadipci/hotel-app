@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\MenuCategory;
 use App\Models\MenuItem;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class MenuItemSeeder extends Seeder
@@ -81,6 +82,8 @@ class MenuItemSeeder extends Seeder
             ],
         ];
 
+        $now = now();
+
         foreach ($data as $item) {
             $categorySlug = $item['category'];
             $categoryId = $categories[$categorySlug] ?? null;
@@ -94,6 +97,25 @@ class MenuItemSeeder extends Seeder
                 $categories[$categorySlug] = $categoryId;
             }
 
+            $storagePath = $item['image'] ?? 'default/no-image.png';
+            $ext = pathinfo($storagePath, PATHINFO_EXTENSION) ?: 'png';
+
+            $mediaId = DB::table('medias')->insertGetId([
+                'uuid' => Str::uuid()->toString(),
+                'name' => $item['name'] . ' Image',
+                'original_filename' => basename($storagePath),
+                'type' => 'image',
+                'extension' => $ext,
+                'storage_path' => $storagePath,
+                'mime_type' => 'image/' . strtolower($ext),
+                'size' => null,
+                'duration' => null,
+                'width' => null,
+                'height' => null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
+
             MenuItem::updateOrCreate(
                 ['name' => $item['name']],
                 [
@@ -105,7 +127,7 @@ class MenuItemSeeder extends Seeder
                     'is_available' => $item['is_available'],
                     'sort_order' => $item['sort_order'] ?? 0,
                     'preparation_time' => $item['preparation_time'],
-                    'image' => $item['image'] ?? 'default/no-image.png',
+                    'image_id' => $mediaId,
                 ]
             );
         }
