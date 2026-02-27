@@ -103,6 +103,7 @@
             </div>
 
             <div class="col-md-6">
+                <!-- START Cover Image Upload -->
                 <div class="mb-3 w-100 upload-block">
                     <label class="font-weight-bold d-block mb-2">Cover Image</label>
                     <div class="d-flex align-items-center mb-2">
@@ -119,17 +120,18 @@
                             <img src="{{ getMediaImageUrl($movie->imageMedia->storage_path, 200, 200) }}" alt="Current cover"
                                 class="img-thumbnail shadow-sm" style="object-fit: cover;">
                         </div>
-                    @else
-                        <div class="mt-2 d-none" id="imagePreviewWrap">
-                            <small class="text-muted d-block">Preview:</small>
-                            <img id="imagePreview" class="img-thumbnail shadow-sm" style="max-height: 200px; object-fit: cover;" alt="Preview">
-                        </div>
                     @endif
+                    <div class="mt-2 d-none" id="imagePreviewWrap">
+                        <small class="text-muted d-block">Preview:</small>
+                        <img id="imagePreview" class="img-thumbnail shadow-sm" style="max-height: 200px; object-fit: cover;" alt="Preview">
+                    </div>
                     @error('image')
                         <div class="text-danger">{{ $message }}</div>
                     @enderror
                 </div>
+                <!-- END Cover Image Upload -->
 
+                <!-- START Video Upload -->
                 <div class="mb-3 w-100 upload-block">
                     <label class="font-weight-bold d-block mb-2">File Video</label>
                     <div class="d-flex align-items-center mb-2">
@@ -165,7 +167,7 @@
     </div>
 </form>
 
-{{-- Custom Modal Add Category (non-Bootstrap) --}}
+{{-- START Custom Modal Add Category (non-Bootstrap) --}}
 <div id="modalAddCategory" class="custom-modal" aria-hidden="true">
     <div class="custom-modal__backdrop" data-modal-close></div>
     <div class="custom-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="modalAddCategoryLabel">
@@ -193,8 +195,9 @@
         </form>
     </div>
 </div>
+{{-- END Custom Modal Add Category (non-Bootstrap) --}
 
-{{-- Custom Modal Media Picker --}}
+{{-- START Custom Modal Media Picker --}}
 <div id="modalMediaPicker" class="custom-modal" aria-hidden="true" data-type="">
     <div class="custom-modal__backdrop" data-modal-close></div>
     <div class="custom-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="modalMediaPickerTitle">
@@ -225,7 +228,7 @@
         </div>
     </div>
 </div>
-
+{{-- END Custom Modal Media Picker --}}
 @section('css')
     @parent
     <style>
@@ -344,84 +347,86 @@
 @section('js')
     @parent
     <script src="{{ asset('js/resumable.js') }}"></script>
+
+    {{-- START Base Form & Category Modal Scripts --}}
     <script>
-        function initMovieForm() {
-            ['#category_ids', '#is_active'].forEach(selector => {
-                const el = $(selector);
-                if (el.hasClass('select2-hidden-accessible')) {
-                    el.select2('destroy');
-                }
-                el.select2({
-                    theme: 'bootstrap4',
-                    width: '100%',
-                    placeholder: 'Pilih opsi'
-                });
-            });
-
-            // custom modal helpers
-            const modal = $('#modalAddCategory');
-            const openModal = () => {
-                modal.addClass('is-open').attr('aria-hidden', 'false');
-                $('body').addClass('custom-modal-open');
-                $('#newCategoryName').val('').focus();
-                $('#newCategoryDescription').val('');
-            };
-            const closeModal = () => {
-                modal.removeClass('is-open').attr('aria-hidden', 'true');
-                $('body').removeClass('custom-modal-open');
-            };
-
-            $('#btnAddCategory').off('click').on('click', function() {
-                openModal();
-            });
-            modal.find('[data-modal-close]').off('click').on('click', closeModal);
-            $(document).off('keydown.customModal').on('keydown.customModal', function(e) {
-                if (e.key === 'Escape' && modal.hasClass('is-open')) closeModal();
-            });
-            modal.find('.custom-modal__backdrop').off('click').on('click', closeModal);
-
-            // handle add category submit
-            $('#formAddCategory').off('submit').on('submit', function(e) {
-                e.preventDefault();
-                const btn = $('#saveCategoryBtn');
-                btn.prop('disabled', true).text('Saving...');
-                if (typeof loadingSwal === 'function') loadingSwal();
-
-                $.ajax({
-                    url: "{{ route('movie-categories.store') }}",
-                    method: 'POST',
-                    data: $(this).serialize(),
-                    success: function(res) {
-                        if (res.status) {
-                            const opt = new Option(res.data.name, res.data.id, true, true);
-                            $('#category_ids').append(opt).trigger('change');
-                            closeModal();
-                        }
-                    },
-                    error: function(xhr) {
-                        swal.close();
-                        const resp = xhr.responseJSON || {};
-                        let msg = resp.message || 'Error adding category. Please try again.';
-                        if (resp.errors) {
-                            const firstErr = Object.values(resp.errors)[0];
-                            if (Array.isArray(firstErr)) {
-                                msg = firstErr[0];
-                            }
-                        }
-                        swal({
-                            icon: 'error',
-                            title: 'Error',
-                            text: msg,
-                        });
-                    },
-                    complete: function() {
-                        btn.prop('disabled', false).text('Save');
-                        swal.close();
+        (function movieFormBase() {
+            function initSelects() {
+                ['#category_ids', '#is_active'].forEach(selector => {
+                    const el = $(selector);
+                    if (el.hasClass('select2-hidden-accessible')) {
+                        el.select2('destroy');
                     }
+                    el.select2({ theme: 'bootstrap4', width: '100%', placeholder: 'Pilih opsi' });
                 });
-            });
+            }
 
-            // auto-set duration from selected video (client-side) to avoid ffprobe dependency
+            function initCategoryModal() {
+                const modal = $('#modalAddCategory');
+                const openModal = () => {
+                    modal.addClass('is-open').attr('aria-hidden', 'false');
+                    $('body').addClass('custom-modal-open');
+                    $('#newCategoryName').val('').focus();
+                    $('#newCategoryDescription').val('');
+                };
+                const closeModal = () => {
+                    modal.removeClass('is-open').attr('aria-hidden', 'true');
+                    $('body').removeClass('custom-modal-open');
+                };
+
+                $('#btnAddCategory').off('click').on('click', openModal);
+                modal.find('[data-modal-close]').off('click').on('click', closeModal);
+                $(document).off('keydown.customModal').on('keydown.customModal', function(e) {
+                    if (e.key === 'Escape' && modal.hasClass('is-open')) closeModal();
+                });
+                modal.find('.custom-modal__backdrop').off('click').on('click', closeModal);
+
+                $('#formAddCategory').off('submit').on('submit', function(e) {
+                    e.preventDefault();
+                    const btn = $('#saveCategoryBtn');
+                    btn.prop('disabled', true).text('Saving...');
+                    if (typeof loadingSwal === 'function') loadingSwal();
+
+                    $.ajax({
+                        url: "{{ route('movie-categories.store') }}",
+                        method: 'POST',
+                        data: $(this).serialize(),
+                        success: function(res) {
+                            if (res.status) {
+                                const opt = new Option(res.data.name, res.data.id, true, true);
+                                $('#category_ids').append(opt).trigger('change');
+                                closeModal();
+                            }
+                        },
+                        error: function(xhr) {
+                            swal.close();
+                            const resp = xhr.responseJSON || {};
+                            let msg = resp.message || 'Error adding category. Please try again.';
+                            if (resp.errors) {
+                                const firstErr = Object.values(resp.errors)[0];
+                                if (Array.isArray(firstErr)) msg = firstErr[0];
+                            }
+                            swal({ icon: 'error', title: 'Error', text: msg });
+                        },
+                        complete: function() {
+                            btn.prop('disabled', false).text('Save');
+                            swal.close();
+                        }
+                    });
+                });
+            }
+
+            $(function() {
+                initSelects();
+                initCategoryModal();
+            });
+        })();
+    </script>
+    {{-- END Base Form & Category Modal Scripts --}}
+
+    {{-- START Media Picker & Upload Scripts --}}
+    <script>
+        (function movieMediaPicker() {
             const videoInput = document.getElementById('video');
             const durationInput = document.getElementById('duration');
             const hiddenUploaded = document.getElementById('uploaded_video_filename');
@@ -447,13 +452,6 @@
             let pickerResumable = null;
             let pickerNext = null;
             let pickerBusy = false;
-            function maybeFillList() {
-                const el = pickerList[0];
-                if (!el || !pickerNext || pickerBusy) return;
-                if (el.scrollHeight <= el.clientHeight + 10) {
-                    loadPickerList(pickerType, pickerNext, false);
-                }
-            }
 
             function setDurationFromFile(file) {
                 if (!file || !durationInput) return;
@@ -477,38 +475,30 @@
                 });
             }
 
-            // Chunk upload with Resumable.js
             if (videoInput && window.Resumable) {
                 const r = new Resumable({
-                    target: "{{ route('media.uploadChunk', [], false) }}", // relative to keep same origin/cookie
-                    chunkSize: 5 * 1024 * 1024, // 5MB
+                    target: "{{ route('media.uploadChunk', [], false) }}",
+                    chunkSize: 5 * 1024 * 1024,
                     simultaneousUploads: 3,
-                    testChunks: false, // skip preflight GET to avoid 404 noise
+                    testChunks: false,
                     throttleProgressCallbacks: 1,
                     withCredentials: true,
-                    query: function(file) {
-                        return {
-                            _token: "{{ csrf_token() }}",
-                            duration: (file && typeof file.durationSeconds !== 'undefined') ? file.durationSeconds : ''
-                        };
-                    },
-                    headers: {
-                        'X-CSRF-TOKEN': "{{ csrf_token() }}"
-                    }
+                    query: file => ({
+                        _token: "{{ csrf_token() }}",
+                        duration: file && typeof file.durationSeconds !== 'undefined' ? file.durationSeconds : ''
+                    }),
+                    headers: { 'X-CSRF-TOKEN': "{{ csrf_token() }}" }
                 });
 
-                if (!r.support) {
-                    console.warn('Resumable.js not supported in this browser.');
-                } else {
+                if (r.support) {
                     r.assignBrowse(videoInput);
 
                     r.on('fileAdded', function(file) {
-                        if (hiddenUploaded) hiddenUploaded.value = '';
-                        if (progressWrap) progressWrap.classList.remove('d-none');
-                        if (saveBtn) saveBtn.disabled = true;
-                        // compute duration before upload so it can be sent with chunks
+                        hiddenUploaded && (hiddenUploaded.value = '');
+                        progressWrap && progressWrap.classList.remove('d-none');
+                        saveBtn && (saveBtn.disabled = true);
                         setDurationFromFile(file.file);
-                        const probe = new Promise((resolve) => {
+                        const probe = new Promise(resolve => {
                             const el = document.createElement('video');
                             el.preload = 'metadata';
                             const url = URL.createObjectURL(file.file);
@@ -537,25 +527,22 @@
                     r.on('fileSuccess', function(file, message) {
                         try {
                             const res = JSON.parse(message);
-                            if (hiddenUploaded) hiddenUploaded.value = res.filename || '';
-                            if (hiddenVideoMediaId) hiddenVideoMediaId.value = res.media_id || '';
-                            // apply duration from resumable metadata if available
+                            hiddenUploaded && (hiddenUploaded.value = res.filename || '');
+                            hiddenVideoMediaId && (hiddenVideoMediaId.value = res.media_id || '');
                             if (file.file && file.file.duration && isFinite(file.file.duration)) {
-                                const secs = Math.round(file.file.duration);
-                                durationInput.value = secs;
+                                durationInput.value = Math.round(file.file.duration);
                             }
-                            // stash relative path if needed later (not stored in form)
                             if (progressBar) {
                                 progressBar.style.width = '100%';
                                 progressBar.textContent = '100%';
                             }
                             if (videoInput) {
-                                videoInput.value = ''; // jangan upload ulang via form
+                                videoInput.value = '';
                                 videoInput.removeAttribute('required');
                             }
-                            if (saveBtn) saveBtn.disabled = false;
+                            saveBtn && (saveBtn.disabled = false);
                             const help = document.getElementById('videoHelp');
-                            if (help) help.textContent = 'Video terunggah via chunk. Lanjutkan simpan form.';
+                            help && (help.textContent = 'Video terunggah via chunk. Lanjutkan simpan form.');
                         } catch (e) {
                             console.error('Invalid response', e);
                             alert('Upload selesai tapi response server tidak valid.');
@@ -565,12 +552,13 @@
                     r.on('fileError', function(file, message) {
                         console.error('Upload error', message);
                         alert('Gagal upload video: ' + message);
-                        if (saveBtn) saveBtn.disabled = false;
+                        saveBtn && (saveBtn.disabled = false);
                     });
+                } else {
+                    console.warn('Resumable.js not supported in this browser.');
                 }
             }
 
-            // Prevent submit if duration still empty
             if (formEl) {
                 formEl.addEventListener('submit', function(e) {
                     if (durationInput && (!durationInput.value || durationInput.value === '')) {
@@ -580,27 +568,13 @@
                 });
             }
 
-            // --- Media picker helpers ---
-            function openPicker(type) {
-                pickerType = type;
-                $('#modalMediaPickerTitle').text('Pilih ' + type.charAt(0).toUpperCase() + type.slice(1));
-                modalPicker.attr('data-type', type).addClass('is-open').attr('aria-hidden', 'false');
-                $('body').addClass('custom-modal-open');
-                pickerInput.value = '';
-                pickerProgress.addClass('d-none');
-                pickerProgressBar.css('width', '0%').text('0%');
-                loadPickerList(type, null, true);
+            function maybeFillList() {
+                const el = pickerList[0];
+                if (!el || !pickerNext || pickerBusy) return;
+                if (el.scrollHeight <= el.clientHeight + 10) {
+                    loadPickerList(pickerType, pickerNext, false);
+                }
             }
-            function closePicker() {
-                modalPicker.removeClass('is-open').attr('aria-hidden', 'true');
-                $('body').removeClass('custom-modal-open');
-            }
-            modalPicker.find('[data-modal-close]').on('click', closePicker);
-            modalPicker.find('.custom-modal__backdrop').on('click', closePicker);
-            $('#btnRefreshMedia').on('click', function(e) {
-                e.preventDefault();
-                loadPickerList(pickerType);
-            });
 
             function renderItems(items, reset = false) {
                 if (reset) pickerList.empty();
@@ -638,7 +612,6 @@
                     if (res.status) {
                         renderItems(res.items || [], reset);
                         pickerNext = res.next_url || null;
-                        // if konten masih pendek, auto load next sampai penuh atau habis
                         setTimeout(maybeFillList, 0);
                     } else {
                         pickerEmpty.removeClass('d-none');
@@ -650,6 +623,29 @@
                     pickerBusy = false;
                 });
             }
+
+            function openPicker(type) {
+                pickerType = type;
+                $('#modalMediaPickerTitle').text('Pilih ' + type.charAt(0).toUpperCase() + type.slice(1));
+                modalPicker.attr('data-type', type).addClass('is-open').attr('aria-hidden', 'false');
+                $('body').addClass('custom-modal-open');
+                pickerInput.value = '';
+                pickerProgress.addClass('d-none');
+                pickerProgressBar.css('width', '0%').text('0%');
+                loadPickerList(type, null, true);
+            }
+
+            function closePicker() {
+                modalPicker.removeClass('is-open').attr('aria-hidden', 'true');
+                $('body').removeClass('custom-modal-open');
+            }
+
+            modalPicker.find('[data-modal-close]').on('click', closePicker);
+            modalPicker.find('.custom-modal__backdrop').on('click', closePicker);
+            $('#btnRefreshMedia').on('click', function(e) {
+                e.preventDefault();
+                loadPickerList(pickerType);
+            });
 
             pickerList.on('scroll', function() {
                 const el = this;
@@ -665,8 +661,8 @@
                 const type = $(this).data('type');
                 const thumb = $(this).data('thumb') || '';
                 if (type === 'image') {
-                    if (imageMediaId) imageMediaId.value = id;
-                    if (imageLabel) imageLabel.textContent = name;
+                    imageMediaId && (imageMediaId.value = id);
+                    imageLabel && (imageLabel.textContent = name);
                     const wrap = document.getElementById('imagePreviewWrap');
                     const img = document.getElementById('imagePreview');
                     if (img && wrap && thumb) {
@@ -674,77 +670,81 @@
                         wrap.classList.remove('d-none');
                     }
                     const currentCover = document.getElementById('currentCoverPreview');
-                    if (currentCover) currentCover.classList.add('d-none');
+                    currentCover && currentCover.classList.add('d-none');
                 } else if (type === 'video') {
-                    if (hiddenVideoMediaId) hiddenVideoMediaId.value = id;
-                    if (videoLabel) videoLabel.textContent = name;
-                    // mark as uploaded so server skips file field
-                    if (hiddenUploaded) hiddenUploaded.value = ''; // use media_id
+                    hiddenVideoMediaId && (hiddenVideoMediaId.value = id);
+                    videoLabel && (videoLabel.textContent = name);
+                    hiddenUploaded && (hiddenUploaded.value = '');
                     durationInput && (durationInput.value = $(this).data('duration') || durationInput.value);
                 }
                 closePicker();
             });
 
-            // upload baru dari modal
             pickerInput.addEventListener('change', function() {
                 const file = this.files && this.files[0];
                 if (!file) return;
+
+                const getVideoDuration = f => new Promise(resolve => {
+                    const url = URL.createObjectURL(f);
+                    const el = document.createElement('video');
+                    el.preload = 'metadata';
+                    el.src = url;
+                    el.onloadedmetadata = () => { resolve(isFinite(el.duration) ? Math.round(el.duration) : 0); URL.revokeObjectURL(url); };
+                    el.onerror = () => { resolve(0); URL.revokeObjectURL(url); };
+                });
+
                 if (pickerType === 'video') {
-                    if (!window.Resumable) {
-                        alert('Resumable.js tidak tersedia');
-                        return;
-                    }
-                    if (pickerResumable) pickerResumable.cancel();
-                    pickerResumable = new Resumable({
-                        target: "{{ route('media.uploadChunk', [], false) }}",
-                        chunkSize: 5 * 1024 * 1024,
-                        simultaneousUploads: 3,
-                        testChunks: false,
-                        throttleProgressCallbacks: 1,
-                        withCredentials: true,
-                        query: function(f) {
-                            return {
-                                _token: "{{ csrf_token() }}",
-                                duration: (f && typeof f.durationSeconds !== 'undefined') ? f.durationSeconds : '',
-                                name: ((uploadNameInput ? uploadNameInput.value : '') || (f && f.file ? f.file.name : '') || '').trim(),
-                                filename: (f && f.file ? f.file.name : '')
-                            };
-                        },
-                        headers: { 'X-CSRF-TOKEN': "{{ csrf_token() }}" }
-                    });
-                    pickerResumable.assignBrowse(pickerInput);
-                    pickerResumable.addFile(file);
-                    pickerResumable.on('fileProgress', function(f) {
-                        pickerProgress.removeClass('d-none');
-                        const pct = Math.floor(f.progress() * 100);
-                        pickerProgressBar.css('width', pct + '%').text(pct + '%');
-                    });
-                    pickerResumable.on('fileSuccess', function(f, message) {
-                        try {
-                            const res = JSON.parse(message);
-                            if (res.media) {
-                                hiddenVideoMediaId.value = res.media.id;
-                                videoLabel.textContent = res.media.name || res.media.original_filename;
-                                durationInput.value = res.media.duration || durationInput.value;
+                    pickerProgress.removeClass('d-none');
+                    pickerProgressBar.css('width', '5%').text('5%');
+
+                    getVideoDuration(file).then(durationVal => {
+                        const formData = new FormData();
+                        formData.append('_token', "{{ csrf_token() }}");
+                        formData.append('file', file);
+                        formData.append('type', 'video');
+                        formData.append('name', (uploadNameInput ? uploadNameInput.value : '') || file.name);
+                        formData.append('duration', durationVal || '');
+
+                        $.ajax({
+                            url: "{{ route('media.store') }}",
+                            method: 'POST',
+                            data: formData,
+                            processData: false,
+                            contentType: false,
+                            xhr: function() {
+                                const xhr = $.ajaxSettings.xhr();
+                                if (xhr.upload) {
+                                    xhr.upload.addEventListener('progress', function(ev) {
+                                        if (ev.lengthComputable) {
+                                            const pct = Math.floor((ev.loaded / ev.total) * 100);
+                                            pickerProgressBar.css('width', pct + '%').text(pct + '%');
+                                        }
+                                    });
+                                }
+                                return xhr;
                             }
-                        } catch (e) {
-                            console.error(e);
-                            alert('Response upload tidak valid');
-                        }
-                        pickerProgress.addClass('d-none');
-                        pickerProgressBar.css('width', '0%').text('0%');
-                        closePicker();
+                        }).done(function(res) {
+                            if (res.status && res.media) {
+                                const m = res.media;
+                                hiddenVideoMediaId && (hiddenVideoMediaId.value = m.id);
+                                videoLabel && (videoLabel.textContent = m.name || m.original_filename);
+                                durationInput && (durationInput.value = m.duration || durationInput.value);
+                                closePicker();
+                            } else {
+                                alert('Upload gagal.');
+                            }
+                        }).fail(function() {
+                            alert('Upload gagal.');
+                        }).always(function() {
+                            pickerProgress.addClass('d-none');
+                            pickerProgressBar.css('width', '0%').text('0%');
+                            pickerInput.value = '';
+                        });
                     });
-                    pickerResumable.on('fileError', function(f, msg) {
-                        alert('Gagal upload video: ' + msg);
-                        pickerProgress.addClass('d-none');
-                        pickerProgressBar.css('width', '0%').text('0%');
-                    });
-                    pickerResumable.upload();
+
                     return;
                 }
 
-                // image via media.store
                 const formData = new FormData();
                 formData.append('_token', "{{ csrf_token() }}");
                 formData.append('file', file);
@@ -774,8 +774,8 @@
                     if (res.status && res.media) {
                         const m = res.media;
                         if (pickerType === 'image') {
-                            imageMediaId.value = m.id;
-                            imageLabel.textContent = m.name || m.original_filename;
+                            imageMediaId && (imageMediaId.value = m.id);
+                            imageLabel && (imageLabel.textContent = m.name || m.original_filename);
                             if (m.thumb_url) {
                                 const wrap = document.getElementById('imagePreviewWrap');
                                 const img = document.getElementById('imagePreview');
@@ -785,7 +785,7 @@
                                 }
                             }
                             const currentCover = document.getElementById('currentCoverPreview');
-                            if (currentCover) currentCover.classList.add('d-none');
+                            currentCover && currentCover.classList.add('d-none');
                         }
                         closePicker();
                     } else {
@@ -802,33 +802,27 @@
 
             btnPickImage && btnPickImage.addEventListener('click', () => openPicker('image'));
             btnPickVideo && btnPickVideo.addEventListener('click', () => openPicker('video'));
-        }
 
-        (function waitForjQuery() {
-            if (window.jQuery) {
-                $(initMovieForm);
-            } else {
-                setTimeout(waitForjQuery, 50);
+            const imageInput = document.getElementById('image');
+            const imagePreviewWrap = document.getElementById('imagePreviewWrap');
+            const imagePreview = document.getElementById('imagePreview');
+            if (imageInput && imagePreviewWrap && imagePreview) {
+                imageInput.addEventListener('change', function() {
+                    const file = this.files && this.files[0];
+                    if (!file) {
+                        imagePreviewWrap.classList.add('d-none');
+                        imagePreview.src = '';
+                        return;
+                    }
+                    const url = URL.createObjectURL(file);
+                    imagePreview.src = url;
+                    imagePreviewWrap.classList.remove('d-none');
+                    imagePreview.onload = () => URL.revokeObjectURL(url);
+                });
             }
-        })();
 
-        // image preview for cover input
-        const imageInput = document.getElementById('image');
-        const imagePreviewWrap = document.getElementById('imagePreviewWrap');
-        const imagePreview = document.getElementById('imagePreview');
-        if (imageInput && imagePreviewWrap && imagePreview) {
-            imageInput.addEventListener('change', function() {
-                const file = this.files && this.files[0];
-                if (!file) {
-                    imagePreviewWrap.classList.add('d-none');
-                    imagePreview.src = '';
-                    return;
-                }
-                const url = URL.createObjectURL(file);
-                imagePreview.src = url;
-                imagePreviewWrap.classList.remove('d-none');
-                imagePreview.onload = () => URL.revokeObjectURL(url);
-            });
-        }
+            $(maybeFillList);
+        })();
     </script>
+    {{-- END Media Picker & Upload Scripts --}}
 @endsection
