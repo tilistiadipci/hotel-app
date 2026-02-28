@@ -26,7 +26,7 @@
 
                 <div class="media-hero">
                     <div class="media-list" id="mediaList">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
+                        <div class="media-list-header d-flex justify-content-between align-items-center mb-2">
                             <div class="text-muted small" id="mediaCount"></div>
                             <div class="d-flex align-items-center">
                                 <span class="badge badge-light mr-2" id="mediaSelectedBadge">0 selected</span>
@@ -122,6 +122,11 @@
                 loading: false
             },
         };
+        const totals = {
+            image: @json($imageTotal),
+            video: @json($videoTotal),
+            audio: @json($audioTotal),
+        };
         const selected = new Set();
         let currentType = 'image';
         let pendingFiles = [];
@@ -188,6 +193,7 @@
                             const res = JSON.parse(message);
                             if (res.media) {
                                 datasets['video'].items.unshift(res.media);
+                                totals['video'] = (totals['video'] || 0) + 1;
                             }
                         } catch (e) {
                             console.error('Invalid response', e);
@@ -300,7 +306,8 @@
             const items = bucket.items || [];
             const wrap = $('#mediaItems');
             wrap.empty();
-            $('#mediaCount').text(items.length + ' items total');
+            const totalCount = totals[type] ?? items.length;
+            $('#mediaCount').text(totalCount + ' items total');
             items.forEach(item => {
                 const thumb = item.type === 'image' ? (item.thumb_url || '') : '';
                 const icon = item.type === 'video' ? 'fa-film' : 'fa-music';
@@ -506,6 +513,7 @@
                             const res = JSON.parse(message);
                             if (res.media) {
                                 datasets['video'].items.unshift(res.media);
+                                totals['video'] = (totals['video'] || 0) + 1;
                             }
                         } catch (e) {
                             console.error('Invalid response', e);
@@ -607,6 +615,7 @@
                                 if (res.status && res.media) {
                                     const t = res.media.type;
                                     datasets[t].items.unshift(res.media);
+                                    totals[t] = (totals[t] || 0) + 1;
                                 }
                             },
                             error: function() {
@@ -665,8 +674,14 @@
                         }).done(function() {
                             // remove from datasets
                             for (const key of Object.keys(datasets)) {
+                                const before = (datasets[key].items || []).length;
                                 datasets[key].items = (datasets[key].items || []).filter(
                                     i => !selected.has(i.uuid));
+                                const after = datasets[key].items.length;
+                                if (totals[key] !== undefined) {
+                                    const diff = before - after;
+                                    if (diff > 0) totals[key] = Math.max(0, totals[key] - diff);
+                                }
                             }
                             selected.clear();
                             renderList($('#mediaTabs .nav-link.active').data('media-tab'));

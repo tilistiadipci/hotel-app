@@ -11,9 +11,18 @@
         border: 1px solid #e5e7eb;
         border-radius: 10px;
         padding: 16px;
+        padding-top: 0px;
         min-height: 65vh;
         max-height: 80vh;
         overflow-y: auto;
+    }
+
+    .media-list-header {
+        position: sticky;
+        top: 0;
+        z-index: 3;
+        background: #f8fafc;
+        padding: 10px 0px;
     }
 
     .media-item {

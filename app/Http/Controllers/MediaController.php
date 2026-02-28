@@ -30,6 +30,10 @@ class MediaController extends Controller
         $videosPage = $this->mediaRepository->query()->where('type', 'video')->latest()->paginate($perPage);
         $audiosPage = $this->mediaRepository->query()->where('type', 'audio')->latest()->paginate($perPage);
 
+        $imageTotal = $imagesPage->total();
+        $videoTotal = $videosPage->total();
+        $audioTotal = $audiosPage->total();
+
         $images = collect($imagesPage->items())->map(fn ($m) => $this->transformMedia($m));
         $videos = collect($videosPage->items())->map(fn ($m) => $this->transformMedia($m));
         $audios = collect($audiosPage->items())->map(fn ($m) => $this->transformMedia($m));
@@ -45,6 +49,9 @@ class MediaController extends Controller
             'images' => $images,
             'videos' => $videos,
             'audios' => $audios,
+            'imageTotal' => $imageTotal,
+            'videoTotal' => $videoTotal,
+            'audioTotal' => $audioTotal,
             'nextImage' => $imagesPage->hasMorePages()
                 ? route('media.library', ['type' => 'image', 'per_page' => $perPage, 'page' => $imagesPage->currentPage() + 1])
                 : null,
