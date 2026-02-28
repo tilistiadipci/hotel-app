@@ -37,9 +37,6 @@ class UserController extends Controller
      */
     public function index(Request $request)
     {
-        if (auth()->user()->role->category == 'operator') {
-            abort(403);
-        }
         if ($request->ajax()) {
             return $this->userRepository->getDatatable();
         }
@@ -56,9 +53,6 @@ class UserController extends Controller
      */
     public function create()
     {
-        if (auth()->user()->role->category == 'operator') {
-            abort(403);
-        }
         return view('pages.users.create', [
             'page' => $this->page,
             'icon' => $this->icon,
@@ -156,9 +150,6 @@ class UserController extends Controller
      */
     public function edit(string $uid)
     {
-        if (auth()->user()->role->category == 'operator') {
-            abort(403);
-        }
         // check if admin or not
         if ($this->userRepository->checkUserNotAdmin($uid)) {
             return view('pages.users.edit', [

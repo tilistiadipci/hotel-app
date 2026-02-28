@@ -55,11 +55,11 @@
                                 </div>
                             </div>
                             <div class="modal-footer clearfix">
-                                <div class="float-left">
+                                {{-- <div class="float-left">
                                     <a href="{{ url('/register') }}" class="btn btn-white text-primary border btn-lg">
                                         Register Owner <i class="fa fa-building"></i>
                                     </a>
-                                </div>
+                                </div> --}}
                                 <div class="float-right">
                                     <button type="submit" class="btn btn-primary btn-lg">
                                         Login <i class="fas fa-sign-in-alt ml-1"></i>

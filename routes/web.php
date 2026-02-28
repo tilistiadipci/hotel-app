@@ -88,14 +88,16 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/change-password', [ProfileController::class, 'changePassword'])->name('change-password');
         });
 
-    // users
-    Route::resource('users', UserController::class);
-    Route::prefix('users')
-        ->name('users.')
-        ->group(function () {
-            Route::post('/bulkDelete', [UserController::class, 'bulkDelete'])->name('bulkDelete');
-            Route::get('/{id}/detail/{part}', [UserController::class, 'detail'])->name('detail');
-        });
+    // users (only admin & super admin/master)
+    Route::middleware('role.category:admin,master')->group(function () {
+        Route::resource('users', UserController::class);
+        Route::prefix('users')
+            ->name('users.')
+            ->group(function () {
+                Route::post('/bulkDelete', [UserController::class, 'bulkDelete'])->name('bulkDelete');
+                Route::get('/{id}/detail/{part}', [UserController::class, 'detail'])->name('detail');
+            });
+    });
 
     // TV Channels
     Route::resource('tv-channels', TVChannelController::class);
