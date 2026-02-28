@@ -421,7 +421,7 @@
         // change handler not needed; handled by Resumable assignBrowse above
 
         // image & audio input
-        pickerInput && pickerInput.addEventListener('change', function() {
+        pickerInput && pickerInput.addEventListener('change', async function() {
             const file = this.files && this.files[0];
             if (!file) return;
 
@@ -443,11 +443,17 @@
                 alert('Ukuran file melebihi 5MB.');
                 return;
             }
+
+            const durationVal = pickerType === 'audio' ? await getFileDuration(file) : null;
+
             const formData = new FormData();
             formData.append('_token', "{{ csrf_token() }}");
             formData.append('file', file);
             formData.append('type', pickerType);
             formData.append('name', (uploadNameInput ? uploadNameInput.value : '') || file.name);
+            if (durationVal) {
+                formData.append('duration', durationVal);
+            }
             pickerProgress.removeClass('d-none');
             pickerProgressBar.css('width', '5%').text('5%');
             $.ajax({

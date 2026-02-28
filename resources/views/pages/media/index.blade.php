@@ -315,7 +315,7 @@
                 meta.push((item.extension || '').toUpperCase());
                 if (item.size) meta.push(humanSize(item.size));
                 if (item.type === 'image' && item.width && item.height) meta.push(item.width + 'x' + item.height);
-                if (item.type === 'video' && item.duration) meta.push(item.duration + 's');
+                if ((item.type === 'video' || item.type === 'audio') && item.duration) meta.push(item.duration + 's');
 
                 wrap.append(`
                     <div class="media-item" data-uuid="${item.uuid}">
