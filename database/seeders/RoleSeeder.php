@@ -25,7 +25,7 @@ class RoleSeeder extends Seeder
             ],
             [
                 'name' => 'Operator',
-                'category' => 'admin',
+                'category' => 'operator',
                 'description' => 'Operator mengatur semua fitur aplikasi',
             ],
         ];

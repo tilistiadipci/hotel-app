@@ -14,15 +14,19 @@ class RoleRepository extends BaseRepository
 
     public function getRoles()
     {
-        $user = User::with('role')->where('id', auth()->user()->id)->first();
+        // $user = User::with('role')->where('id', auth()->user()->id)->first();
 
-        if ($user->role->category == 'master') {
-            return parent::all();
+        // if ($user->role->category == 'master') {
+        //     return parent::all();
+        // }
+
+        if (auth()->user()->role->category == 'admin') {
+            return parent::where()->whereNotIn('category', ['master', 'admin'])->get();
         }
 
-        if ($user->role->category == 'admin') {
+        // if ($user->role->category == 'admin') {
             return parent::where()->where('category', '!=', 'master')->get();
-        }
+        // }
 
         // if ($user->role->category == 'user') {
         //     return parent::where()->where('category', '!=', 'master')->where('category', '!=', 'admin')->get();

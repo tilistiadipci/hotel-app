@@ -52,7 +52,7 @@
     </div>
 
     <div class="card-footer">
-        <button type="submit" class="btn ml-2 btn-primary">
+        <button type="submit" class="btn btn-primary">
             <i class="fa fa-save"></i> Submit
         </button>
     </div>

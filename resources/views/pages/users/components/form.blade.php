@@ -146,26 +146,9 @@
                 </div>
             </div>
             <div class="col-md-6">
-                @php
-                    $avatarPath = isset($user) && $user->profile->avatar ? $user->profile->avatar : '/images/avatar.png';
-                    $avatarUrl = asset(str_replace(' ', '%20', $avatarPath));
-                @endphp
-                <div class="mb-3 w-100 text-center">
-                    <div class="avatar-preview mb-2">
-                        <img id="avatarPreview"
-                            src="{{ $avatarUrl }}"
-                            alt="Preview" class="img-fluid rounded shadow-sm"
-                            style="max-height: 220px; object-fit: cover;">
-                    </div>
-                    <small class="text-muted d-block">Preview</small>
-                </div>
-                <div class="w-100">
-                    @include('partials.forms.image', [
-                        'data' => $user ?? null,
-                        'image' => isset($user) ? $user->profile->avatar : null,
-                        'size' => 'Max 300 x 300 px',
-                    ])
-                </div>
+                @include('partials.components.media_picker_upload_image', [
+                    'data' => isset($user) ? $user->profile : null,
+                ])
             </div>
         </div>
     </div>
@@ -179,15 +162,16 @@
     </div>
 </form>
 
-<script>
-    // simple image preview for avatar input
-    window.previewImage = function(event) {
-        const files = event.target.files;
-        if (!files || !files.length) return;
-        const file = files[0];
-        const preview = document.getElementById('avatarPreview');
-        if (preview) {
-            preview.src = URL.createObjectURL(file);
-        }
-    }
-</script>
+@include('partials.components.media_picker_modal')
+
+@section('css')
+    @parent
+
+    @include('partials.components.media_picker_style')
+@endsection
+
+@section('js')
+    @parent
+
+    @include('partials.components.media_picker_script')
+@endsection

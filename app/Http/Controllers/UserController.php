@@ -4,24 +4,31 @@ namespace App\Http\Controllers;
 
 use App\Repositories\UserRepository;
 use App\Repositories\RoleRepository;
+use App\Repositories\MediaRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
 use App\Repositories\DepartementRepository;
+use App\Http\Controllers\HelperController;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
 {
     protected $userRepository;
     protected $roleRepository;
+    protected MediaRepository $mediaRepository;
     private $page;
     private $icon = 'fa fa-users';
 
     public function __construct(
         UserRepository $userRepository,
-        RoleRepository $roleRepository
+        RoleRepository $roleRepository,
+        MediaRepository $mediaRepository
     ) {
         $this->userRepository = $userRepository;
         $this->roleRepository = $roleRepository;
+        $this->mediaRepository = $mediaRepository;
         $this->page = 'users';
     }
 
@@ -30,6 +37,9 @@ class UserController extends Controller
      */
     public function index(Request $request)
     {
+        if (auth()->user()->role->category == 'operator') {
+            abort(403);
+        }
         if ($request->ajax()) {
             return $this->userRepository->getDatatable();
         }
@@ -46,6 +56,9 @@ class UserController extends Controller
      */
     public function create()
     {
+        if (auth()->user()->role->category == 'operator') {
+            abort(403);
+        }
         return view('pages.users.create', [
             'page' => $this->page,
             'icon' => $this->icon,
@@ -59,17 +72,24 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $this->validateRequest($request);
+        $createdMediaIds = [];
+        $storedPaths = [];
 
         try {
             DB::beginTransaction();
-            $this->handleUploadFile($request);
 
-            $this->userRepository->create($request->all());
+            $imageId = $this->resolveAvatar($request, null, $createdMediaIds, $storedPaths);
+            $payload = $request->all();
+            $payload['image_id'] = $imageId;
+            unset($payload['image'], $payload['image_media_id'], $payload['img']);
+
+            $this->userRepository->create($payload);
 
             DB::commit();
             return redirect()->route('users.index')->with('success', trans('common.success.create'));
         } catch (\Exception $e) {
             DB::rollback();
+            app(HelperController::class)->cleanupMedia($createdMediaIds, $storedPaths);
             $this->debugError($e);
             return redirect()->back()->with('error', $e->getMessage());
         }
@@ -95,7 +115,7 @@ class UserController extends Controller
                 'status' => true,
                 'data' => view('pages.users.info', [
                     'page' => $this->page,
-                    'user' => $user->load(['profile', 'role']),
+                    'user' => $user->load(['profile.imageMedia', 'role']),
                     'detail' => 'info',
                 ])->render(),
                 'return_type' => 'json',
@@ -108,7 +128,7 @@ class UserController extends Controller
 
         return view('pages.users.show', [
             'page' => $this->page,
-            'user' => $user->load(['profile', 'role']),
+            'user' => $user->load(['profile.imageMedia', 'role']),
             'detail' => 'info',
         ]);
     }
@@ -126,7 +146,7 @@ class UserController extends Controller
 
         return view('pages.users.show', [
             'page' => $this->page,
-            'user' => $user->load(['profile', 'role']),
+            'user' => $user->load(['profile.imageMedia', 'role']),
             'detail' => $part,
         ]);
     }
@@ -136,12 +156,15 @@ class UserController extends Controller
      */
     public function edit(string $uid)
     {
+        if (auth()->user()->role->category == 'operator') {
+            abort(403);
+        }
         // check if admin or not
         if ($this->userRepository->checkUserNotAdmin($uid)) {
             return view('pages.users.edit', [
                 'page' => $this->page,
                 'icon' => $this->icon,
-                'user' => $this->userRepository->whereWith(['profile'], ['uuid' => $uid])->first(),
+                'user' => $this->userRepository->whereWith(['profile.imageMedia'], ['uuid' => $uid])->first(),
                 'roles' => $this->roleRepository->getRoles(),
             ]);
         }
@@ -153,17 +176,31 @@ class UserController extends Controller
     public function update(Request $request, string $id)
     {
         $this->validateRequest($request, $id);
+        $createdMediaIds = [];
+        $storedPaths = [];
 
         try {
             DB::beginTransaction();
-            $this->handleUploadFile($request);
 
-            $this->userRepository->update($id, $request->all());
+            $existing = $this->userRepository->findUid($id) ?? $this->userRepository->find($id);
+            if (!$existing) {
+                throw new \Exception('User tidak ditemukan.');
+            }
+
+            $existingImageId = optional($existing->profile)->image_id;
+            $imageId = $this->resolveAvatar($request, $existingImageId, $createdMediaIds, $storedPaths);
+
+            $payload = $request->all();
+            $payload['image_id'] = $imageId;
+            $payload['existing_image_id'] = $existingImageId;
+            unset($payload['image'], $payload['image_media_id'], $payload['img']);
+
+            $this->userRepository->update($existing->id, $payload);
 
             DB::commit();
 
             // kalau update profile
-            if ($id == auth()->user()->id) {
+            if ($existing->id == auth()->user()->id) {
                 return true;
             }
 
@@ -172,7 +209,7 @@ class UserController extends Controller
             DB::rollback();
             $this->debugError($e);
 
-            if ($id == auth()->user()->id) {
+            if (($existing->id ?? null) == auth()->user()->id) {
                 return false;
             }
 
@@ -224,22 +261,29 @@ class UserController extends Controller
 
     private function validateRequest(Request $request, $id = null)
     {
+        // resolve numeric id for unique rules when uuid passed
+        $userIdForUnique = null;
+        if ($id) {
+            $userIdForUnique = \App\Models\User::where('uuid', $id)->value('id') ?? $id;
+        }
+
         // base rules
         $rules = [
             'name' => 'required|max:200',
             'username' => 'required',
             'gender' => 'required',
-            'email' => 'required|unique:users,email,' . $id,
+            'email' => 'required|unique:users,email,' . $userIdForUnique,
             'phone' => 'required|min:6|max:20',
             'role_id' => 'required',
         ];
 
         // file rule: allow empty, guard dimensions to avoid ValueError when tmp path missing
-        $rules['img'] = 'nullable|image|mimes:jpeg,png,jpg|max:512';
-        if ($request->hasFile('img')) {
-            $file = $request->file('img');
+        $rules['image'] = 'nullable|image|mimes:jpeg,png,jpg|max:512';
+        $rules['image_media_id'] = 'nullable|integer|exists:medias,id';
+        $file = $request->file('image') ?? $request->file('img');
+        if ($file) {
             if ($file->isValid() && $file->getRealPath()) {
-                $rules['img'] .= '|dimensions:min_width=10,min_height=10,max_width=300,max_height=300';
+                $rules['image'] .= '|dimensions:min_width=10,min_height=10,max_width=300,max_height=300';
             }
         }
 
@@ -258,13 +302,69 @@ class UserController extends Controller
         ];
 
         if ($id) {
-            $rules['username'] = 'required|unique:users,username,' . $id;
-            $rules['email'] = 'required|unique:users,email,' . $id;
+            $rules['username'] = 'required|unique:users,username,' . $userIdForUnique;
+            $rules['email'] = 'required|unique:users,email,' . $userIdForUnique;
 
             $messages['username.unique'] = trans('common.error.unique', ['attribute'=> 'Username']);
             $messages['email.unique'] = trans('common.error.unique', ['attribute'=> trans('common.email')]);
         }
 
         $request->validate($rules, $messages);
+    }
+
+    private function resolveAvatar(Request $request, ?int $existingImageId, array &$createdMediaIds, array &$storedPaths): ?int
+    {
+        $file = $request->file('image') ?? $request->file('img');
+        $selectedMediaId = $request->input('image_media_id');
+
+        if ($file && $file->isValid()) {
+            $stored = $this->storeImageFile($file);
+            $createdMediaIds[] = $stored['media_id'];
+            $storedPaths[] = $stored['relative_path'];
+            return $stored['media_id'];
+        }
+
+        if ($selectedMediaId) {
+            $media = $this->mediaRepository->find($selectedMediaId);
+            if (!$media || $media->type !== 'image') {
+                throw ValidationException::withMessages([
+                    'image' => 'Media gambar tidak ditemukan atau bukan gambar.',
+                ]);
+            }
+            return $media->id;
+        }
+
+        return $existingImageId;
+    }
+
+    private function storeImageFile(UploadedFile $file): array
+    {
+        if (!$file->isValid()) {
+            throw new \Exception('File gambar tidak valid.');
+        }
+
+        /** @var HelperController $helper */
+        $helper = app(HelperController::class);
+        $relativePath = $helper->uploadMediaFile($file, 'avatars', 'media');
+        if (empty($relativePath)) {
+            throw new \Exception('Gagal menentukan path penyimpanan gambar.');
+        }
+
+        $dimensions = $helper->getImageDimensionsFromPath($relativePath, $file);
+
+        $media = $this->mediaRepository->createFromUpload('image', $relativePath, [
+            'extension' => $file->getClientOriginalExtension(),
+            'mime' => $file->getMimeType(),
+            'size' => $file->getSize(),
+            'name' => pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME),
+            'original' => $file->getClientOriginalName(),
+            'width' => $dimensions['width'],
+            'height' => $dimensions['height'],
+        ]);
+
+        return [
+            'media_id' => $media->id,
+            'relative_path' => $relativePath,
+        ];
     }
 }

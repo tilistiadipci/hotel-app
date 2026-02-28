@@ -37,7 +37,15 @@
         </div>
     </div>
 
+    @include('partials.components.media_picker_modal')
+@endsection
+
+@section('css')
+    @parent
+    @include('partials.components.media_picker_style')
 @endsection
 
 @section('js')
+    @parent
+    @include('partials.components.media_picker_script')
 @endsection

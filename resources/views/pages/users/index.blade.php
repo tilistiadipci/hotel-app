@@ -125,8 +125,7 @@
                 data: 'name',
                 name: 'name',
                 render: function(data, type, row) {
-                    let url = `{{ url('users') }}/${row.uuid}`
-                    return `<a href="${url}">${row.profile.name || ''}</a>`
+                    return row.profile.name;
                 }
             },
             {

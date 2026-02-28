@@ -71,7 +71,7 @@ class UserRepository extends BaseRepository
         $query = $this->query()
             ->where('role_id', '!=', 1)
             ->where('id', '!=', auth()->user()->id)
-            ->with(['profile', 'role'])
+            ->with(['profile.imageMedia', 'role'])
             ->filter(request(['search', 'filters']));
 
         return DataTables::of($this->paginateDatatable($query))
@@ -101,7 +101,7 @@ class UserRepository extends BaseRepository
             'phone' => $data['phone'] ?? null,
             'address' => $data['address'] ?? null,
             'gender' => $data['gender'] ?? null,
-            'avatar' => $data['image'] ?? '/images/avatar.png',
+            'image_id' => $data['image_id'] ?? null,
             'user_id' => $user->id
         ]);
 
@@ -134,11 +134,11 @@ class UserRepository extends BaseRepository
             'phone' => $request['phone'],
             'address' => $request['address'],
             'gender' => $request['gender'],
-            'avatar' => $request['image'] ?? $request['old_image'],
+            'image_id' => $request['image_id'] ?? $request['existing_image_id'] ?? null,
         ]);
     }
 
-    public function bulkDeleteByUid(array $uids, $fieldName = 'avatar', $destroyImage = true)
+    public function bulkDeleteByUid(array $uids, $fieldName = 'image_id', $destroyImage = false)
     {
         if (empty($uids)) {
             return 0;
@@ -147,18 +147,6 @@ class UserRepository extends BaseRepository
         // fetch user ids for given uuids
         $users = User::whereIn('uuid', $uids)->get(['id', 'uuid']);
         $userIds = $users->pluck('id')->toArray();
-
-        // delete avatars in user_profiles if requested
-        if ($destroyImage) {
-            $profiles = UserProfile::whereIn('user_id', $userIds)
-                ->where($fieldName, '!=', '/images/avatar.png')
-                ->get([$fieldName])
-                ->toArray();
-
-            foreach ($profiles as $profile) {
-                $this->destroyImage($profile, $fieldName);
-            }
-        }
 
         // soft delete users and profiles
         User::whereIn('id', $userIds)->update([
@@ -197,7 +185,7 @@ class UserRepository extends BaseRepository
             'contact_name' => $request['contact_name'],
             'address' => $request['address'],
             'phone' => $request['phone'],
-            'avatar' => $request['image'] ?? $request['old_image'],
+            'image_id' => $request['image_id'] ?? $request['existing_image_id'] ?? null,
             'gender' => $request['gender']
         ]);
 

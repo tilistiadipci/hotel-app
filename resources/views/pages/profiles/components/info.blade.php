@@ -8,6 +8,22 @@
         <td>{{ $user->username ?? '' }}</td>
     </tr>
     <tr>
+        <td>{{ trans('common.phone') }}</td>
+        <td>{{ $user->profile->phone ?? '' }}</td>
+    </tr>
+    <tr>
+        <td>{{ trans('common.address') }}</td>
+        <td>{{ $user->profile->address ?? '' }}</td>
+    </tr>
+    <tr>
+        <td>{{ trans('common.gender') }}</td>
+        <td>{{ $user->profile->gender ?? '' }}</td>
+    </tr>
+    <tr>
+        <td>{{ trans('common.contact_name') }}</td>
+        <td>{{ $user->profile->contact_name ?? '' }}</td>
+    </tr>
+    <tr>
         <td>{{ trans('common.email') }}</td>
         <td>{{ $user->email ?? '' }}</td>
     </tr>
@@ -16,3 +32,8 @@
         <td>{{ $user->last_login_at ?? '' }}</td>
     </tr>
 </table>
+
+
+@include('partials.buttons.btn-edit', [
+    'url' => route('profile.edit'),
+])

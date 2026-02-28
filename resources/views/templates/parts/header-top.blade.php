@@ -77,7 +77,7 @@
                             <div class="btn-group">
                                 <a data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" class="p-0 btn">
                                     <img style="width: 40x; height: 40px;" class="img-fluid rounded-circle"
-                                        src="{{ auth()->user()->profile->avatar ?? '/images/avatar.png' }}" alt="">
+                                        src="{{ getMediaImageUrl(optional(auth()->user()->profile->imageMedia)->storage_path ?? 'default/no-image.png', 120, 120) }}" alt="">
                                     <i class="fa fa-angle-down ml-2 opacity-8"></i>
                                 </a>
                                 <div tabindex="-1" role="menu" aria-hidden="true"
@@ -92,7 +92,7 @@
                                                     <div class="widget-content-wrapper">
                                                         <div class="widget-content-left mr-3">
                                                             <img style="width: 40x; height: 40px;" class="img-fluid rounded-circle"
-                                                                src="{{ auth()->user()->profile->avatar ?? '/images/avatar.png' }}"
+                                                                src="{{ getMediaImageUrl(optional(auth()->user()->profile->imageMedia)->storage_path ?? 'default/no-image.png', 120, 120) }}"
                                                                 alt="">
                                                         </div>
                                                         <div class="widget-content-left">

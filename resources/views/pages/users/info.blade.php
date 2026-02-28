@@ -1,10 +1,9 @@
 @php
-    $avatarPath = $user->profile->avatar ?? '/images/avatar.png';
-    $avatarUrl = asset(str_replace(' ', '%20', $avatarPath));
+    $avatarUrl = getMediaImageUrl(optional($user->profile->imageMedia)->storage_path ?? 'default/no-image.png', 300, 300);
     $items = [
         trans('common.user.username') => $user->username,
         trans('common.email') => $user->email,
-        trans('common.user.name') => $user->profile->name ?? '-',
+        trans('common.name') => $user->profile->name ?? '-',
         trans('common.phone') => $user->profile->phone ?? '-',
         trans('common.address') => $user->profile->address ?? '-',
         trans('common.gender') => $user->profile->gender ?? '-',

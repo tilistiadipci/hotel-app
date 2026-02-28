@@ -10,12 +10,6 @@
                     'icon' => $icon,
                     'breadcrumbs' => [['href' => '#', 'label' => auth()->user()->profile->name ?? '']],
                 ])
-
-                <div class="page-title-actions">
-                    @include('partials.buttons.btn-edit', [
-                        'url' => route('profile.edit'),
-                    ])
-                </div>
             </div>
         </div>
 
@@ -29,7 +23,8 @@
                                 <a data-toggle="tab" href="#info" class="nav-link active">{{ trans('common.info') }}</a>
                             </li>
                             <li class="nav-item">
-                                <a data-toggle="tab" href="#changePassword" class="nav-link">{{ trans('common.profile.change_password') }}</a>
+                                <a data-toggle="tab" href="#changePassword"
+                                    class="nav-link">{{ trans('common.profile.change_password') }}</a>
                             </li>
                         </ul>
                         <div class="tab-content">
@@ -48,4 +43,17 @@
 @endsection
 
 @section('js')
+    <script>
+        (function initTogglePasswordOnce() {
+            if (window.__profileTogglePasswordBound) return;
+            window.__profileTogglePasswordBound = true;
+
+            $(document).on('click', '.toggle-password', function() {
+                $(this).toggleClass('fa-eye fa-eye-slash');
+                const input = $($(this).attr('toggle'));
+                if (!input.length) return;
+                input.attr('type', input.attr('type') === 'password' ? 'text' : 'password');
+            });
+        })();
+    </script>
 @endsection

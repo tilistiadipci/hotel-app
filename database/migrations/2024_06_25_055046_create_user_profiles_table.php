@@ -17,7 +17,7 @@ return new class extends Migration
             $table->string('contact_name', 200)->nullable();
             $table->string('phone', 30)->nullable();
             $table->string('address', 255)->nullable();
-            $table->string('avatar', 255)->default('/images/avatar.png');
+            $table->foreignId('image_id')->nullable()->constrained('medias')->nullOnDelete();
             $table->enum('gender', ['male', 'female'])->nullable();
             $table->uuid('user_id');
             $table->uuid('created_by')->nullable();
