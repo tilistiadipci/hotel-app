@@ -31,7 +31,7 @@ return new class extends Migration
             $table->string('slug', 160)->unique();
             $table->string('short_description', 255)->nullable();
             $table->text('description')->nullable();
-            $table->string('image', 255)->nullable();
+            $table->foreignId('image_id')->nullable()->constrained('medias')->nullOnDelete();
             $table->time('open_time')->nullable();
             $table->time('close_time')->nullable();
             $table->string('location', 150)->nullable();

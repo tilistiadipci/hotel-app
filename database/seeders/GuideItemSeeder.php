@@ -6,6 +6,7 @@ use App\Models\GuideCategory;
 use App\Models\GuideItem;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class GuideItemSeeder extends Seeder
@@ -70,9 +71,29 @@ class GuideItemSeeder extends Seeder
             ],
         ];
 
+        $now = now();
+
         foreach ($samples as $item) {
             $categoryId = $categoryIds[Str::slug($item['category'])] ?? $categoryIds->first();
             $slug = Str::slug($item['title']);
+            $storagePath = $item['image'] ?? 'default/no-image.png';
+            $ext = pathinfo($storagePath, PATHINFO_EXTENSION) ?: 'png';
+
+            $mediaId = DB::table('medias')->insertGetId([
+                'uuid' => Str::uuid()->toString(),
+                'name' => $item['title'] . ' Image',
+                'original_filename' => basename($storagePath),
+                'type' => 'image',
+                'extension' => strtolower($ext),
+                'storage_path' => $storagePath,
+                'mime_type' => 'image/' . strtolower($ext),
+                'size' => null,
+                'duration' => null,
+                'width' => null,
+                'height' => null,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ]);
 
             $payload = [
                 'category_id' => $categoryId,
@@ -80,7 +101,7 @@ class GuideItemSeeder extends Seeder
                 'slug' => $slug,
                 'short_description' => $item['short_description'],
                 'description' => $item['description'],
-                'image' => $item['image'],
+                'image_id' => $mediaId,
                 'open_time' => $item['open_time'],
                 'close_time' => $item['close_time'],
                 'location' => $item['location'],

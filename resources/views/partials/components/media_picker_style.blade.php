@@ -74,9 +74,12 @@
         display: grid;
         grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
         gap: 12px;
+        align-content: start;
+        align-items: start;
         max-height: 300px;
         min-height: 300px;
         overflow-y: auto;
+        grid-auto-rows: minmax(0, auto);
     }
 
     .media-picker-item {

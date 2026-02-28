@@ -125,7 +125,7 @@
             </div>
 
             <div class="col-md-6">
-                 @include('partials.components.media_picker_upload_image', [
+                @include('partials.components.media_picker_upload_image', [
                     'data' => $place ?? null,
                 ])
             </div>
@@ -170,7 +170,6 @@
 </div>
 
 @include('partials.components.media_picker_modal')
-
 
 @section('css')
     @parent

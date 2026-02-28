@@ -2,56 +2,46 @@
     $item = $item ?? null;
 @endphp
 
+@php
+    $imageUrl = getMediaImageUrl($item->imageMedia->storage_path ?? 'default/no-image.png', 500, 500);
+    $fields = [
+        trans('common.title') ?? 'Title' => $item->title ?? '-',
+        trans('common.category') => optional($item->category)->name ?? '-',
+        trans('common.location') ?? 'Location' => $item->location ?? '-',
+        trans('common.contact') ?? 'Contact' => $item->contact_extension ?? '-',
+        trans('common.open') ?? 'Open' => $item->open_time ?? '-',
+        trans('common.close') ?? 'Close' => $item->close_time ?? '-',
+        trans('common.sort_order') ?? 'Sort Order' => $item->sort_order ?? '-',
+        trans('common.status') => ($item->is_active ?? false) ? trans('common.active') : trans('common.inactive'),
+    ];
+@endphp
+
 <div class="row">
-    <div class="col-md-6">
-        <table class="table table-sm table-borderless">
-            <tr>
-                <th style="width: 140px;">{{ trans('common.title') ?? 'Title' }}</th>
-                <td>{{ $item->title ?? '-' }}</td>
-            </tr>
-            <tr>
-                <th>{{ trans('common.category') }}</th>
-                <td>{{ optional($item->category)->name ?? '-' }}</td>
-            </tr>
-            <tr>
-                <th>{{ trans('common.location') ?? 'Location' }}</th>
-                <td>{{ $item->location ?? '-' }}</td>
-            </tr>
-            <tr>
-                <th>{{ trans('common.contact') ?? 'Contact' }}</th>
-                <td>{{ $item->contact_extension ?? '-' }}</td>
-            </tr>
-            <tr>
-                <th>{{ trans('common.open') ?? 'Open' }}</th>
-                <td>{{ $item->open_time ?? '-' }}</td>
-            </tr>
-            <tr>
-                <th>{{ trans('common.close') ?? 'Close' }}</th>
-                <td>{{ $item->close_time ?? '-' }}</td>
-            </tr>
-            <tr>
-                <th>{{ trans('common.status') }}</th>
-                <td>
-                    @if (($item->is_active ?? false) == 1)
-                        <span class="badge badge-success">{{ trans('common.active') }}</span>
-                    @else
-                        <span class="badge badge-secondary">{{ trans('common.inactive') }}</span>
-                    @endif
-                </td>
-            </tr>
-        </table>
+    <div class="col-md-7">
+        <ul class="list-group list-group-flush shadow-sm rounded">
+            @foreach ($fields as $label => $value)
+                <li class="list-group-item d-flex justify-content-between align-items-center">
+                    <span class="text-muted">{{ $label }}</span>
+                    <span class="font-weight-bold">{{ $value }}</span>
+                </li>
+            @endforeach
+            <li class="list-group-item">
+                <strong class="d-block mb-1">{{ trans('common.short_description') ?? 'Short Description' }}</strong>
+                <div class="text-muted">{{ $item->short_description ?? '-' }}</div>
+            </li>
+            <li class="list-group-item">
+                <strong class="d-block mb-1">{{ trans('common.description') ?? 'Description' }}</strong>
+                <div class="text-muted">{!! nl2br(e($item->description ?? '-')) !!}</div>
+            </li>
+        </ul>
     </div>
-    <div class="col-md-6">
-        <div class="mb-2">
-            <strong>{{ trans('common.description') ?? 'Description' }}</strong>
-            <p class="mb-1">{{ $item->short_description ?? '-' }}</p>
-            <div class="text-muted">{!! nl2br(e($item->description ?? '')) !!}</div>
-        </div>
-        <div class="text-center">
-            @php
-                $thumbPath = $item->image ?? '/images/avatar.png';
-            @endphp
-            <img src="{{ asset($thumbPath) }}" alt="Image" class="img-fluid rounded shadow-sm" style="max-height: 220px; object-fit: cover;">
+    <div class="col-md-5 text-center">
+        <div class="card shadow-sm">
+            <div class="card-body">
+                <img src="{{ $imageUrl }}" alt="{{ $item->title ?? 'Image' }}" class="img-fluid rounded mb-2"
+                    style="max-height: 240px; object-fit: cover;">
+                <div class="small text-muted">{{ trans('common.image') }}</div>
+            </div>
         </div>
     </div>
 </div>

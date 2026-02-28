@@ -1,5 +1,25 @@
 @php
     $item = $item ?? null;
+    $openTimeVal = old('open_time', $item->open_time ?? null);
+    $closeTimeVal = old('close_time', $item->close_time ?? null);
+
+    // Normalize possible "H:i:s" stored values into "H:i" for the time input
+    $formatTime = function ($time) {
+        if (!$time) {
+            return null;
+        }
+        // If already Carbon, format; if string with seconds, trim.
+        if ($time instanceof \Illuminate\Support\Carbon) {
+            return $time->format('H:i');
+        }
+        if (is_string($time) && strlen($time) >= 5) {
+            return substr($time, 0, 5);
+        }
+        return $time;
+    };
+
+    $openTimeVal = $formatTime($openTimeVal);
+    $closeTimeVal = $formatTime($closeTimeVal);
 @endphp
 
 <form action="{{ $item ? route('guides.update', $item->uuid ?? $item->id) : route('guides.store') }}" method="POST" enctype="multipart/form-data">
@@ -114,7 +134,7 @@
                     <div class="col-sm-8">
                         @include('partials.forms.input', [
                             'elementId' => 'open_time',
-                            'value' => $item->open_time ?? old('open_time'),
+                            'value' => $openTimeVal,
                             'type' => 'time',
                         ])
                     </div>
@@ -125,28 +145,16 @@
                     <div class="col-sm-8">
                         @include('partials.forms.input', [
                             'elementId' => 'close_time',
-                            'value' => $item->close_time ?? old('close_time'),
+                            'value' => $closeTimeVal,
                             'type' => 'time',
                         ])
                     </div>
                 </div>
 
-                <div class="mb-3 w-100 upload-block">
-                    <label class="font-weight-bold d-block mb-2">{{ trans('common.image') ?? 'Image' }}</label>
-                    @if ($item && $item->image)
-                        <input type="hidden" name="old_image" value="{{ $item->image }}">
-                        <div class="mb-2">
-                            <img src="{{ asset($item->image) }}" alt="Current Image" class="img-fluid rounded shadow-sm" style="max-height: 160px; object-fit: cover;">
-                        </div>
-                    @endif
-                    <input type="file" name="image" id="image" class="form-control-file" accept="image/*">
-                    <div class="mt-2" id="imagePreviewWrapper" style="display: none;">
-                        <img id="imagePreview" src="" alt="Preview" class="img-fluid rounded shadow-sm" style="max-height: 160px; object-fit: cover;">
-                    </div>
-                    <small class="text-muted d-block mt-1" style="font-style: normal;">Jpg, Png, Jpeg. Max 2MB.</small>
-                    @error('image')
-                        <div class="text-danger">{{ $message }}</div>
-                    @enderror
+                <div>
+                    @include('partials.components.media_picker_upload_image', [
+                        'data' => $item ?? null,
+                    ])
                 </div>
             </div>
         </div>
@@ -189,6 +197,8 @@
     </div>
 </div>
 
+@include('partials.components.media_picker_modal')
+
 @section('css')
     @parent
     <style>
@@ -229,10 +239,15 @@
         .custom-modal__footer { display: flex; justify-content: flex-end; gap: 8px; padding-top: 8px; }
         body.custom-modal-open { overflow: hidden; }
     </style>
+
+    @include('partials.components.media_picker_style')
 @endsection
 
 @section('js')
     @parent
+
+    @include('partials.components.media_picker_script')
+
     <script>
         (function waitForjQuery() {
             if (window.jQuery) {

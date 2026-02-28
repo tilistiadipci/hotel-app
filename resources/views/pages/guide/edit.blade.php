@@ -5,10 +5,10 @@
         <div class="app-page-title">
             <div class="page-title-wrapper">
                 @include('templates.parts.breadcrumb', [
-                    'title' => trans('common.guide.edit') ?? 'Edit Guide',
+                    'title' => trans('common.edit') ?? 'Edit Guide',
                     'icon' => $icon,
                     'breadcrumbs' => [
-                        ['href' => route('guides.index'), 'label' => trans('common.guide.title') ?? 'Guides'],
+                        ['href' => route('guides.index'), 'label' => trans('common.title') ?? 'Guides'],
                         ['href' => '#', 'label' => trans('common.edit') ?? 'Edit'],
                     ],
                 ])

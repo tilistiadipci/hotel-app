@@ -7,6 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
+use App\Models\Media;
 
 class GuideItem extends Model
 {
@@ -30,6 +31,11 @@ class GuideItem extends Model
     public function category()
     {
         return $this->belongsTo(GuideCategory::class, 'category_id');
+    }
+
+    public function imageMedia()
+    {
+        return $this->belongsTo(Media::class, 'image_id');
     }
 
     public function scopeFilter($query, array $filters)

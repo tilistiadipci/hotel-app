@@ -8,7 +8,7 @@
                     'title' => trans('common.create_new'),
                     'icon' => $icon,
                     'breadcrumbs' => [
-                        ['href' => route('guides.index'), 'label' => trans('common.guide.title') ?? 'Guides'],
+                        ['href' => route('guides.index'), 'label' => trans('common.title') ?? 'Guides'],
                         ['href' => '#', 'label' => trans('common.create_new')],
                     ],
                 ])

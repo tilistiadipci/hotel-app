@@ -56,36 +56,30 @@ class GuideItemRepository extends BaseRepository
         return false;
     }
 
-    public function deleteById($id, $fieldName = 'image', $destroyImage = true)
+    public function deleteById($id, $fieldName = 'image_id', $destroyImage = false)
     {
         $record = $this->find($id);
         if ($record) {
             $record->deleted_by = auth()->id();
             $record->save();
-            $result = $record->delete(); // Soft delete
-
-            if ($result && $destroyImage && $fieldName && $record->$fieldName && $record->$fieldName !== '/images/default.png') {
-                $this->destroyImage($record, $fieldName);
-            }
-
-            return $result;
+            return $record->delete(); // Soft delete
         }
         return false;
     }
 
-    public function deleteByUid($uid, $fieldName = 'image', $destroyImage = true)
+    public function deleteByUid($uid, $fieldName = 'image_id', $destroyImage = false)
     {
-        return $this->delete($uid, $fieldName, $destroyImage);
+        return $this->delete($uid, 'image_id', false);
     }
 
-    public function bulkDeleteById(array $ids, $fieldName = 'image', $destroyImage = true)
+    public function bulkDeleteById(array $ids, $fieldName = 'image_id', $destroyImage = false)
     {
-        return parent::bulkDelete($ids, $fieldName, $destroyImage);
+        return parent::bulkDelete($ids, 'image_id', false);
     }
 
-    public function bulkDeleteByUid(array $uids, $fieldName = 'image', $destroyImage = true)
+    public function bulkDeleteByUid(array $uids, $fieldName = 'image_id', $destroyImage = false)
     {
-        return parent::bulkDeleteByUid($uids, $fieldName, $destroyImage);
+        return parent::bulkDeleteByUid($uids, 'image_id', false);
     }
 
     public function findBySlug(string $slug)
@@ -96,7 +90,7 @@ class GuideItemRepository extends BaseRepository
     public function getDatatable()
     {
         $query = $this->query()
-            ->with('category')
+            ->with(['category', 'imageMedia'])
             ->filter(request(['search', 'filters']));
 
         return DataTables::of($this->paginateDatatable($query))
