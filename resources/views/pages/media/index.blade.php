@@ -105,6 +105,7 @@
 @section('js')
     <script src="{{ asset('js/resumable.js') }}"></script>
     <script>
+        const apiService = `{{ config('app.app_service_api') }}`;
         const datasets = {
             image: {
                 items: @json($images),
@@ -222,6 +223,27 @@
             return (kb / 1024).toFixed(2) + ' MB';
         }
 
+        function humanDuration(seconds) {
+            const sec = Number(seconds) || 0;
+            if (sec <= 0) return '0s';
+            const h = Math.floor(sec / 3600);
+            const m = Math.floor((sec % 3600) / 60);
+            const s = Math.floor(sec % 60);
+            const parts = [];
+            if (h) parts.push(h + 'h');
+            if (m || h) parts.push(m + 'm');
+            parts.push(s + 's');
+            return parts.join(' ');
+        }
+
+        function mediaStreamUrl(type, path) {
+            if (!path) return '#';
+            const isFull = /^https?:\/\//i.test(path);
+            if (isFull) return path;
+            const cleanBase = (apiService || '').replace(/\/+$/, '');
+            return `${cleanBase}/media?type=${encodeURIComponent(type)}&path=${encodeURIComponent(path)}`;
+        }
+
         function findItem(uuid) {
             for (const key of Object.keys(datasets)) {
                 const found = (datasets[key].items || []).find(i => i.uuid === uuid);
@@ -315,7 +337,7 @@
                 meta.push((item.extension || '').toUpperCase());
                 if (item.size) meta.push(humanSize(item.size));
                 if (item.type === 'image' && item.width && item.height) meta.push(item.width + 'x' + item.height);
-                if ((item.type === 'video' || item.type === 'audio') && item.duration) meta.push(item.duration + 's');
+                if ((item.type === 'video' || item.type === 'audio') && item.duration) meta.push(humanDuration(item.duration));
 
                 wrap.append(`
                     <div class="media-item" data-uuid="${item.uuid}">
@@ -326,10 +348,13 @@
                         ${item.type === 'image'
                             ? `<img class="media-thumb" src="${thumb}" alt="${item.name}">`
                             : `<div class="media-thumb d-flex align-items-center justify-content-center"><i class="fa ${icon} text-primary"></i></div>`}
-                        <div>
+                        <div class="media-body">
                             ${item.name === item.original_filename ? `` : `<div class="font-weight-semibold">${item.name}</div>`}
                             <div class="font-weight-semibold">${item.original_filename}</div>
                             <div class="media-meta">${meta.join(' • ')}</div>
+                        </div>
+                        <div class="media-actions">
+                            ${(item.type === 'audio' || item.type === 'video') ? `<a href="${mediaStreamUrl(item.type, item.storage_path)}" target="_blank" class="btn btn-sm btn-outline-primary"><i class="fa fa-play mr-1"></i>Play</a>` : ''}
                         </div>
                     </div>
                 `);
@@ -536,7 +561,7 @@
 
                     r.on('fileError', function(file, message) {
                         console.error('Upload error', message);
-                        alert('Gagal upload video: ' + message);
+                        alert('Gagal upload video. Refresh halaman dan coba lagi.');
                         $('#uploadBtn').prop('disabled', false).html(`<i class="fa fa-upload mr-1"></i> Complete Upload`);
                         videoUploading = false;
                         resetProgress();

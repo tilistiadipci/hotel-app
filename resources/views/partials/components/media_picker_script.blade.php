@@ -176,7 +176,7 @@
 
                 r.on('fileError', function(file, message) {
                     console.error('Upload error', message);
-                    alert('Gagal upload video: ' + message);
+                    alert('Gagal upload. Refresh halaman dan coba lagi.');
                     saveBtn && (saveBtn.disabled = false);
                     if (progressWrap) progressWrap.classList.add('d-none');
                     if (progressBar) {
@@ -216,19 +216,34 @@
             pickerEmpty.addClass('d-none');
             items.forEach(it => {
                 const thumb = it.thumb_url || '';
-                const icon = it.type === 'video' ? 'fa-film' : (it.type === 'audio' ? 'fa-music' :
-                    'fa-image');
-                pickerList.append(`
-                        <div class="media-picker-item" data-uuid="${it.uuid}" data-id="${it.id}" data-type="${it.type}"
-                             data-name="${it.name}" data-original="${it.original_filename}" data-path="${it.storage_path}" data-thumb="${thumb}">
-                            <div class="media-picker-thumb">
-                                ${thumb ? `<img src="${thumb}" alt="${it.name}" style="width:100%;height:100%;object-fit:cover;border-radius:4px;">` : `<i class="fa ${icon} fa-2x"></i>`}
+                    const icon = it.type === 'video' ? 'fa-film' : (it.type === 'audio' ? 'fa-music' :
+                        'fa-image');
+                    pickerList.append(`
+                            <div class="media-picker-item" data-uuid="${it.uuid}" data-id="${it.id}" data-type="${it.type}"
+                                 data-name="${it.name}" data-original="${it.original_filename}" data-path="${it.storage_path}" data-thumb="${thumb}">
+                                <div class="media-picker-thumb">
+                                    ${thumb ? `<img src="${thumb}" alt="${it.name}" style="width:100%;height:100%;object-fit:cover;border-radius:4px;">` : `<i class="fa ${icon} fa-2x"></i>`}
+                                </div>
+                                <div class="media-picker-title" title="${it.name}">${it.name}</div>
+                            <div class="text-muted" style="font-size:11px;">
+                                ${(it.extension || '').toUpperCase()}${it.duration ? ' • ' + formatDuration(it.duration) : ''}
                             </div>
-                            <div class="media-picker-title" title="${it.name}">${it.name}</div>
-                            <div class="text-muted" style="font-size:11px;">${(it.extension || '').toUpperCase()}</div>
-                        </div>
-                    `);
+                            </div>
+                        `);
             });
+        }
+
+        function formatDuration(seconds) {
+            const sec = Number(seconds) || 0;
+            if (sec <= 0) return '0s';
+            const h = Math.floor(sec / 3600);
+            const m = Math.floor((sec % 3600) / 60);
+            const s = Math.floor(sec % 60);
+            const parts = [];
+            if (h) parts.push(h + 'h');
+            if (m || h) parts.push(m + 'm');
+            parts.push(s + 's');
+            return parts.join(' ');
         }
 
         function loadPickerList(type, url = null, reset = false) {

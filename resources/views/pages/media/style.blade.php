@@ -26,9 +26,11 @@
     }
 
     .media-item {
-        display: flex;
+        display: grid;
+        grid-template-columns: auto auto 1fr auto;
         align-items: center;
-        gap: 12px;
+        column-gap: 12px;
+        row-gap: 6px;
         padding: 10px 12px;
         border-radius: 8px;
         transition: background 0.15s ease;
@@ -47,6 +49,14 @@
         object-fit: cover;
         border-radius: 8px;
         background: #f1f5f9;
+    }
+
+    .media-actions {
+        display: flex;
+        gap: 8px;
+        align-items: center;
+        justify-content: flex-end;
+        height: 100%;
     }
 
     .media-meta {
