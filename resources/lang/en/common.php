@@ -98,6 +98,9 @@ return [
     'stream_url' => 'Stream URL',
     'frequency' => 'Frequency',
     'quality' => 'Quality',
+    'logout_confirmation' => 'Are you sure you want to logout?',
+    'male' => 'Male',
+    'female' => 'Female',
 
     'list_month' => [
         'january' => 'January',

@@ -11,7 +11,7 @@
     <input type="file" name="image" id="image" class="form-control-file d-none" accept="image/*">
     @if ($data && $data->imageMedia)
         <div class="mt-2" id="currentCoverPreview">
-            <small class="text-muted d-block">Current cover:</small>
+            <small class="text-muted d-block">Current image:</small>
             <img src="{{ getMediaImageUrl($data->imageMedia->storage_path, 200, 200) }}" alt="Current cover"
                 class="img-thumbnail shadow-sm" style="object-fit: cover;">
         </div>

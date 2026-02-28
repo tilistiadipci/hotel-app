@@ -94,6 +94,9 @@ return [
     'stream_url' => 'Stream URL',
     'frequency' => 'Frekuensi',
     'quality' => 'Kualitas',
+    'logout_confirmation' => 'Apakah Anda yakin ingin logout?',
+    'male' => 'Laki-laki',
+    'female' => 'Perempuan',
 
     'list_month' => [
         'january' => 'Januari',

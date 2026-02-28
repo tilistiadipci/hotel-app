@@ -1,5 +1,7 @@
 @php
-    $avatarUrl = getMediaImageUrl(optional($user->profile->imageMedia)->storage_path ?? 'default/no-image.png', 300, 300);
+    $avatarPath = optional($user->profile->imageMedia)->storage_path ?? 'default/no-image.png';
+    $avatarUrl = $avatarPath === 'default/no-image.png' ? null : getMediaImageUrl($avatarPath, 300, 300);
+    $initials = collect(explode(' ', $user->profile->name ?? 'U'))->filter()->map(fn($p) => strtoupper(mb_substr($p, 0, 1)))->take(2)->implode('');
     $items = [
         trans('common.user.username') => $user->username,
         trans('common.email') => $user->email,
@@ -28,8 +30,15 @@
     <div class="col-sm-4 text-center">
         <div class="card shadow-sm">
             <div class="card-body">
-                <img src="{{ $avatarUrl }}" alt="{{ $user->profile->name ?? '' }}" class="img-fluid rounded mb-2"
-                    style="max-height: 220px; object-fit: cover;">
+                @if ($avatarUrl)
+                    <img src="{{ $avatarUrl }}" alt="{{ $user->profile->name ?? '' }}" class="img-fluid rounded mb-2"
+                        style="max-height: 220px; object-fit: cover;">
+                @else
+                    <div class="d-inline-flex align-items-center justify-content-center rounded-circle bg-primary text-white mb-2"
+                        style="width:120px;height:120px;font-size:42px;font-weight:700;">
+                        {{ $initials ?: 'U' }}
+                    </div>
+                @endif
                 <div class="small text-muted">{{ trans('common.photo') }}</div>
             </div>
         </div>

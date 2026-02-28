@@ -76,9 +76,20 @@
                         <div class="widget-content-left">
                             <div class="btn-group">
                                 <a data-toggle="dropdown" aria-haspopup="true" aria-expanded="false" class="p-0 btn">
-                                    <img style="width: 40x; height: 40px;" class="img-fluid rounded-circle"
-                                        src="{{ getMediaImageUrl(optional(auth()->user()->profile->imageMedia)->storage_path ?? 'default/no-image.png', 120, 120) }}" alt="">
-                                    <i class="fa fa-angle-down ml-2 opacity-8"></i>
+                                    @php
+                                        $avatarPath = optional(auth()->user()->profile->imageMedia)->storage_path ?? 'default/no-image.png';
+                                        $avatarName = auth()->user()->profile->name ?? 'U';
+                                        $initials = collect(explode(' ', $avatarName))->filter()->map(fn($p) => strtoupper(mb_substr($p, 0, 1)))->take(2)->implode('');
+                                    @endphp
+                                    @if ($avatarPath === 'default/no-image.png')
+                                        <div style="width:40px;height:40px;" class="d-flex align-items-center justify-content-center rounded-circle bg-primary text-white font-weight-bold">
+                                            {{ $initials ?: 'U' }}
+                                        </div>
+                                    @else
+                                        <img style="width: 40x; height: 40px;" class="img-fluid rounded-circle"
+                                            src="{{ getMediaImageUrl($avatarPath, 120, 120) }}" alt="">
+                                            <i class="fa fa-angle-down ml-2 opacity-8"></i>
+                                    @endif
                                 </a>
                                 <div tabindex="-1" role="menu" aria-hidden="true"
                                     class="rm-pointers dropdown-menu-lg dropdown-menu dropdown-menu-right">
@@ -91,9 +102,15 @@
                                                 <div class="widget-content p-0">
                                                     <div class="widget-content-wrapper">
                                                         <div class="widget-content-left mr-3">
-                                                            <img style="width: 40x; height: 40px;" class="img-fluid rounded-circle"
-                                                                src="{{ getMediaImageUrl(optional(auth()->user()->profile->imageMedia)->storage_path ?? 'default/no-image.png', 120, 120) }}"
-                                                                alt="">
+                                                            @if ($avatarPath === 'default/no-image.png')
+                                                                <div style="width:40px;height:40px;" class="d-flex align-items-center justify-content-center rounded-circle bg-info text-white font-weight-bold">
+                                                                    {{ $initials ?: 'U' }}
+                                                                </div>
+                                                            @else
+                                                                <img style="width: 40x; height: 40px;" class="img-fluid rounded-circle"
+                                                                    src="{{ getMediaImageUrl($avatarPath, 120, 120) }}"
+                                                                    alt="">
+                                                            @endif
                                                         </div>
                                                         <div class="widget-content-left">
                                                             <div class="widget-heading">
@@ -107,7 +124,7 @@
                                                             <form action="{{ route('logout') }}" method="POST">
                                                                 @csrf
                                                                 <button type="submit"
-                                                                    class="btn-pill btn-shadow btn-shine btn btn-focus">{{ trans('common.logout') }}
+                                                                    class="btn-pill btn-shadow btn-shine btn btn-focus" onclick="return confirm('{{ trans('common.logout_confirmation') }}')">{{ trans('common.logout') }}
                                                             </form>
                                                             </button>
                                                         </div>

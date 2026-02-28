@@ -17,7 +17,7 @@
     </tr>
     <tr>
         <td>{{ trans('common.gender') }}</td>
-        <td>{{ $user->profile->gender ?? '' }}</td>
+        <td>{{ $user->profile->gender == 'male' ? trans('common.male') : trans('common.female') }}</td>
     </tr>
     <tr>
         <td>{{ trans('common.contact_name') }}</td>
