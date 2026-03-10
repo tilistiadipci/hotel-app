@@ -201,11 +201,11 @@ Route::middleware(['auth'])->group(function () {
         ->only(['index', 'store', 'destroy']);
 
 
-    // website
-    Route::prefix('website')
-        ->name('website.')
+    Route::prefix('settings')
+        ->name('settings')
         ->group(function () {
-            Route::get('/', [SettingWebsiteController::class, 'index'])->name('index');
+            Route::get('/', [SettingWebsiteController::class, 'index'])->name('.index');
+            Route::post('/update', [SettingWebsiteController::class, 'update'])->name('.update');
         });
 });
 
