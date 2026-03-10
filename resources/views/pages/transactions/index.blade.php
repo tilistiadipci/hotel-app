@@ -21,20 +21,30 @@
                     <div class="card-header">Transaction List</div>
                     <div class="card-body p-2">
                         <div class="transaction-status-tabs mb-3">
-                            <button type="button" class="badge badge-pill transaction-filter {{ $activeStatus === 'all' ? 'badge-primary' : 'badge-light' }}" data-status="all">
-                                All ({{ $statusCounts['all'] ?? 0 }})
+                            <button type="button"
+                                class="badge badge-pill transaction-filter {{ $activeStatus === 'all' ? 'badge-primary' : 'badge-light' }}"
+                                data-status="all">
+                                All (<span id="count-all">{{ $statusCounts['all'] ?? 0 }}</span>)
                             </button>
-                            <button type="button" class="badge badge-pill transaction-filter {{ $activeStatus === 'ordered' ? 'badge-info' : 'badge-light' }}" data-status="ordered">
-                                Ordered ({{ $statusCounts['ordered'] ?? 0 }})
+                            <button type="button"
+                                class="badge badge-pill transaction-filter {{ $activeStatus === 'ordered' ? 'badge-info' : 'badge-light' }}"
+                                data-status="ordered">
+                                Ordered (<span id="count-ordered">{{ $statusCounts['ordered'] ?? 0 }}</span>)
                             </button>
-                            <button type="button" class="badge badge-pill transaction-filter {{ $activeStatus === 'processing' ? 'badge-warning' : 'badge-light' }}" data-status="processing">
-                                Processing ({{ $statusCounts['processing'] ?? 0 }})
+                            <button type="button"
+                                class="badge badge-pill transaction-filter {{ $activeStatus === 'processing' ? 'badge-warning' : 'badge-light' }}"
+                                data-status="processing">
+                                Processing (<span id="count-processing">{{ $statusCounts['processing'] ?? 0 }}</span>)
                             </button>
-                            <button type="button" class="badge badge-pill transaction-filter {{ $activeStatus === 'completed' ? 'badge-success' : 'badge-light' }}" data-status="completed">
-                                Completed ({{ $statusCounts['completed'] ?? 0 }})
+                            <button type="button"
+                                class="badge badge-pill transaction-filter {{ $activeStatus === 'completed' ? 'badge-success' : 'badge-light' }}"
+                                data-status="completed">
+                                Completed (<span id="count-completed">{{ $statusCounts['completed'] ?? 0 }}</span>)
                             </button>
-                            <button type="button" class="badge badge-pill transaction-filter {{ $activeStatus === 'cancelled' ? 'badge-danger' : 'badge-light' }}" data-status="cancelled">
-                                Cancelled ({{ $statusCounts['cancelled'] ?? 0 }})
+                            <button type="button"
+                                class="badge badge-pill transaction-filter {{ $activeStatus === 'cancelled' ? 'badge-danger' : 'badge-light' }}"
+                                data-status="cancelled">
+                                Cancelled (<span id="count-cancelled">{{ $statusCounts['cancelled'] ?? 0 }}</span>)
                             </button>
                         </div>
                         <div id="transaction-list-container">
@@ -52,7 +62,9 @@
 
             <div class="col-lg-7">
                 <div id="transaction-detail-container">
-                    @include('pages.transactions.components.detail', ['selectedTransaction' => $selectedTransaction])
+                    @include('pages.transactions.components.detail', [
+                        'selectedTransaction' => $selectedTransaction,
+                    ])
                 </div>
             </div>
         </div>
@@ -181,6 +193,7 @@
 
 @section('js')
     @parent
+    <script src="{{ env('WEBSOCKET') }}/socket.io/socket.io.js"></script>
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const listContainer = document.getElementById('transaction-list-container');
@@ -194,7 +207,8 @@
 
             function updateFilterButtons(status) {
                 filterButtons.forEach(function(button) {
-                    button.classList.remove('badge-primary', 'badge-info', 'badge-warning', 'badge-success', 'badge-danger');
+                    button.classList.remove('badge-primary', 'badge-info', 'badge-warning', 'badge-success',
+                        'badge-danger');
                     button.classList.add('badge-light');
 
                     if (button.dataset.status !== status) {
@@ -227,7 +241,8 @@
                     trigger.addEventListener('click', function() {
                         const transactionId = this.dataset.transactionId;
 
-                        listContainer.querySelectorAll('.transaction-trigger').forEach(function(item) {
+                        listContainer.querySelectorAll('.transaction-trigger').forEach(function(
+                            item) {
                             item.classList.remove('transaction-list-item--active');
                         });
 
@@ -252,26 +267,31 @@
                         formData.append('_token', '{{ csrf_token() }}');
 
                         fetch(`{{ url('transactions/status') }}/${transactionId}`, {
-                            method: 'POST',
-                            headers: {
-                                'X-Requested-With': 'XMLHttpRequest',
-                                'Accept': 'application/json'
-                            },
-                            body: formData
-                        })
+                                method: 'POST',
+                                headers: {
+                                    'X-Requested-With': 'XMLHttpRequest',
+                                    'Accept': 'application/json'
+                                },
+                                body: formData
+                            })
                             .then(function(response) {
                                 return response.json().then(function(data) {
-                                    return { ok: response.ok, data: data };
+                                    return {
+                                        ok: response.ok,
+                                        data: data
+                                    };
                                 });
                             })
                             .then(function(result) {
                                 if (!result.ok) {
-                                    throw new Error(result.data.message || 'Failed to update transaction.');
+                                    throw new Error(result.data.message ||
+                                        'Failed to update transaction.');
                                 }
 
                                 detailContainer.innerHTML = result.data.detail_html;
                                 bindStatusButtons();
                                 reloadTransactionList(transactionId);
+                                updateCount(result.data.detail_count);
                                 toastr["success"](result.data.message, "Success");
                             })
                             .catch(function(error) {
@@ -283,10 +303,10 @@
 
             function loadTransactionDetail(transactionId) {
                 fetch(`{{ route('transactions.index') }}?transaction_id=${transactionId}&status=${activeStatus}`, {
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest'
-                    }
-                })
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest'
+                        }
+                    })
                     .then(function(response) {
                         return response.text();
                     })
@@ -299,6 +319,14 @@
                     });
             }
 
+            function updateCount(detailCount) {
+                $('#count-all').text(detailCount.all);
+                $('#count-processing').text(detailCount.processing);
+                $('#count-ordered').text(detailCount.ordered);
+                $('#count-completed').text(detailCount.completed);
+                $('#count-cancelled').text(detailCount.cancelled);
+            }
+
             function loadMoreTransactions() {
                 if (!hasMore || isLoading) {
                     return;
@@ -308,11 +336,11 @@
                 loadingIndicator.classList.remove('d-none');
 
                 fetch(`{{ route('transactions.index') }}?partial=list&page=${nextPage}&status=${activeStatus}`, {
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json'
-                    }
-                })
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        }
+                    })
                     .then(function(response) {
                         return response.json();
                     })
@@ -341,11 +369,11 @@
                 const transactionQuery = activeId ? `&transaction_id=${activeId}` : '';
 
                 fetch(`{{ route('transactions.index') }}?partial=list&page=1&status=${activeStatus}${transactionQuery}`, {
-                    headers: {
-                        'X-Requested-With': 'XMLHttpRequest',
-                        'Accept': 'application/json'
-                    }
-                })
+                        headers: {
+                            'X-Requested-With': 'XMLHttpRequest',
+                            'Accept': 'application/json'
+                        }
+                    })
                     .then(function(response) {
                         return response.json();
                     })
@@ -368,10 +396,10 @@
                     reloadTransactionList(null);
 
                     fetch(`{{ route('transactions.index') }}?status=${activeStatus}`, {
-                        headers: {
-                            'X-Requested-With': 'XMLHttpRequest'
-                        }
-                    })
+                            headers: {
+                                'X-Requested-With': 'XMLHttpRequest'
+                            }
+                        })
                         .then(function(response) {
                             return response.text();
                         })
@@ -383,11 +411,25 @@
             });
 
             listContainer.addEventListener('scroll', function() {
-                const nearBottom = listContainer.scrollTop + listContainer.clientHeight >= listContainer.scrollHeight - 80;
+                const nearBottom = listContainer.scrollTop + listContainer.clientHeight >= listContainer
+                    .scrollHeight - 80;
                 if (nearBottom) {
                     loadMoreTransactions();
                 }
             });
+
+
+            const socket = io(`{{ env('WEBSOCKET') }}`);
+            socket.on("new-order", function(data) {
+                reloadTransactionList(null);
+
+                playNotificationSound();
+            });
+
+            function playNotificationSound() {
+                const audio = new Audio(`{{ asset('template/sound/bell.mp3') }}`);
+                audio.play();
+            }
 
             bindTransactionTriggers(document);
             bindStatusButtons();

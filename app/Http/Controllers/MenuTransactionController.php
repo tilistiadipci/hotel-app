@@ -99,8 +99,23 @@ class MenuTransactionController extends Controller
         $transaction->save();
         $transaction->refresh()->load(['invoice', 'player', 'details', 'createdBy']);
 
+        $statusCounts = [
+            'all' => MenuTransaction::query()->count(),
+            'ordered' => MenuTransaction::query()->where('status', 'ordered')->count(),
+            'processing' => MenuTransaction::query()->where('status', 'processing')->count(),
+            'completed' => MenuTransaction::query()->where('status', 'completed')->count(),
+            'cancelled' => MenuTransaction::query()->where('status', 'cancelled')->count(),
+        ];
+
         return response()->json([
             'message' => 'Transaction updated successfully.',
+            'detail_count' => [
+                'all' => $statusCounts['all'],
+                'completed' => $statusCounts['completed'],
+                'cancelled' => $statusCounts['cancelled'],
+                'processing' => $statusCounts['processing'],
+                'ordered' => $statusCounts['ordered'],
+            ],
             'detail_html' => view('pages.transactions.components.detail', [
                 'selectedTransaction' => $transaction,
             ])->render(),
