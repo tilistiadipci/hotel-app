@@ -69,7 +69,7 @@
                         </form>
                     </div>
                 </div>
-                <div class="text-center text-white opacity-8 mt-3">Copyright © Bio Experience {{ date('Y') }}</div>
+                <div class="text-center text-white opacity-8 mt-3">Copyright © Bio Experience 2024-{{ date('Y') }}</div>
             </div>
         </div>
     </div>

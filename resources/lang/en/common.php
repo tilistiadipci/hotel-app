@@ -69,6 +69,7 @@ return [
     'filter' => 'Filter',
     'choose_item' => 'Choose Item',
     'choose_item_text' => 'Please choose an item first!',
+    'choose_file' => 'Choose File',
     'no_data' => 'No data',
     'detail' => 'Detail',
     'status' => 'Status',
@@ -101,6 +102,10 @@ return [
     'logout_confirmation' => 'Are you sure you want to logout?',
     'male' => 'Male',
     'female' => 'Female',
+    'drop_file' => 'Click to upload file',
+    'complete_upload' => 'Complete Uploaded',
+    'usage' => 'Stroage Usage',
+    'edit_media' => 'Edit Media Name',
 
     'list_month' => [
         'january' => 'January',
@@ -177,6 +182,13 @@ return [
         'quality' => 'Quality',
     ],
 
+    'player' => [
+        'list_of_player' => 'List of Players',
+        'title' => 'Players',
+        'title_singular' => 'Player',
+        'serial' => 'Serial Number',
+    ],
+
     'song' => [
         'list_of_song' => 'List of Songs',
         'title' => 'Songs',
@@ -222,6 +234,12 @@ return [
         'latitude' => 'Latitude',
         'longitude' => 'Longitude',
         'distance' => 'Distance',
+    ],
+
+    'transaction' => [
+        'list_of_transaction' => 'List of Transactions',
+        'title' => 'Transactions',
+        'title_singular' => 'Transaction',
     ],
 
     'menu' => [

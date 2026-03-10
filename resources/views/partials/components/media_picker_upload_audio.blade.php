@@ -4,17 +4,14 @@
         <button type="button" class="btn btn-outline-primary btn-sm mr-2" id="btnPickAudio">
             <i class="fa fa-music mr-1"></i> {{ trans('common.pick_file') }}
         </button>
-        <div class="text-muted small" id="selectedAudioLabel">
-            {{ optional($data?->audioMedia)->original_filename ?? trans('common.no_file_selected') }}
-        </div>
     </div>
     <input type="hidden" name="audio_media_id" id="audio_media_id"
         value="{{ old('audio_media_id', $data->audioMedia->id ?? '') }}">
     {{-- Input file disembunyikan; upload/ambil file via tombol Pick/Upload (media picker) --}}
     <input type="file" name="audio" id="audio" class="form-control-file d-none" accept="audio/*">
-    <small class="text-muted d-block mt-1" id="audioHelp" style="font-style: normal;">
-        Format: MP3/WAV/FLAC/AAC/M4A/OGG. Bisa pilih dari media atau unggah baru.
-    </small>
+    <div class="text-muted small" id="selectedAudioLabel">
+        Current audio: {{ optional($data?->audioMedia)->original_filename ?? trans('common.no_file_selected') }}
+    </div>
     @error('audio')
         <div class="text-danger">{{ $message }}</div>
     @enderror

@@ -92,7 +92,8 @@
                 withCredentials: true,
                 query: file => ({
                     _token: "{{ csrf_token() }}",
-                    duration: file && typeof file.durationSeconds !== 'undefined' ? file.durationSeconds : ''
+                    duration: file && typeof file.durationSeconds !== 'undefined' ? file
+                        .durationSeconds : ''
                 }),
                 headers: {
                     'X-CSRF-TOKEN': "{{ csrf_token() }}"
@@ -194,7 +195,8 @@
                 if (durationInput && (!durationInput.value || durationInput.value === '')) {
                     e.preventDefault();
                     alert(
-                        'Durasi video belum terdeteksi. Tunggu proses hitung durasi selesai atau pilih ulang videonya.');
+                        'Durasi video belum terdeteksi. Tunggu proses hitung durasi selesai atau pilih ulang videonya.'
+                    );
                 }
             });
         }
@@ -216,9 +218,9 @@
             pickerEmpty.addClass('d-none');
             items.forEach(it => {
                 const thumb = it.thumb_url || '';
-                    const icon = it.type === 'video' ? 'fa-film' : (it.type === 'audio' ? 'fa-music' :
-                        'fa-image');
-                    pickerList.append(`
+                const icon = it.type === 'video' ? 'fa-film' : (it.type === 'audio' ? 'fa-music' :
+                    'fa-image');
+                pickerList.append(`
                             <div class="media-picker-item" data-uuid="${it.uuid}" data-id="${it.id}" data-type="${it.type}"
                                  data-name="${it.name}" data-original="${it.original_filename}" data-path="${it.storage_path}" data-thumb="${thumb}">
                                 <div class="media-picker-thumb">
@@ -286,11 +288,11 @@
             // set accept & help text sesuai tipe
             if (pickerInput) pickerInput.setAttribute('accept', pickerAcceptMap[type] || 'image/*,audio/*,video/*');
             if (pickerHelp) {
-                pickerHelp.textContent = type === 'image'
-                    ? 'Format: JPG, JPEG, PNG'
-                    : (type === 'audio'
-                        ? 'Format: MP3, WAV, FLAC, AAC, M4A, OGG'
-                        : 'Format: MP4, MOV, MKV, WEBM, AVI');
+                pickerHelp.textContent = type === 'image' ?
+                    'Format: JPG, JPEG, PNG. Max. 100MB' :
+                    (type === 'audio' ?
+                        'Format: MP3, WAV, FLAC, AAC, M4A, OGG. Max. 500MB' :
+                        'Format: MP4, MKV, WEBM, AVI. Max. 2GB');
             }
             // toggle inputs
             if (pickerVideoInput && pickerInput) {
@@ -364,8 +366,10 @@
                 withCredentials: true,
                 query: (file) => ({
                     _token: "{{ csrf_token() }}",
-                    duration: file && typeof file.durationSeconds !== 'undefined' ? file.durationSeconds : '',
-                    name: (uploadNameInput ? uploadNameInput.value : '') || (file ? file.fileName : ''),
+                    duration: file && typeof file.durationSeconds !== 'undefined' ? file
+                        .durationSeconds : '',
+                    name: (uploadNameInput ? uploadNameInput.value : '') || (file ? file.fileName :
+                        ''),
                     filename: file ? file.fileName : '',
                 }),
                 headers: {
@@ -374,18 +378,46 @@
             });
 
             if (pickerResumable.support) {
-                // single browse trigger: button (preferred) or hidden input fallback
                 const browseTargets = [];
                 if (btnChooseVideoInModal) browseTargets.push(btnChooseVideoInModal);
                 browseTargets.push(pickerVideoInput);
-                pickerResumable.assignBrowse(browseTargets, false, false, { accept: 'video/*' });
+
+                pickerResumable.assignBrowse(browseTargets, false, false, {
+                    accept: '.mp4,.mkv,.webm,.avi'
+                });
+
+                const resetVideoUploadState = () => {
+                    pickerProgress.addClass('d-none');
+                    pickerProgressBar.css('width', '0%').text('0%');
+
+                    if (pickerInput) pickerInput.value = '';
+                    if (pickerVideoInput) pickerVideoInput.value = '';
+
+                    if (btnChooseVideoInModal && pickerType === 'video') {
+                        btnChooseVideoInModal.classList.remove('d-none');
+                    }
+                };
 
                 pickerResumable.on('fileAdded', function(file) {
+                    const allowedExt = ['mp4', 'mkv', 'webm', 'avi'];
+                    const ext = (file.fileName || file.name || '').split('.').pop().toLowerCase();
+
+                    if (!allowedExt.includes(ext)) {
+                        pickerResumable.removeFile(file);
+                        resetVideoUploadState();
+                        alert('Format video tidak didukung. Gunakan MP4, MKV, WEBM, atau AVI.');
+                        return;
+                    }
+
                     pickerProgress.removeClass('d-none');
                     pickerProgressBar.css('width', '5%').text('5%');
                     videoLabel && (videoLabel.textContent = file.fileName || file.name || 'Video');
+
                     getFileDuration(file.file).then(durationVal => {
                         file.durationSeconds = durationVal || null;
+                        pickerResumable.upload();
+                    }).catch(() => {
+                        file.durationSeconds = null;
                         pickerResumable.upload();
                     });
                 });
@@ -399,6 +431,7 @@
                 pickerResumable.on('fileSuccess', function(file, message) {
                     try {
                         const res = JSON.parse(message);
+
                         if (res.status && res.media) {
                             const m = res.media;
                             hiddenVideoMediaId && (hiddenVideoMediaId.value = m.id);
@@ -406,28 +439,39 @@
                             durationInput && (durationInput.value = m.duration || durationInput.value);
                             closePicker();
                         } else {
-                            alert('Upload gagal.');
+                            pickerResumable.cancel();
+                            pickerResumable.removeFile(file);
+                            alert(res.message || 'Upload gagal.');
                         }
                     } catch (e) {
                         console.error('Invalid response', e);
+                        pickerResumable.cancel();
+                        pickerResumable.removeFile(file);
                         alert('Upload selesai tapi response server tidak valid.');
                     } finally {
-                        pickerProgress.addClass('d-none');
-                        pickerProgressBar.css('width', '0%').text('0%');
-                        pickerInput.value = '';
-                        if (pickerVideoInput) pickerVideoInput.value = '';
-                        if (btnChooseVideoInModal && pickerType !== 'video') btnChooseVideoInModal.classList.add('d-none');
+                        resetVideoUploadState();
                     }
                 });
 
                 pickerResumable.on('fileError', function(file, message) {
                     console.error('Upload chunk error', message);
-                    alert('Gagal upload video.');
-                    pickerProgress.addClass('d-none');
-                    pickerProgressBar.css('width', '0%').text('0%');
-                    pickerInput.value = '';
-                    if (pickerVideoInput) pickerVideoInput.value = '';
-                    if (btnChooseVideoInModal && pickerType === 'video') btnChooseVideoInModal.classList.remove('d-none');
+
+                    let errorMessage = 'Gagal upload video.';
+
+                    try {
+                        const res = JSON.parse(message);
+                        errorMessage = res.message || res.msg || errorMessage;
+                    } catch (e) {
+                        if (typeof message === 'string' && message.trim() !== '') {
+                            errorMessage = message;
+                        }
+                    }
+
+                    pickerResumable.cancel();
+                    pickerResumable.removeFile(file);
+
+                    resetVideoUploadState();
+                    alert(errorMessage);
                 });
             }
         }
@@ -454,8 +498,25 @@
                 alert('File bukan audio.');
                 return;
             }
-            if (file.size && file.size > pickerMaxSize) {
-                alert('Ukuran file melebihi 5MB.');
+
+            // validasi size berdasarkan type
+            let maxSize = 0;
+
+            if (pickerType === 'image') {
+                maxSize = 100 * 1024 * 1024; // 100MB
+            } else if (pickerType === 'audio') {
+                maxSize = 500 * 1024 * 1024; // 500MB
+            } else if (pickerType === 'video') {
+                maxSize = 2 * 1024 * 1024 * 1024; // 2GB
+            }
+
+            if (file.size && file.size > maxSize) {
+                let msg = '';
+                if (pickerType === 'image') msg = 'Ukuran gambar maksimal 100MB.';
+                if (pickerType === 'audio') msg = 'Ukuran audio maksimal 500MB.';
+                if (pickerType === 'video') msg = 'Ukuran video maksimal 2GB.';
+
+                alert(msg);
                 return;
             }
 
@@ -482,7 +543,8 @@
                     if (xhr.upload) {
                         xhr.upload.addEventListener('progress', function(ev) {
                             if (ev.lengthComputable) {
-                                const pct = Math.floor((ev.loaded / ev.total) * 100);
+                                const pct = Math.floor((ev.loaded / ev.total) *
+                                    100);
                                 pickerProgressBar.css('width', pct + '%').text(pct +
                                     '%');
                             }

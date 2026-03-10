@@ -68,6 +68,7 @@ return [
     'filter' => 'Filter',
     'choose_item' => 'Pilih Item',
     'choose_item_text' => 'Silahkan pilih item terlebih dahulu!',
+    'choose_file' => 'Pilih File',
     'no_data' => 'Tidak ada data',
     'detail' => 'Detail',
     'status' => 'Status',
@@ -97,6 +98,10 @@ return [
     'logout_confirmation' => 'Apakah Anda yakin ingin logout?',
     'male' => 'Laki-laki',
     'female' => 'Perempuan',
+    'drop_file' => 'Klik untuk mengunggah file',
+    'complete_upload' => 'Selesaikan Unggah',
+    'usage' => 'Penggunaan',
+    'edit_media' => 'Ubah Nama Media',
 
     'list_month' => [
         'january' => 'Januari',
@@ -172,6 +177,13 @@ return [
         'stream_url' => 'Stream URL',
         'frequency' => 'Frekuensi',
         'quality' => 'Kualitas',
+    ],
+
+    'player' => [
+        'list_of_player' => 'Daftar Player',
+        'title' => 'Player',
+        'title_singular' => 'Player',
+        'serial' => 'Serial Number',
     ],
 
     'song' => [
@@ -256,6 +268,12 @@ return [
         'type' => 'Tipe',
         'size' => 'Ukuran',
         'url' => 'URL',
+    ],
+
+    'transaction' => [
+        'list_of_transaction' => 'Daftar Transaksi',
+        'title' => 'Transaksi',
+        'title_singular' => 'Transaksi',
     ],
 
     'profile' => [

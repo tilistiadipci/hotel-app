@@ -17,6 +17,7 @@ use App\Http\Controllers\MenuCategoryController;
 use App\Http\Controllers\GuideItemController;
 use App\Http\Controllers\GuideCategoryController;
 use App\Http\Controllers\MediaController;
+use App\Http\Controllers\PlayerController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -113,6 +114,14 @@ Route::middleware(['auth'])->group(function () {
         ->name('songs.')
         ->group(function () {
             Route::post('/bulkDelete', [SongController::class, 'bulkDelete'])->name('bulkDelete');
+        });
+
+    // Players
+    Route::resource('players', PlayerController::class);
+    Route::prefix('players')
+        ->name('players.')
+        ->group(function () {
+            Route::post('/bulkDelete', [PlayerController::class, 'bulkDelete'])->name('bulkDelete');
         });
 
     // Movies (custom routes first to avoid conflict with resource show)

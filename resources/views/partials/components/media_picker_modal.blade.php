@@ -2,7 +2,7 @@
     <div class="custom-modal__backdrop" data-modal-close></div>
     <div class="custom-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="modalMediaPickerTitle">
         <div class="custom-modal__header">
-            <h5 class="custom-modal__title" id="modalMediaPickerTitle">{{ trans('common.media_picker') }}</h5>
+            <h5 class="custom-modal__title">{{ trans('common.choose_file') }}</h5>
             <button type="button" class="custom-modal__close" data-modal-close aria-label="Close">&times;</button>
         </div>
         <div class="custom-modal__body">
@@ -21,7 +21,7 @@
                     <input type="file" class="form-control-file" id="mediaPickerInput" accept="image/*,audio/*">
                     <input type="file" class="form-control-file d-none" id="mediaPickerVideoInput" accept="video/*">
                     <button type="button" class="btn btn-primary btn-sm d-none" id="btnChooseVideoInModal">
-                        <i class="fa fa-upload mr-1"></i> Pilih Video
+                        <i class="fa fa-upload mr-1"></i> {{  trans('common.choose_file') }}
                     </button>
                 </div>
                 <small class="text-muted d-block" id="mediaPickerHelp">{{ trans('common.supported_formats') }}</small>

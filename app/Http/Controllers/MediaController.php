@@ -34,9 +34,9 @@ class MediaController extends Controller
         $videoTotal = $videosPage->total();
         $audioTotal = $audiosPage->total();
 
-        $images = collect($imagesPage->items())->map(fn ($m) => $this->transformMedia($m));
-        $videos = collect($videosPage->items())->map(fn ($m) => $this->transformMedia($m));
-        $audios = collect($audiosPage->items())->map(fn ($m) => $this->transformMedia($m));
+        $images = collect($imagesPage->items())->map(fn($m) => $this->transformMedia($m));
+        $videos = collect($videosPage->items())->map(fn($m) => $this->transformMedia($m));
+        $audios = collect($audiosPage->items())->map(fn($m) => $this->transformMedia($m));
 
         $usageBytes = $this->getDiskUsageBytes(config('filesystems.disks.media.root'));
         $quotaBytes = null;
@@ -84,7 +84,7 @@ class MediaController extends Controller
             ->latest()
             ->paginate($perPage);
 
-        $items = collect($media->items())->map(fn ($m) => $this->transformMedia($m))->values();
+        $items = collect($media->items())->map(fn($m) => $this->transformMedia($m))->values();
 
         return response()->json([
             'status' => true,
@@ -104,6 +104,7 @@ class MediaController extends Controller
         $filename = $request->input('resumableFilename', $request->input('filename', 'video.mp4'));
         $chunkNumber = (int) $request->input('resumableChunkNumber', 0);
         $totalChunks = (int) $request->input('resumableTotalChunks', 0);
+        $totalSize = (int) $request->input('resumableTotalSize', 0);
         $customName = trim($request->input('name', '')) ?: null;
         $duration = max(0, (int) $request->input('duration', 0));
 
@@ -111,35 +112,60 @@ class MediaController extends Controller
             return response('Invalid request', 400);
         }
 
+        // Validasi format file dari nama file
+        $allowedExtensions = ['mp4', 'mkv', 'webm', 'avi'];
+        $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+
+        if (!$extension || !in_array($extension, $allowedExtensions, true)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Format video tidak didukung. Gunakan MP4, MKV, WEBM, atau AVI.'
+            ], 422);
+        }
+
+        // Validasi ukuran maksimal 2GB
+        $maxSize = 2 * 1024 * 1024 * 1024; // 2GB
+        if ($totalSize > $maxSize) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Ukuran video melebihi batas maksimum 2GB.'
+            ], 422);
+        }
+
         $tempDir = storage_path('app/chunks/videos/' . $identifier);
-        // ensure directory exists (idempotent)
-        // guard: if path is a file, remove it then recreate dir
+
         if (is_file($tempDir)) {
             File::delete($tempDir);
         }
+
         File::ensureDirectoryExists($tempDir, 0755, true);
 
-        // Handle chunk check (GET) used by Resumable.js
+        // Handle chunk check (GET)
         if ($request->isMethod('get')) {
             $chunkPath = $tempDir . '/chunk_' . $chunkNumber;
             return is_file($chunkPath) ? response('OK', 200) : response('Not Found', 404);
         }
 
-        // Store current chunk
+        // Simpan chunk
         $chunk = $request->file('file');
         if (!$chunk || !$chunk->isValid()) {
             return response('Invalid chunk', 400);
         }
-        // overwrite if exists to avoid partial conflicts
+
         $chunk->move($tempDir, 'chunk_' . $chunkNumber);
 
-        // If not last chunk, return progress
+        // Belum chunk terakhir
         if ($chunkNumber < $totalChunks) {
-            return response()->json(['uploaded' => $chunkNumber, 'total' => $totalChunks]);
+            return response()->json([
+                'uploaded' => $chunkNumber,
+                'total' => $totalChunks
+            ]);
         }
 
-        // Combine chunks
-        $safeFilename = now()->format('YmdHis') . '_' . Str::slug(pathinfo($filename, PATHINFO_FILENAME)) . '.' . pathinfo($filename, PATHINFO_EXTENSION);
+        // Gabung chunk
+        $safeFilename = now()->format('YmdHis') . '_' .
+            Str::slug(pathinfo($filename, PATHINFO_FILENAME)) . '.' . $extension;
+
         $finalRelative = 'videos/' . $safeFilename;
         $finalPath = $this->mediaAbsolutePath($finalRelative);
 
@@ -148,26 +174,52 @@ class MediaController extends Controller
 
         $out = fopen($finalPath, 'wb');
         if (!$out) {
+            File::deleteDirectory($tempDir);
             return response('Cannot create file', 500);
         }
 
         for ($i = 1; $i <= $totalChunks; $i++) {
             $chunkFile = $tempDir . '/chunk_' . $i;
             $in = fopen($chunkFile, 'rb');
+
             if ($in) {
                 stream_copy_to_stream($in, $out);
                 fclose($in);
             } else {
                 fclose($out);
+                File::delete($finalPath);
                 File::deleteDirectory($tempDir);
                 return response("Missing chunk {$i}", 500);
             }
         }
+
         fclose($out);
 
+        // Validasi MIME file final
+        $finfo = new \finfo(FILEINFO_MIME_TYPE);
+        $realMime = $finfo->file($finalPath);
+
+        $allowedMimes = [
+            'video/mp4',
+            'video/x-matroska',
+            'video/webm',
+            'video/x-msvideo',
+        ];
+
+        if (!in_array($realMime, $allowedMimes, true)) {
+            File::delete($finalPath);
+            File::deleteDirectory($tempDir);
+
+            return response()->json([
+                'status' => false,
+                'message' => 'File video tidak valid atau format tidak didukung.',
+                'mime' => $realMime,
+            ], 422);
+        }
+
         $media = $this->mediaRepository->createFromUpload('video', $finalRelative, [
-            'extension' => pathinfo($safeFilename, PATHINFO_EXTENSION),
-            'mime' => $this->guessMimeFromExtension(pathinfo($safeFilename, PATHINFO_EXTENSION)),
+            'extension' => $extension,
+            'mime' => $realMime,
             'size' => filesize($finalPath) ?: null,
             'name' => $customName ?? pathinfo($safeFilename, PATHINFO_FILENAME),
             'original' => $filename,
@@ -190,12 +242,33 @@ class MediaController extends Controller
 
     public function store(Request $request)
     {
-        $validated = $request->validate([
-            'file' => 'required|file|max:5242880', // ~5GB cap
+        $type = $request->input('type');
+
+        $rules = [
             'type' => 'nullable|in:image,video,audio',
             'name' => 'nullable|string|max:255',
             'duration' => 'nullable|integer|min:0',
-        ]);
+        ];
+
+        if ($type === 'image') {
+            $rules['file'] = 'required|file|mimes:jpg,jpeg,png|max:102400';
+        }
+
+        if ($type === 'audio') {
+            $rules['file'] = 'required|file|mimes:mp3,wav,flac,aac,m4a,ogg|max:512000';
+        }
+
+        if ($type === 'video') {
+            $rules['file'] = 'required|file|mimes:mp4,mkv,webm,avi|max:2097152';
+        }
+
+        $validated = $request->validate($rules);
+
+        if (empty($validated['file'])) {
+            throw ValidationException::withMessages([
+                'file' => 'File tidak boleh kosong.',
+            ]);
+        }
 
         /** @var UploadedFile $file */
         $file = $validated['file'];

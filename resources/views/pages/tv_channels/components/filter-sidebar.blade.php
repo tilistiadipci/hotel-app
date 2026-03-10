@@ -7,7 +7,7 @@
     </div>
     <form id="filterForm" class="px-3 pt-2">
         <div class="form-group">
-            <label for="filterName">Nama Channel</label>
+            <label for="filterName">{{ trans('common.name') }}</label>
             <div class="input-group input-group-sm">
                 <input type="text" id="filterName" class="form-control" placeholder="Nama channel">
                 <div class="input-group-append">
@@ -16,7 +16,7 @@
             </div>
         </div>
         <div class="form-group">
-            <label for="filterType">Jenis</label>
+            <label for="filterType">{{ trans('common.type') }}</label>
             <div class="d-flex align-items-center">
                 <select id="filterType" class="form-control form-control-sm select2 filter-select" style="width: 100%;" data-placeholder="{{ trans('common.all') }}">
                     <option value="">{{ trans('common.all') }}</option>

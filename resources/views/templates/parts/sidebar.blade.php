@@ -53,6 +53,11 @@
                         <i class="metismenu-icon pe-7s-film"></i> {{ trans('common.movie.title') }}
                     </a>
                 </li>
+                <li class="{{ $page == 'players' ? 'mm-active' : '' }}">
+                    <a href="{{ url('/players') }}" class="{{ $page == 'players' ? 'mm-active' : '' }}">
+                        <i class="metismenu-icon pe-7s-play"></i> {{ trans('common.player.title') }}
+                    </a>
+                </li>
                 <li class="{{ $page == 'menu-items' ? 'mm-active' : '' }}">
                     <a href="{{ url('/menu') }}" class="{{ $page == 'menu-items' ? 'mm-active' : '' }}">
                         <i class="metismenu-icon fa fa-utensils"></i> Menu
@@ -66,6 +71,11 @@
                 <li class="{{ $page == 'guides' ? 'mm-active' : '' }}">
                     <a href="{{ url('/guides') }}" class="{{ $page == 'guides' ? 'mm-active' : '' }}">
                         <i class="metismenu-icon pe-7s-date"></i> {{ trans('common.guide.title') }}
+                    </a>
+                </li>
+                <li class="{{ $page == 'transactions' ? 'mm-active' : '' }}">
+                    <a href="{{ url('/transactions') }}" class="{{ $page == 'transactions' ? 'mm-active' : '' }}">
+                        <i class="metismenu-icon pe-7s-wallet"></i> {{ trans('common.transaction.title') }}
                     </a>
                 </li>
                 @if (auth()->user()->role_id == 1 || auth()->user()->role_id == 2)
