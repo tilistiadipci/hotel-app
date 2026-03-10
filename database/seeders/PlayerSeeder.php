@@ -17,6 +17,7 @@ class PlayerSeeder extends Seeder
             [
                 'uuid'       => (string) Str::uuid(),
                 'name'       => 'Player 1',
+                'alias'     => 'ROOM 1',
                 'serial'     => 'PL001',
                 'is_active'  => true,
                 'created_at' => $now,
@@ -25,6 +26,7 @@ class PlayerSeeder extends Seeder
             [
                 'uuid'       => (string) Str::uuid(),
                 'name'       => 'Player 2',
+                'alias'     => 'ROOM 2',
                 'serial'     => 'PL002',
                 'is_active'  => true,
                 'created_at' => $now,
@@ -33,6 +35,7 @@ class PlayerSeeder extends Seeder
             [
                 'uuid'       => (string) Str::uuid(),
                 'name'       => 'Player 3',
+                'alias'     => 'ROOM 3',
                 'serial'     => 'PL003',
                 'is_active'  => true,
                 'created_at' => $now,
@@ -45,6 +48,7 @@ class PlayerSeeder extends Seeder
             ['serial'],
             [
                 'name',
+                'alias',
                 'is_active',
                 'updated_at',
             ]

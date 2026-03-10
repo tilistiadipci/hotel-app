@@ -17,6 +17,7 @@ use App\Http\Controllers\MenuCategoryController;
 use App\Http\Controllers\GuideItemController;
 use App\Http\Controllers\GuideCategoryController;
 use App\Http\Controllers\MediaController;
+use App\Http\Controllers\MenuTransactionController;
 use App\Http\Controllers\PlayerController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -206,6 +207,13 @@ Route::middleware(['auth'])->group(function () {
         ->group(function () {
             Route::get('/', [SettingWebsiteController::class, 'index'])->name('.index');
             Route::post('/update', [SettingWebsiteController::class, 'update'])->name('.update');
+        });
+
+    Route::prefix('transactions')
+        ->name('transactions')
+        ->group(function () {
+            Route::get('/', [MenuTransactionController::class, 'index'])->name('.index');
+            Route::post('/status/{id}', [MenuTransactionController::class, 'updateStatus'])->name('.status');
         });
 });
 

@@ -47,6 +47,7 @@
                                     </th>
                                     <th style="width:60px">No</th>
                                     <th>{{ trans('common.name') }}</th>
+                                    <th>Alias</th>
                                     <th>{{ trans('common.player.serial') }}</th>
                                     <th>{{ trans('common.status') }}</th>
                                     <th style="text-align:center">{!! trans('common.action') !!}</th>
@@ -106,6 +107,7 @@
                     return `<a href="${url}">${row.name || ''}</a>`;
                 }
             },
+            { data: 'alias', name: 'alias' },
             { data: 'serial', name: 'serial' },
             {
                 name: 'is_active',

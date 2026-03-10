@@ -25,6 +25,19 @@
                 </div>
 
                 <div class="position-relative row form-group">
+                    <label class="col-sm-3 col-form-label text-sm-right">Alias</label>
+                    <div class="col-sm-9">
+                        @include('partials.forms.input', [
+                            'elementId' => 'alias',
+                            'required' => true,
+                            'value' => $player->alias ?? old('alias'),
+                            'type' => 'text',
+                            'maxlength' => 150,
+                        ])
+                    </div>
+                </div>
+
+                <div class="position-relative row form-group">
                     <label class="col-sm-3 col-form-label text-sm-right">{{ trans('common.player.serial') }}</label>
                     <div class="col-sm-9">
                         @include('partials.forms.input', [

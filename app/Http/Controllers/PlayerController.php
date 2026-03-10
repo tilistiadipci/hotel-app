@@ -153,6 +153,7 @@ class PlayerController extends Controller
 
         $rules = [
             'name' => 'required|string|max:150',
+            'alias' => 'required|string|max:100',
             'serial' => 'required|string|max:100|unique:players,serial' . ($playerId ? ',' . $playerId : ''),
             'is_active' => 'nullable|boolean',
         ];
