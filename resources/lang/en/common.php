@@ -187,6 +187,28 @@ return [
         'title' => 'Players',
         'title_singular' => 'Player',
         'serial' => 'Serial Number',
+        'cannot_deactivate_when_booked' => 'This player cannot be deactivated because it is still booked and has not been checked out.',
+    ],
+
+    'booking' => [
+        'title' => 'Booking',
+        'book_now' => 'Check In',
+        'checkout' => 'Check Out',
+        'available' => 'Available',
+        'occupied' => 'Occupied',
+        'guest_name' => 'Guest Name',
+        'room_name' => 'Room Name',
+        'checked_in_at' => 'Check In',
+        'checkout_confirm' => 'Are you sure you want to check out this booking?',
+        'already_booked' => 'This player is already being used by another guest.',
+        'no_active_booking' => 'There is no active booking for this player.',
+        'filter_guest_name' => 'Guest Name',
+        'filter_guest_name_placeholder' => 'Search guest name',
+        'filter_player_name' => 'Player Name',
+        'filter_player_name_placeholder' => 'Search player',
+        'filter_room_name' => 'Room Name',
+        'alias' => 'Alias',
+        'filter_room_name_placeholder' => 'Search room name',
     ],
 
     'song' => [

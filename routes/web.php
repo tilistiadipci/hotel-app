@@ -20,6 +20,7 @@ use App\Http\Controllers\GuideCategoryController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\MenuTransactionController;
 use App\Http\Controllers\PlayerController;
+use App\Http\Controllers\BookingController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -124,6 +125,14 @@ Route::middleware(['auth'])->group(function () {
         ->name('players.')
         ->group(function () {
             Route::post('/bulkDelete', [PlayerController::class, 'bulkDelete'])->name('bulkDelete');
+        });
+
+    Route::prefix('booking')
+        ->name('booking.')
+        ->group(function () {
+            Route::get('/', [BookingController::class, 'index'])->name('index');
+            Route::post('/{player}/store', [BookingController::class, 'store'])->name('store');
+            Route::post('/{player}/checkout', [BookingController::class, 'checkout'])->name('checkout');
         });
 
     // Movies (custom routes first to avoid conflict with resource show)

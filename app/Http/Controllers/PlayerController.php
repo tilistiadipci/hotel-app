@@ -6,6 +6,7 @@ use App\Repositories\PlayerRepository;
 use App\Repositories\ThemeRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 class PlayerController extends Controller
 {
@@ -106,13 +107,25 @@ class PlayerController extends Controller
         $data = $this->validateRequest($request, $uid);
 
         try {
-            DB::beginTransaction();
-            $this->playerRepository->updateByUid($uid, $data);
-            DB::commit();
+            DB::transaction(function () use ($uid, $data) {
+                $player = $this->playerRepository->findUidForUpdate($uid);
+                if (!$player) {
+                    throw new \RuntimeException(trans('common.error.404'));
+                }
+
+                if ((int) ($data['is_active'] ?? 1) === 0 && $this->playerRepository->hasActiveBooking($player->id)) {
+                    throw ValidationException::withMessages([
+                        'is_active' => trans('common.player.cannot_deactivate_when_booked'),
+                    ]);
+                }
+
+                $this->playerRepository->updateByUid($uid, $data);
+            });
 
             return redirect()->route('players.index')->with('success', trans('common.success.update'));
+        } catch (ValidationException $e) {
+            return redirect()->back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
-            DB::rollBack();
             $this->debugError($e);
             return redirect()->back()->with('error', $e->getMessage());
         }

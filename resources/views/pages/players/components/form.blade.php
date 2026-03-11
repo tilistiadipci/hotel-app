@@ -76,10 +76,13 @@
                         @php
                             $isActive = $player->is_active ?? old('is_active', 1);
                         @endphp
-                        <select name="is_active" id="is_active" class="form-control select2" style="width: 100%;">
+                        <select name="is_active" id="is_active" class="form-control select2 @error('is_active') is-invalid @enderror" style="width: 100%;">
                             <option value="1" {{ $isActive == 1 ? 'selected' : '' }}>{{ trans('common.active') }}</option>
                             <option value="0" {{ $isActive == 0 ? 'selected' : '' }}>{{ trans('common.inactive') }}</option>
                         </select>
+                        @error('is_active')
+                            <div class="text-danger mt-1">{{ $message }}</div>
+                        @enderror
                     </div>
                 </div>
             </div>

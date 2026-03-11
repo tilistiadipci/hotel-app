@@ -2,6 +2,7 @@
 
 namespace App\Repositories;
 
+use App\Models\Booking;
 use App\Models\Player;
 use Yajra\DataTables\Facades\DataTables;
 
@@ -69,5 +70,21 @@ class PlayerRepository extends BaseRepository
             })
             ->rawColumns(['action'])
             ->make(true);
+    }
+
+    public function findUidForUpdate(string $uid): ?Player
+    {
+        return $this->query()
+            ->where('uuid', $uid)
+            ->lockForUpdate()
+            ->first();
+    }
+
+    public function hasActiveBooking(int $playerId): bool
+    {
+        return Booking::query()
+            ->active()
+            ->where('player_id', $playerId)
+            ->exists();
     }
 }

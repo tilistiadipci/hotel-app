@@ -40,7 +40,7 @@
                 </li>
                 <li class="{{ $page == 'booking' ? 'mm-active' : '' }}">
                     <a href="{{ url('/booking') }}" class="{{ $page == 'booking' ? 'mm-active' : '' }}">
-                        <i class="metismenu-icon fa fa-calendar"></i> Booking
+                        <i class="metismenu-icon fa fa-calendar"></i> Checkin/Checkout
                     </a>
                 </li>
                 <li class="{{ $page == 'tv channels' ? 'mm-active' : '' }}">

@@ -66,4 +66,16 @@ class Player extends Model
     {
         return $this->belongsTo(Theme::class);
     }
+
+    public function bookings()
+    {
+        return $this->hasMany(Booking::class, 'player_id');
+    }
+
+    public function currentBooking()
+    {
+        return $this->hasOne(Booking::class, 'player_id')
+            ->whereNull('checked_out_at')
+            ->latestOfMany('checked_in_at');
+    }
 }

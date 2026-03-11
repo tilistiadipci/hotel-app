@@ -184,6 +184,28 @@ return [
         'title' => 'Player',
         'title_singular' => 'Player',
         'serial' => 'Serial Number',
+        'cannot_deactivate_when_booked' => 'Player tidak bisa dinonaktifkan karena masih sedang dibooking dan belum checkout.',
+    ],
+
+    'booking' => [
+        'title' => 'Booking',
+        'book_now' => 'Check In',
+        'checkout' => 'Check Out',
+        'available' => 'Available',
+        'occupied' => 'Occupied',
+        'guest_name' => 'Nama Tamu',
+        'room_name' => 'Nama Ruangan',
+        'checked_in_at' => 'Check In',
+        'checkout_confirm' => 'Yakin ingin checkout booking ini?',
+        'already_booked' => 'Player ini sedang dipakai oleh tamu lain.',
+        'no_active_booking' => 'Tidak ada booking aktif untuk player ini.',
+        'filter_guest_name' => 'Nama Tamu',
+        'filter_guest_name_placeholder' => 'Cari nama tamu',
+        'filter_player_name' => 'Nama Player',
+        'filter_player_name_placeholder' => 'Cari player',
+        'filter_room_name' => 'Nama Ruangan',
+        'alias' => 'Alias',
+        'filter_room_name_placeholder' => 'Cari nama ruangan',
     ],
 
     'song' => [

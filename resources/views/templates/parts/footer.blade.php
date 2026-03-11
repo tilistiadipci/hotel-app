@@ -4,7 +4,7 @@
         <div class="app-footer__inner">
             <div class="app-footer-left">
                 <div class="footer-dots">
-                    Copyright&nbsp;©&nbsp;<a href="https://bio-experience.com">Bio Experience</a>&nbsp;-&nbsp;{{ date('Y') }}
+                    Copyright&nbsp;©&nbsp;<a href="https://bio-experience.com">Bio Experience</a>&nbsp;2025&nbsp;-&nbsp;{{ date('Y') }}
                 </div>
             </div>
             <div class="app-footer-right">
