@@ -35,6 +35,10 @@ return new class extends Migration
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->unsignedBigInteger('deleted_by')->nullable();
 
+            $table->unsignedInteger('processed_by')->nullable();
+            $table->unsignedInteger('completed_by')->nullable();
+            $table->unsignedInteger('cancelled_by')->nullable();
+
             $table->index('player_id', 'idx_player_id');
             $table->index('status', 'idx_status');
             $table->index('payment_status', 'idx_payment_status');

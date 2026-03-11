@@ -1,8 +1,6 @@
 @if ($selectedTransaction)
     <div class="card mb-3">
         <div class="card-body">
-            <textarea id="selectedData" cols="30" rows="10" style="display: none;">{{ json_encode($selectedTransaction) }}</textarea>
-
             <div class="d-flex flex-wrap justify-content-between align-items-start mb-4">
                 <div class="mb-3 mb-md-0">
                     <h3 class="mb-1">
@@ -37,11 +35,21 @@
                 @endif
             </div>
 
+            @php
+                // dd($selectedTransaction)
+            @endphp
+
             <div class="row mb-4">
                 <div class="col-md-4 mb-3">
-                    <div class="transaction-meta__label">Handled By</div>
+                    <div class="transaction-meta__label">Processed By</div>
                     <div class="transaction-meta__value">
-                        {{ optional($selectedTransaction->createdBy)->username ?? 'Admin' }}
+                        {{ optional($selectedTransaction->processedBy)->username ?? '-' }}
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="transaction-meta__label">Completed By</div>
+                    <div class="transaction-meta__value">
+                        {{ optional($selectedTransaction->completedBy)->username ?? '-' }}
                     </div>
                 </div>
                 <div class="col-md-4 mb-3">
@@ -54,6 +62,14 @@
                     <div class="transaction-meta__label">Payment Method</div>
                     <div class="transaction-meta__value">{{ strtoupper($selectedTransaction->payment_method) }}</div>
                 </div>
+                @if (optional($selectedTransaction->cancelledBy)->username)
+                    <div class="col-md-4 mb-3">
+                        <div class="transaction-meta__label">Cancelled By</div>
+                        <div class="transaction-meta__value">
+                            {{ optional($selectedTransaction->cancelledBy)->username }}
+                        </div>
+                    </div>
+                @endif
             </div>
 
             <h6 class="text-muted text-uppercase mb-3">Items Purchased</h6>
@@ -123,10 +139,12 @@
                             <td style="text-align:right;">{{ optional($selectedTransaction->player)->alias ?? '-' }}
                             </td>
                         </tr>
-                        <tr>
-                            <td>Guest</td>
-                            <td style="text-align:right;">{{ $selectedTransaction->guest_name ?? '-' }}</td>
-                        </tr>
+                        @if (!empty($selectedTransaction->guest_name) && $selectedTransaction->guest_name != '-')
+                            <tr>
+                                <td>Guest</td>
+                                <td style="text-align:right;">{{ $selectedTransaction->guest_name ?? '-' }}</td>
+                            </tr>
+                        @endif
                         <tr>
                             <td>Payment</td>
                             <td style="text-align:right;">{{ strtoupper($selectedTransaction->payment_method) }}</td>

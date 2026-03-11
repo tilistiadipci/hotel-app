@@ -23,7 +23,7 @@ class MenuItemSeeder extends Seeder
             [
                 'name' => 'Bruschetta',
                 'category' => 'appetizers',
-                'price' => 45000,
+                'price' => 2000,
                 'discount_price' => null,
                 'description' => 'Grilled bread topped with tomatoes, basil, and olive oil.',
                 'is_available' => true,
@@ -33,8 +33,8 @@ class MenuItemSeeder extends Seeder
             [
                 'name' => 'Caesar Salad',
                 'category' => 'appetizers',
-                'price' => 52000,
-                'discount_price' => 48000,
+                'price' => 3000,
+                'discount_price' => 2500,
                 'description' => 'Romaine, parmesan, croutons, and house Caesar dressing.',
                 'is_available' => true,
                 'sort_order' => 2,
@@ -43,7 +43,7 @@ class MenuItemSeeder extends Seeder
             [
                 'name' => 'Grilled Salmon',
                 'category' => 'main-course',
-                'price' => 145000,
+                'price' => 2500,
                 'discount_price' => null,
                 'description' => 'Norwegian salmon with lemon butter sauce.',
                 'is_available' => true,
@@ -53,8 +53,8 @@ class MenuItemSeeder extends Seeder
             [
                 'name' => 'Ribeye Steak',
                 'category' => 'main-course',
-                'price' => 175000,
-                'discount_price' => 160000,
+                'price' => 2000,
+                'discount_price' => 1000,
                 'description' => '250gr ribeye, grilled to order, with peppercorn jus.',
                 'is_available' => true,
                 'sort_order' => 2,
@@ -73,8 +73,8 @@ class MenuItemSeeder extends Seeder
             [
                 'name' => 'Iced Latte',
                 'category' => 'beverages',
-                'price' => 38000,
-                'discount_price' => 32000,
+                'price' => 4000,
+                'discount_price' => 2000,
                 'description' => 'Double espresso with cold milk over ice.',
                 'is_available' => true,
                 'sort_order' => 1,

@@ -70,4 +70,19 @@ class MenuTransaction extends Model
     {
         return $this->belongsTo(User::class, 'deleted_by');
     }
+
+    public function processedBy()
+    {
+        return $this->belongsTo(User::class, 'processed_by');
+    }
+
+    public function completedBy()
+    {
+        return $this->belongsTo(User::class, 'completed_by');
+    }
+
+    public function cancelledBy()
+    {
+        return $this->belongsTo(User::class, 'cancelled_by');
+    }
 }

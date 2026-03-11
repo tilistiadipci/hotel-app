@@ -2,40 +2,37 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\MenuTransaction;
+use App\Repositories\MenuTransactionRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
 class MenuTransactionController extends Controller
 {
+    public function __construct(
+        private readonly MenuTransactionRepository $menuTransactionRepository
+    ) {
+    }
+
     /**
      * Display a listing of the resource.
      */
     public function index(Request $request)
     {
         $activeStatus = $request->input('status', 'ordered');
-        $statusCounts = [
-            'all' => MenuTransaction::query()->count(),
-            'ordered' => MenuTransaction::query()->where('status', 'ordered')->count(),
-            'processing' => MenuTransaction::query()->where('status', 'processing')->count(),
-            'completed' => MenuTransaction::query()->where('status', 'completed')->count(),
-            'cancelled' => MenuTransaction::query()->where('status', 'cancelled')->count(),
-        ];
-
-        $transactionsPaginator = MenuTransaction::query()
-            ->with(['invoice', 'player', 'details.menu.imageMedia', 'createdBy'])
-            ->when(in_array($activeStatus, ['ordered', 'processing', 'completed', 'cancelled'], true), function ($query) use ($activeStatus) {
-                $query->where('status', $activeStatus);
-            })
-            ->orderByRaw("CASE WHEN status = 'completed' THEN 1 ELSE 0 END ASC")
-            ->orderByDesc('created_at')
-            ->paginate(10);
+        $activePaymentMethod = $this->normalizePaymentMethod($activeStatus, $request->input('payment_method', 'all'));
+        $statusCounts = $this->menuTransactionRepository->statusCounts();
+        $paymentMethodCounts = $this->menuTransactionRepository->paymentMethodCounts($activeStatus);
+        $transactionsPaginator = $this->menuTransactionRepository->paginateFiltered($activeStatus, $activePaymentMethod, 10);
 
         $transactions = $transactionsPaginator->getCollection();
 
         $selectedId = $request->input('transaction_id');
         $selectedTransaction = $transactions->firstWhere('id', (int) $selectedId) ?? $transactions->first();
+
+        if (!$selectedTransaction && $selectedId) {
+            $selectedTransaction = $this->menuTransactionRepository->findWithRelations((int) $selectedId);
+        }
 
         if ($request->ajax()) {
             if ($request->input('partial') === 'list') {
@@ -47,6 +44,9 @@ class MenuTransactionController extends Controller
                     'has_more' => $transactionsPaginator->hasMorePages(),
                     'next_page' => $transactionsPaginator->currentPage() + 1,
                     'active_status' => $activeStatus,
+                    'active_payment_method' => $activePaymentMethod,
+                    'selected_transaction_id' => $selectedTransaction?->id,
+                    'payment_method_counts' => $paymentMethodCounts,
                 ]);
             }
 
@@ -62,7 +62,9 @@ class MenuTransactionController extends Controller
             'hasMoreTransactions' => $transactionsPaginator->hasMorePages(),
             'nextTransactionPage' => $transactionsPaginator->currentPage() + 1,
             'activeStatus' => $activeStatus,
+            'activePaymentMethod' => $activePaymentMethod,
             'statusCounts' => $statusCounts,
+            'paymentMethodCounts' => $paymentMethodCounts,
         ]);
     }
 
@@ -72,9 +74,13 @@ class MenuTransactionController extends Controller
             'status' => ['required', Rule::in(['processing', 'completed'])],
         ]);
 
-        $transaction = MenuTransaction::query()
-            ->with(['invoice', 'player', 'details.menu.imageMedia', 'createdBy'])
-            ->findOrFail($id);
+        $transaction = $this->menuTransactionRepository->findWithRelations((int) $id);
+
+        if (!$transaction) {
+            return response()->json([
+                'message' => trans('common.error.404'),
+            ], 404);
+        }
 
         if ($validated['status'] === 'processing' && $transaction->status !== 'ordered') {
             return response()->json([
@@ -91,21 +97,36 @@ class MenuTransactionController extends Controller
         $transaction->status = $validated['status'];
         $transaction->updated_by = auth()->id();
 
+        if ($validated['status'] === 'processing') {
+            $transaction->processed_by = auth()->id();
+        }
+
         if ($validated['status'] === 'completed' && $transaction->payment_status === 'pending') {
             $transaction->payment_status = 'paid';
             $transaction->paid_at = now();
         }
 
-        $transaction->save();
-        $transaction->refresh()->load(['invoice', 'player', 'details', 'createdBy']);
+        if ($validated['status'] === 'completed') {
+            if (!$transaction->processed_by) {
+                $transaction->processed_by = auth()->id();
+            }
 
-        $statusCounts = [
-            'all' => MenuTransaction::query()->count(),
-            'ordered' => MenuTransaction::query()->where('status', 'ordered')->count(),
-            'processing' => MenuTransaction::query()->where('status', 'processing')->count(),
-            'completed' => MenuTransaction::query()->where('status', 'completed')->count(),
-            'cancelled' => MenuTransaction::query()->where('status', 'cancelled')->count(),
-        ];
+            $transaction->completed_by = auth()->id();
+        }
+
+        $transaction->save();
+        $transaction->refresh()->load([
+            'invoice',
+            'player',
+            'details.menu.imageMedia',
+            'createdBy',
+            'processedBy',
+            'completedBy',
+            'cancelledBy',
+        ]);
+
+        $statusCounts = $this->menuTransactionRepository->statusCounts();
+        $paymentMethodCounts = $this->menuTransactionRepository->paymentMethodCounts($transaction->status);
 
         return response()->json([
             'message' => 'Transaction updated successfully.',
@@ -116,9 +137,15 @@ class MenuTransactionController extends Controller
                 'processing' => $statusCounts['processing'],
                 'ordered' => $statusCounts['ordered'],
             ],
+            'payment_method_counts' => $paymentMethodCounts,
             'detail_html' => view('pages.transactions.components.detail', [
                 'selectedTransaction' => $transaction,
             ])->render(),
         ]);
+    }
+
+    private function normalizePaymentMethod(string $status, string $paymentMethod): string
+    {
+        return in_array($paymentMethod, ['qris', 'bill'], true) ? $paymentMethod : 'all';
     }
 }

@@ -14,7 +14,10 @@
         data-transaction-id="{{ $transaction->id }}">
         <div class="d-flex justify-content-between align-items-start mb-2">
             <strong>{{ optional($transaction->invoice)->invoice_number ?? 'TRX-' . $transaction->id }}</strong>
-            <span class="badge badge-{{ $statusClass }}">{{ strtoupper($transaction->status) }}</span>
+            <div class="text-right d-flex">
+                <span class="badge mx-1 badge-{{ $statusClass }}">{{ strtoupper($transaction->status) }}</span>
+                <span class="badge badge-dark">{{ strtoupper($transaction->payment_method) }}</span>
+            </div>
         </div>
         <div class="text-muted small mb-2">{{ formatDate($transaction->created_at, true, 'M d, Y - h:i A') }}</div>
         <div class="d-flex justify-content-between align-items-center">
