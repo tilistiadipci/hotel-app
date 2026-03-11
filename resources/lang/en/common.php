@@ -240,6 +240,16 @@ return [
         'list_of_transaction' => 'List of Transactions',
         'title' => 'Transactions',
         'title_singular' => 'Transaction',
+        'status_label' => [
+            'ordered' => 'Ordered',
+            'processing' => 'Processing',
+            'completed' => 'Completed',
+            'cancelled' => 'Cancelled',
+        ],
+        'payment_method_label' => [
+            'qris' => 'QRIS',
+            'bill' => 'Bill',
+        ],
         'print_receipt' => 'Print Receipt',
         'process_order' => 'Process Order',
         'complete_order' => 'Complete Order',

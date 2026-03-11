@@ -14,6 +14,8 @@ if (! function_exists('formatDate')) {
             $date = $date->timezone(config('app.timezone'));
         }
 
+        // return $date;
+
         return $date->translatedFormat($format);
     }
 }

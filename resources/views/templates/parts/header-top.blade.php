@@ -31,14 +31,7 @@
     </div>
     <div class="app-header__content">
         <div class="app-header-left">
-            <div class="search-wrapper">
-                <div class="input-holder">
-                    <form action="" id="searchFromAsset" method="GET">
-                        <input type="text" class="search-input" name="asset_name" placeholder="{{ trans('common.search_text') }}">
-                    </form>
-                    <button id="searchIconAsseet" class="search-icon"><span></span></button>
-                </div>
-                <button class="close"></button>
+            <div class="clock-wrapper d-flex align-items-center">
             </div>
         </div>
         <div class="app-header-right">

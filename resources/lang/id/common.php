@@ -274,6 +274,16 @@ return [
         'list_of_transaction' => 'Daftar Transaksi',
         'title' => 'Transaksi',
         'title_singular' => 'Transaksi',
+        'status_label' => [
+            'ordered' => 'Ordered',
+            'processing' => 'Processing',
+            'completed' => 'Completed',
+            'cancelled' => 'Cancelled',
+        ],
+        'payment_method_label' => [
+            'qris' => 'QRIS',
+            'bill' => 'Bill',
+        ],
         'print_receipt' => 'Cetak Struk',
         'process_order' => 'Proses Pesanan',
         'complete_order' => 'Pesanan Selesai',

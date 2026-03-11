@@ -278,6 +278,14 @@
         .modal-backdrop {
             z-index: 2050 !important;
         }
+
+        .clock {
+            font-size: 24px;
+            font-weight: bold;
+            text-align: center;
+            padding: 5px;
+            border-radius: 5px;
+        }
     </style>
 
     @yield('css')
@@ -625,6 +633,27 @@
                 });
             }
         });
+
+        // function clockCount() {
+        //     const clock = new Date();
+        //     const hours = clock.getHours();
+        //     const minutes = clock.getMinutes();
+        //     const seconds = clock.getSeconds();
+        //     const clockElement = document.querySelector('.clock');
+
+        //     if (hours < 10) {
+        //         hours = '0' + hours;
+        //     }
+        //     if (minutes < 10) {
+        //         minutes = '0' + minutes;
+        //     }
+        //     if (seconds < 10) {
+        //         seconds = '0' + seconds;
+        //     }
+        //     clockElement.innerHTML = `${hours}:${minutes}:${seconds}`;
+        // }
+
+        // setInterval(clockCount, 1000);
     </script>
 
     @include('partials.media-picker')

@@ -7,7 +7,7 @@
                         {{ optional($selectedTransaction->invoice)->invoice_number ?? 'TRX-' . $selectedTransaction->id }}
                     </h3>
                     <div class="text-muted">
-                        {{ ucfirst($selectedTransaction->status) }} -
+                        {{ trans('common.transaction.status_label.' . $selectedTransaction->status) }} -
                         {{ formatDate($selectedTransaction->created_at, true, 'M d, Y, h:i A') }}
                     </div>
                 </div>
@@ -46,7 +46,7 @@
             </div>
 
             @php
-                // dd($selectedTransaction)
+                $paymentMethodLabel = trans('common.transaction.payment_method_label.' . $selectedTransaction->payment_method);
             @endphp
 
             <div class="row mb-4">
@@ -70,7 +70,7 @@
                 </div>
                 <div class="col-md-4 mb-3">
                     <div class="transaction-meta__label">{{ trans('common.transaction.payment_method') }}</div>
-                    <div class="transaction-meta__value">{{ strtoupper($selectedTransaction->payment_method) }}</div>
+                    <div class="transaction-meta__value">{{ $paymentMethodLabel }}</div>
                 </div>
                 @if (optional($selectedTransaction->cancelledBy)->username)
                     <div class="col-md-4 mb-3">
@@ -161,7 +161,7 @@
                         @endif
                         <tr>
                             <td>{{ trans('common.transaction.payment') }}</td>
-                            <td style="text-align:right;">{{ strtoupper($selectedTransaction->payment_method) }}</td>
+                            <td style="text-align:right;">{{ $paymentMethodLabel }}</td>
                         </tr>
                     </table>
 
