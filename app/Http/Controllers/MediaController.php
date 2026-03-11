@@ -429,7 +429,7 @@ class MediaController extends Controller
             return;
         }
         // skip shared placeholder to avoid deleting the default asset
-        if (stripos($media->storage_path, 'default/no-image') !== false) {
+        if (stripos($media->storage_path, 'default/') !== false) {
             $media->deleted_by = auth()->id();
             $media->deleted_at = now();
             $media->save();

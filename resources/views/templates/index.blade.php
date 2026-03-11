@@ -125,7 +125,7 @@
         .toggle-password {
             position: absolute;
             top: 10px;
-            right: 15px;
+            right: 20px;
             cursor: pointer;
         }
 
