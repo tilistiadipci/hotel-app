@@ -3,18 +3,21 @@
 namespace App\Http\Controllers;
 
 use App\Repositories\PlayerRepository;
+use App\Repositories\ThemeRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
 class PlayerController extends Controller
 {
     protected PlayerRepository $playerRepository;
+    protected ThemeRepository $themeRepository;
     private string $page = 'players';
     private string $icon = 'fa fa-users';
 
-    public function __construct(PlayerRepository $playerRepository)
+    public function __construct(PlayerRepository $playerRepository, ThemeRepository $themeRepository)
     {
         $this->playerRepository = $playerRepository;
+        $this->themeRepository = $themeRepository;
     }
 
     public function index(Request $request)
@@ -34,6 +37,7 @@ class PlayerController extends Controller
         return view('pages.players.create', [
             'page' => $this->page,
             'icon' => $this->icon,
+            'themes' => $this->themeRepository->getList(),
         ]);
     }
 
@@ -93,6 +97,7 @@ class PlayerController extends Controller
             'page' => $this->page,
             'icon' => $this->icon,
             'player' => $player,
+            'themes' => $this->themeRepository->getList(),
         ]);
     }
 
@@ -155,6 +160,7 @@ class PlayerController extends Controller
             'name' => 'required|string|max:150',
             'alias' => 'required|string|max:100',
             'serial' => 'required|string|max:100|unique:players,serial' . ($playerId ? ',' . $playerId : ''),
+            'theme_id' => 'required|integer|exists:themes,id',
             'is_active' => 'nullable|boolean',
         ];
 

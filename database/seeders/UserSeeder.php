@@ -35,6 +35,38 @@ class UserSeeder extends Seeder
             'updated_at' => $now,
         ]);
 
+        $avatarMediaId2 = DB::table('medias')->insertGetId([
+            'uuid' => Str::uuid()->toString(),
+            'name' => 'Admin Avatar',
+            'original_filename' => basename($storagePath),
+            'type' => 'image',
+            'extension' => strtolower($ext),
+            'storage_path' => $storagePath,
+            'mime_type' => 'image/' . strtolower($ext),
+            'size' => null,
+            'duration' => null,
+            'width' => null,
+            'height' => null,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
+        $avatarMediaId3 = DB::table('medias')->insertGetId([
+            'uuid' => Str::uuid()->toString(),
+            'name' => 'Operator Avatar',
+            'original_filename' => basename($storagePath),
+            'type' => 'image',
+            'extension' => strtolower($ext),
+            'storage_path' => $storagePath,
+            'mime_type' => 'image/' . strtolower($ext),
+            'size' => null,
+            'duration' => null,
+            'width' => null,
+            'height' => null,
+            'created_at' => $now,
+            'updated_at' => $now,
+        ]);
+
         User::factory()->create([
             'username' => 'Super Admin',
             'email' => 'superadmin@gmail.com',
@@ -46,6 +78,34 @@ class UserSeeder extends Seeder
             'address' => 'Jl. Jalan Raya No. 123',
             'gender' => 'male',
             'image_id' => $avatarMediaId,
+        ]);
+
+        // create user admin
+        User::factory()->create([
+            'username' => 'Admin',
+            'email' => 'admin@gmail.com',
+            'password' => Hash::make('admin'),
+            'role_id' => 2,
+        ])->profile()->create([
+            'name' => 'Admin',
+            'phone' => '081234567890',
+            'address' => 'Jl. Jalan Raya No. 123',
+            'gender' => 'male',
+            'image_id' => $avatarMediaId2,
+        ]);
+
+        // create user operator
+        User::factory()->create([
+            'username' => 'Operator',
+            'email' => 'operator@gmail.com',
+            'password' => Hash::make('operator'),
+            'role_id' => 3,
+        ])->profile()->create([
+            'name' => 'Operator',
+            'phone' => '081234567890',
+            'address' => 'Jl. Jalan Raya No. 123',
+            'gender' => 'male',
+            'image_id' => $avatarMediaId3,
         ]);
     }
 }

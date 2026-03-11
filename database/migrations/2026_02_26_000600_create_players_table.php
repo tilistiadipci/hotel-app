@@ -14,6 +14,7 @@ return new class extends Migration
             $table->string('name', 150);
             $table->string('serial', 100)->unique();
             $table->boolean('is_active')->default(true);
+            $table->unsignedBigInteger('theme_id')->nullable()->constrained('themes')->nullOnDelete();
             $table->unsignedBigInteger('created_by')->nullable();
             $table->unsignedBigInteger('updated_by')->nullable();
             $table->unsignedBigInteger('deleted_by')->nullable();

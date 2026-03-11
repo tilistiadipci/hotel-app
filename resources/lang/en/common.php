@@ -242,6 +242,26 @@ return [
         'title_singular' => 'Transaction',
     ],
 
+    'theme' => [
+        'title' => 'Themes',
+        'title_singular' => 'Theme',
+        'edit' => 'Edit Theme',
+        'details' => 'Theme Details',
+        'detail_key' => 'Key',
+        'detail_value' => 'Value',
+        'add_detail' => 'Add Detail',
+        'is_default' => 'Default',
+        'set_default' => 'Set Default',
+        'default_active' => 'Default',
+        'fixed_header' => 'Fixed Header',
+        'fixed_sidebar' => 'Fixed Sidebar',
+        'fixed_footer' => 'Fixed Footer',
+        'header_scheme' => 'Header Scheme',
+        'sidebar_scheme' => 'Sidebar Scheme',
+        'tabs_style' => 'Tabs Style',
+        'body_theme' => 'Body Theme',
+    ],
+
     'menu' => [
         'list_of_menu' => 'List of Menu Items',
         'title' => 'Menu Items',

@@ -7,6 +7,7 @@ use App\Http\Controllers\MovieCategoryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SettingWebsiteController;
 use App\Http\Controllers\SongController;
+use App\Http\Controllers\ThemeController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\TVChannelController;
 use App\Http\Controllers\MovieController;
@@ -208,6 +209,15 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/', [SettingWebsiteController::class, 'index'])->name('.index');
             Route::post('/update', [SettingWebsiteController::class, 'update'])->name('.update');
         });
+
+    Route::middleware('role.category:admin,master')->group(function () {
+        Route::prefix('themes')
+            ->name('themes.')
+            ->group(function () {
+                Route::post('/{theme}/set-default', [ThemeController::class, 'setDefault'])->name('set-default');
+            });
+        Route::resource('themes', ThemeController::class)->only(['index', 'edit', 'update']);
+    });
 
     Route::prefix('transactions')
         ->name('transactions')

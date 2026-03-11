@@ -49,6 +49,7 @@
                                     <th>{{ trans('common.name') }}</th>
                                     <th>Alias</th>
                                     <th>{{ trans('common.player.serial') }}</th>
+                                    <th>Theme</th>
                                     <th>{{ trans('common.status') }}</th>
                                     <th style="text-align:center">{!! trans('common.action') !!}</th>
                                 </tr>
@@ -109,6 +110,7 @@
             },
             { data: 'alias', name: 'alias' },
             { data: 'serial', name: 'serial' },
+            { data: 'theme_name', name: 'theme_name' },
             {
                 name: 'is_active',
                 render: function(data, type, row) {

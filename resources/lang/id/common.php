@@ -276,6 +276,26 @@ return [
         'title_singular' => 'Transaksi',
     ],
 
+    'theme' => [
+        'title' => 'Themes',
+        'title_singular' => 'Theme',
+        'edit' => 'Ubah Theme',
+        'details' => 'Theme Details',
+        'detail_key' => 'Key',
+        'detail_value' => 'Value',
+        'add_detail' => 'Tambah Detail',
+        'is_default' => 'Default',
+        'set_default' => 'Set Default',
+        'default_active' => 'Default',
+        'fixed_header' => 'Fixed Header',
+        'fixed_sidebar' => 'Fixed Sidebar',
+        'fixed_footer' => 'Fixed Footer',
+        'header_scheme' => 'Skema Header',
+        'sidebar_scheme' => 'Skema Sidebar',
+        'tabs_style' => 'Gaya Tabs',
+        'body_theme' => 'Tema Body',
+    ],
+
     'profile' => [
         'title_singular' => 'Profil',
         'change_password' => 'Ubah Password',

@@ -423,6 +423,8 @@
             socket.on("new-order", function(data) {
                 reloadTransactionList(null);
 
+                toastr["success"](`Order ${data.player_alias}`, "Success");
+
                 playNotificationSound();
             });
 

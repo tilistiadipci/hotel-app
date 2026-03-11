@@ -38,6 +38,11 @@
                         <i class="metismenu-icon lnr-laptop"></i> Dashboard
                     </a>
                 </li>
+                <li class="{{ $page == 'themes' ? 'mm-active' : '' }}">
+                    <a href="{{ url('/themes') }}" class="{{ $page == 'themes' ? 'mm-active' : '' }}">
+                        <i class="metismenu-icon pe-7s-paint-bucket"></i> Themes
+                    </a>
+                </li>
                 <li class="{{ $page == 'tv channels' ? 'mm-active' : '' }}">
                     <a href="{{ url('/tv-channels') }}" class="{{ $page == 'tv channels' ? 'mm-active' : '' }}">
                         <i class="metismenu-icon pe-7s-monitor"></i> TV Channels
@@ -144,6 +149,13 @@
                         <i class="metismenu-icon pe-7s-settings"></i> {{ trans('common.settings') }}
                     </a>
                 </li>
+                @if (in_array(auth()->user()->role->category ?? null, ['admin', 'master'], true))
+                    <li class="{{ $page == 'themes' ? 'mm-active' : '' }}">
+                        <a href="{{ url('/themes') }}" class="{{ $page == 'themes' ? 'mm-active' : '' }}">
+                            <i class="metismenu-icon pe-7s-paint-bucket"></i> {{ trans('common.theme.title') }}
+                        </a>
+                    </li>
+                @endif
             </ul>
         </div>
     </div>

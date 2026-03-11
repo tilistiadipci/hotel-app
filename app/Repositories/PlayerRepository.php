@@ -15,6 +15,7 @@ class PlayerRepository extends BaseRepository
     public function create(array $attributes)
     {
         $attributes['is_active'] = $attributes['is_active'] ?? true;
+        $attributes['theme_id'] = $attributes['theme_id'] ?? 1;
 
         return parent::create($attributes);
     }
@@ -22,6 +23,7 @@ class PlayerRepository extends BaseRepository
     public function updateByUid($uid, array $attributes)
     {
         $attributes['is_active'] = $attributes['is_active'] ?? true;
+        $attributes['theme_id'] = $attributes['theme_id'] ?? 1;
 
         return parent::updateByUid($uid, $attributes);
     }
@@ -52,6 +54,7 @@ class PlayerRepository extends BaseRepository
     public function getDatatable()
     {
         $query = $this->query()
+            ->with(['theme'])
             ->filter(request(['search', 'filters']));
 
         return DataTables::of($this->paginateDatatable($query))
@@ -60,6 +63,9 @@ class PlayerRepository extends BaseRepository
                 return view('partials.datatable.action2', [
                     'row' => $row
                 ])->render();
+            })
+            ->addColumn('theme_name', function ($row) {
+                return $row->theme ? $row->theme->name : '-';
             })
             ->rawColumns(['action'])
             ->make(true);
