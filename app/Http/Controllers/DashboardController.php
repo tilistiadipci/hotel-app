@@ -3,9 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Repositories\DashboardRepository;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
-
 class DashboardController extends Controller
 {
     protected $dashboardRepository;
@@ -21,7 +18,13 @@ class DashboardController extends Controller
         $data['page'] = 'dashboard';
         $data['tabActive'] = 'dashboard';
         $data['title'] = 'Dashboard';
-        $data['userCount'] = $this->dashboardRepository->userCount();
+        $data['showDateFilter'] = false;
+        $data['playerCount'] = $this->dashboardRepository->playerCount();
+        $data['pantryTransactionCount'] = $this->dashboardRepository->pantryTransactionCountToday();
+        $data['bookingCheckinCount'] = $this->dashboardRepository->bookingCheckinCountToday();
+        $data['bookingCheckoutCount'] = $this->dashboardRepository->bookingCheckoutCountToday();
+        $data['transactionDonutChart'] = $this->dashboardRepository->checkinPlayerDonutChart();
+        $data['bookingActivityChart'] = $this->dashboardRepository->pantryTransactionDailyActivityChart();
 
         return view('pages.dashboard.index', $data);
     }

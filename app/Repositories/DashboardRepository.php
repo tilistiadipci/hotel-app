@@ -2,6 +2,9 @@
 
 namespace App\Repositories;
 
+use App\Models\Booking;
+use App\Models\MenuTransaction;
+use App\Models\Player;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 
@@ -10,6 +13,98 @@ class DashboardRepository
     public function userCount()
     {
         return app(UserRepository::class)->countNotAdmin();
+    }
+
+    public function playerCount(): int
+    {
+        return Player::query()
+            ->where('is_active', 1)
+            ->count();
+    }
+
+    public function pantryTransactionCountToday(): int
+    {
+        return MenuTransaction::query()
+            ->whereDate('created_at', today())
+            ->count();
+    }
+
+    public function bookingCheckinCountToday(): int
+    {
+        return Booking::query()
+            ->whereDate('checked_in_at', today())
+            ->count();
+    }
+
+    public function bookingCheckoutCountToday(): int
+    {
+        return Booking::query()
+            ->whereNotNull('checked_out_at')
+            ->whereDate('checked_out_at', today())
+            ->count();
+    }
+
+    public function checkinPlayerDonutChart(): array
+    {
+        $result = Booking::query()
+            ->join('players', 'players.id', '=', 'bookings.player_id')
+            ->selectRaw('COALESCE(NULLIF(players.alias, ""), players.name) as player_label, COUNT(*) as total')
+            ->whereDate('bookings.checked_in_at', today())
+            ->groupBy('player_label')
+            ->orderBy('player_label')
+            ->get();
+
+        return [
+            'labels' => $result->pluck('player_label')->all(),
+            'series' => $result->pluck('total')->map(fn ($total) => (int) $total)->all(),
+        ];
+    }
+
+    public function pantryTransactionDailyActivityChart(): array
+    {
+        $hours = collect(range(0, 23))->map(function ($hour) {
+            return str_pad((string) $hour, 2, '0', STR_PAD_LEFT) . ':00';
+        });
+
+        $statuses = [
+            'ordered' => [
+                'label' => trans('common.transaction.status_label.ordered'),
+                'color' => '#38bdf8',
+            ],
+            'processing' => [
+                'label' => trans('common.transaction.status_label.processing'),
+                'color' => '#f59e0b',
+            ],
+            'completed' => [
+                'label' => trans('common.transaction.status_label.completed'),
+                'color' => '#22c55e',
+            ],
+            'cancelled' => [
+                'label' => trans('common.transaction.status_label.cancelled'),
+                'color' => '#ef4444',
+            ],
+        ];
+
+        $result = MenuTransaction::query()
+            ->selectRaw('status, HOUR(created_at) as hour_key, COUNT(*) as total')
+            ->whereDate('created_at', today())
+            ->groupBy('status', 'hour_key')
+            ->get();
+
+        return [
+            'labels' => $hours->all(),
+            'series' => collect($statuses)->map(function ($config, $status) use ($hours, $result) {
+                return [
+                    'name' => $config['label'],
+                    'data' => $hours->map(function ($label, $hour) use ($result, $status) {
+                        return (int) optional(
+                            $result->first(fn ($item) => $item->status === $status && (int) $item->hour_key === $hour)
+                        )->total ?: 0;
+                    })->all(),
+                    'color' => $config['color'],
+                ];
+            })->values()->all(),
+        ];
     }
 
     public function baseQueryChartAudit()

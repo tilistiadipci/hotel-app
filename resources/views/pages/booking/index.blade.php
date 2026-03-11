@@ -53,9 +53,11 @@
                                 </select>
                             </div>
                             <button type="submit" class="btn btn-primary btn-block">
-                                {{ trans('common.search_text') }}
+                               <i class="fa fa-filter"></i> {{ trans('common.search_text') }}
                             </button>
-                            <a href="{{ route('booking.index') }}" class="btn btn-light btn-block mt-2">{{ trans('common.reset') }}</a>
+                            <a href="{{ route('booking.index') }}" class="btn btn-light btn-block mt-2">
+                               <i class="fa fa-undo"></i> {{ trans('common.reset') }}
+                            </a>
                         </form>
                     </div>
                 </div>
@@ -101,13 +103,13 @@
                                     @if ($booking)
                                         <button type="button" class="btn btn-outline-danger btn-block btn-checkout-booking"
                                             data-url="{{ route('booking.checkout', $player->uuid) }}">
-                                            {{ trans('common.booking.checkout') }}
+                                           <i class="fa fa-times"></i> {{ trans('common.booking.checkout') }}
                                         </button>
                                     @else
                                         <button type="button" class="btn btn-success btn-block btn-open-booking-modal"
                                             data-player-alias="{{ $player->alias }}"
                                             data-url="{{ route('booking.store', $player->uuid) }}">
-                                            {{ trans('common.booking.book_now') }}
+                                            <i class="fa fa-check"></i> {{ trans('common.booking.book_now') }}
                                         </button>
                                     @endif
                                 </div>

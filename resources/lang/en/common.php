@@ -298,6 +298,18 @@ return [
         'qris_pending_action_blocked' => 'QRIS transactions cannot be processed or completed while payment is still pending.',
     ],
 
+    'dashboard' => [
+        'player_summary' => 'Players',
+        'pantry_transaction_summary' => 'Pantry Transaction',
+        'checkin_summary' => 'Check In',
+        'checkout_summary' => 'Check Out',
+        'transaction_donut_title' => 'Players Checked In Today',
+        'booking_activity_title' => 'Today Pantry Transaction Activity',
+        'checkin_chart_label' => 'Check In',
+        'checkout_chart_label' => 'Check Out',
+        'daily_only' => 'Daily transactions without filters',
+    ],
+
     'theme' => [
         'title' => 'Themes',
         'title_singular' => 'Theme',

@@ -332,6 +332,18 @@ return [
         'qris_pending_action_blocked' => 'Transaksi QRIS tidak bisa diproses atau diselesaikan selama pembayaran masih pending.',
     ],
 
+    'dashboard' => [
+        'player_summary' => 'Players',
+        'pantry_transaction_summary' => 'Pantry Transaction',
+        'checkin_summary' => 'Check In',
+        'checkout_summary' => 'Check Out',
+        'transaction_donut_title' => 'Player Check In Hari Ini',
+        'booking_activity_title' => 'Aktivitas Transaksi Pantry Hari Ini',
+        'checkin_chart_label' => 'Check In',
+        'checkout_chart_label' => 'Check Out',
+        'daily_only' => 'Transaksi harian tanpa filter',
+    ],
+
     'theme' => [
         'title' => 'Themes',
         'title_singular' => 'Theme',
