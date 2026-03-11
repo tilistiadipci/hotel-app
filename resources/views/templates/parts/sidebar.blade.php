@@ -38,6 +38,11 @@
                         <i class="metismenu-icon lnr-laptop"></i> Dashboard
                     </a>
                 </li>
+                <li class="{{ $page == 'booking' ? 'mm-active' : '' }}">
+                    <a href="{{ url('/booking') }}" class="{{ $page == 'booking' ? 'mm-active' : '' }}">
+                        <i class="metismenu-icon fa fa-calendar"></i> Booking
+                    </a>
+                </li>
                 <li class="{{ $page == 'tv channels' ? 'mm-active' : '' }}">
                     <a href="{{ url('/tv-channels') }}" class="{{ $page == 'tv channels' ? 'mm-active' : '' }}">
                         <i class="metismenu-icon pe-7s-monitor"></i> TV Channels
@@ -125,26 +130,25 @@
                     </a>
                 </li>
 
-                {{-- settings --}}
                 <li class="app-sidebar__heading">{{ trans('common.settings') }}</li>
                 <li class="{{ $page == 'account' ? 'mm-active' : '' }}">
                     <a href="{{ url('/profile') }}" class="{{ $page == 'account' ? 'mm-active' : '' }}">
                         <i class="metismenu-icon pe-7s-user"></i> {{ trans('common.account') }}
                     </a>
                 </li>
-                @if (auth()->user()->role_id == 1 || auth()->user()->role_id == 2)
+
+                @if (in_array(auth()->user()->role_id ?? null, [1, 2], true))
+                    {{-- settings --}}
                     <li class="{{ $page == 'users' ? 'mm-active' : '' }}">
                         <a href="{{ url('/users') }}" class="{{ $page == 'users' ? 'mm-active' : '' }}">
                             <i class="metismenu-icon pe-7s-users"></i> {{ trans('common.user.title') }}
                         </a>
                     </li>
-                @endif
-                <li class="{{ $page == 'settings' ? 'mm-active' : '' }}">
-                    <a href="{{ url('/settings') }}" class="{{ $page == 'settings' ? 'mm-active' : '' }}">
-                        <i class="metismenu-icon pe-7s-settings"></i> General
-                    </a>
-                </li>
-                @if (in_array(auth()->user()->role->category ?? null, ['admin', 'master'], true))
+                    <li class="{{ $page == 'settings' ? 'mm-active' : '' }}">
+                        <a href="{{ url('/settings') }}" class="{{ $page == 'settings' ? 'mm-active' : '' }}">
+                            <i class="metismenu-icon pe-7s-settings"></i> General
+                        </a>
+                    </li>
                     <li class="{{ $page == 'themes' ? 'mm-active' : '' }}">
                         <a href="{{ url('/themes') }}" class="{{ $page == 'themes' ? 'mm-active' : '' }}">
                             <i class="metismenu-icon pe-7s-paint-bucket"></i> {{ trans('common.theme.title') }}

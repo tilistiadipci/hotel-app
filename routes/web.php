@@ -62,7 +62,7 @@ Auth::routes();
 Route::middleware('auth')
     ->group(function () {
         Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
-});
+    });
 
 
 // change language
@@ -179,8 +179,8 @@ Route::middleware(['auth'])->group(function () {
     Route::prefix('menu')
         ->name('menu.')
         ->group(function () {
-        Route::post('/bulkDelete', [MenuController::class, 'bulkDelete'])->name('bulkDelete');
-    });
+            Route::post('/bulkDelete', [MenuController::class, 'bulkDelete'])->name('bulkDelete');
+        });
     // Menu Categories
     Route::resource('menu-categories', MenuCategoryController::class);
     Route::prefix('menu-categories')
@@ -202,14 +202,6 @@ Route::middleware(['auth'])->group(function () {
         ->parameters(['media' => 'uuid'])
         ->only(['index', 'store', 'destroy']);
 
-
-    Route::prefix('settings')
-        ->name('settings')
-        ->group(function () {
-            Route::get('/', [SettingWebsiteController::class, 'index'])->name('.index');
-            Route::post('/update', [SettingWebsiteController::class, 'update'])->name('.update');
-        });
-
     Route::middleware('role.category:admin,master')->group(function () {
         Route::prefix('themes')
             ->name('themes.')
@@ -217,6 +209,13 @@ Route::middleware(['auth'])->group(function () {
                 Route::post('/{theme}/set-default', [ThemeController::class, 'setDefault'])->name('set-default');
             });
         Route::resource('themes', ThemeController::class)->only(['index', 'edit', 'update']);
+
+        Route::prefix('settings')
+            ->name('settings')
+            ->group(function () {
+                Route::get('/', [SettingWebsiteController::class, 'index'])->name('.index');
+                Route::post('/update', [SettingWebsiteController::class, 'update'])->name('.update');
+            });
     });
 
     Route::prefix('transactions')
