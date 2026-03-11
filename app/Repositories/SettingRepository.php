@@ -27,6 +27,13 @@ class SettingRepository extends BaseRepository
         return in_array((string) $value, ['1', 'true', 'active', 'yes'], true);
     }
 
+    public function getNumericValueByKey(string $key, int|float|string $default = 0): int|float|string
+    {
+        $value = $this->query()->where('key', $key)->value('value');
+
+        return $value ?? $default;
+    }
+
     public function saveByKey(string $name, string $key, ?string $value): Setting
     {
         $setting = $this->query()->firstOrNew(['key' => $key]);

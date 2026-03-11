@@ -116,6 +116,93 @@
                     </form>
                 </div>
             </div>
+
+            <div class="col-lg-6">
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <i class="fa fa-calculator mr-2"></i> {{ trans('common.settings_page.transaction_charge_settings') }}
+                    </div>
+                    <form method="POST" action="{{ route('settings.update') }}">
+                        @csrf
+                        <input type="hidden" name="section" value="transaction_charge">
+                        <input type="hidden" name="tax_percentage_grand_total_status" value="inactive">
+                        <input type="hidden" name="service_charge_status" value="inactive">
+
+                        <div class="card-body">
+                            <p class="text-muted">{{ trans('common.settings_page.transaction_charge_desc') }}</p>
+
+                            <div class="border rounded p-3 mb-3">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <div class="pr-3">
+                                        <h5 class="mb-1">{{ trans('common.settings_page.tax_percentage_grand_total_status') }}</h5>
+                                        <p class="mb-0 text-muted">{{ trans('common.settings_page.tax_percentage_grand_total_status_desc') }}</p>
+                                    </div>
+
+                                    <div class="custom-control custom-switch mb-0">
+                                        <input type="checkbox" class="custom-control-input transaction-charge-toggle"
+                                            id="tax_percentage_grand_total_status" name="tax_percentage_grand_total_status"
+                                            value="active"
+                                            {{ old('tax_percentage_grand_total_status', $settings['tax_percentage_grand_total_status']) === 'active' ? 'checked' : '' }}>
+                                        <label class="custom-control-label" for="tax_percentage_grand_total_status"></label>
+                                    </div>
+                                </div>
+
+                                <div class="form-group mb-0">
+                                    <label for="tax_percentage_grand_total">{{ trans('common.settings_page.tax_percentage_grand_total') }}</label>
+                                    <input type="number" step="0.01" min="0"
+                                        class="form-control @error('tax_percentage_grand_total') is-invalid @enderror"
+                                        id="tax_percentage_grand_total" name="tax_percentage_grand_total"
+                                        value="{{ old('tax_percentage_grand_total', $settings['tax_percentage_grand_total']) }}">
+                                </div>
+
+                                @error('tax_percentage_grand_total_status')
+                                    <div class="text-danger small mt-2">{{ $message }}</div>
+                                @enderror
+                                @error('tax_percentage_grand_total')
+                                    <div class="text-danger small mt-2">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="border rounded p-3">
+                                <div class="d-flex justify-content-between align-items-center mb-3">
+                                    <div class="pr-3">
+                                        <h5 class="mb-1">{{ trans('common.settings_page.service_charge_status') }}</h5>
+                                        <p class="mb-0 text-muted">{{ trans('common.settings_page.service_charge_status_desc') }}</p>
+                                    </div>
+
+                                    <div class="custom-control custom-switch mb-0">
+                                        <input type="checkbox" class="custom-control-input transaction-charge-toggle"
+                                            id="service_charge_status" name="service_charge_status" value="active"
+                                            {{ old('service_charge_status', $settings['service_charge_status']) === 'active' ? 'checked' : '' }}>
+                                        <label class="custom-control-label" for="service_charge_status"></label>
+                                    </div>
+                                </div>
+
+                                <div class="form-group mb-0">
+                                    <label for="service_charge_fixed">{{ trans('common.settings_page.service_charge_fixed') }}</label>
+                                    <input type="number" step="0.01" min="0"
+                                        class="form-control @error('service_charge_fixed') is-invalid @enderror"
+                                        id="service_charge_fixed" name="service_charge_fixed"
+                                        value="{{ old('service_charge_fixed', $settings['service_charge_fixed']) }}">
+                                </div>
+
+                                @error('service_charge_status')
+                                    <div class="text-danger small mt-2">{{ $message }}</div>
+                                @enderror
+                                @error('service_charge_fixed')
+                                    <div class="text-danger small mt-2">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <div class="card-footer text-right">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fa fa-save mr-1"></i> {{ trans('common.save') }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
         </div>
     </div>
 @endsection
@@ -133,6 +220,14 @@
 
                 statusInput.value = statusInput.checked ? 'active' : 'inactive';
             }
+
+            document.querySelectorAll('.transaction-charge-toggle').forEach(function(toggle) {
+                toggle.addEventListener('change', function() {
+                    this.value = this.checked ? 'active' : 'inactive';
+                });
+
+                toggle.value = toggle.checked ? 'active' : 'inactive';
+            });
 
             document.querySelectorAll('[data-copy-target]').forEach(function(button) {
                 button.addEventListener('click', function() {

@@ -31,6 +31,38 @@ class SettingSeeder extends Seeder
                 'created_at' => $now,
                 'updated_at' => $now,
             ],
+            [
+                'uuid'       => (string) Str::uuid(),
+                'name'       => 'Tax Percentage Grand Total Status',
+                'key'        => 'tax_percentage_grand_total_status',
+                'value'      => 'inactive', // active or inactive
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'uuid'       => (string) Str::uuid(),
+                'name'       => 'Tax Percentage Grand Total (%)',
+                'key'        => 'tax_percentage_grand_total',
+                'value'      => 12,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'uuid'       => (string) Str::uuid(),
+                'name'       => 'Service Charge Status',
+                'key'        => 'service_charge_status',
+                'value'      => 'inactive', // active or inactive
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'uuid'       => (string) Str::uuid(),
+                'name'       => 'Service Charge (Fixed)',
+                'key'        => 'service_charge_fixed',
+                'value'      => 10000,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
         ];
 
         DB::table('settings')->upsert(

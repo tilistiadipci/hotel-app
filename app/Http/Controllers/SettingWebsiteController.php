@@ -41,6 +41,10 @@ class SettingWebsiteController extends Controller
                 'notification_email_alerts' => $this->settingRepository->getBoolValueByKey('notification_email_alerts', true),
                 'notification_push_notifications' => $this->settingRepository->getBoolValueByKey('notification_push_notifications', false),
                 'notification_sms_booking_alerts' => $this->settingRepository->getBoolValueByKey('notification_sms_booking_alerts', true),
+                'tax_percentage_grand_total_status' => $this->settingRepository->getValueByKey('tax_percentage_grand_total_status', 'inactive'),
+                'tax_percentage_grand_total' => $this->settingRepository->getNumericValueByKey('tax_percentage_grand_total', 0),
+                'service_charge_status' => $this->settingRepository->getValueByKey('service_charge_status', 'inactive'),
+                'service_charge_fixed' => $this->settingRepository->getNumericValueByKey('service_charge_fixed', 0),
             ],
         ]);
     }
@@ -49,7 +53,7 @@ class SettingWebsiteController extends Controller
     {
         $section = $request->input('section');
 
-        if (!in_array($section, ['api_status', 'api_key', 'language', 'notifications'], true)) {
+        if (!in_array($section, ['api_status', 'api_key', 'language', 'notifications', 'transaction_charge'], true)) {
             return redirect()->route('settings.index')->with('error', 'Invalid settings section.');
         }
 
@@ -75,6 +79,36 @@ class SettingWebsiteController extends Controller
             ]);
 
             $this->saveLanguageSetting($validated['default_language']);
+        }
+
+        if ($section === 'transaction_charge') {
+            $validated = $request->validate([
+                'tax_percentage_grand_total_status' => ['required', Rule::in(['active', 'inactive'])],
+                'tax_percentage_grand_total' => ['required', 'numeric', 'min:0'],
+                'service_charge_status' => ['required', Rule::in(['active', 'inactive'])],
+                'service_charge_fixed' => ['required', 'numeric', 'min:0'],
+            ]);
+
+            $this->settingRepository->saveByKey(
+                'Tax Percentage Grand Total Status',
+                'tax_percentage_grand_total_status',
+                $validated['tax_percentage_grand_total_status']
+            );
+            $this->settingRepository->saveByKey(
+                'Tax Percentage Grand Total (%)',
+                'tax_percentage_grand_total',
+                (string) $validated['tax_percentage_grand_total']
+            );
+            $this->settingRepository->saveByKey(
+                'Service Charge Status',
+                'service_charge_status',
+                $validated['service_charge_status']
+            );
+            $this->settingRepository->saveByKey(
+                'Service Charge (Fixed)',
+                'service_charge_fixed',
+                (string) $validated['service_charge_fixed']
+            );
         }
 
         return redirect()->route('settings.index')->with('success', trans('common.success.update'));

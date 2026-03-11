@@ -14,23 +14,33 @@
 
                 <div>
                     <button type="button" class="btn btn-outline-secondary mr-2" onclick="printReceipt()">
-                        <i class="fa fa-print mr-1"></i> Print Receipt
+                        <i class="fa fa-print mr-1"></i> {{ trans('common.transaction.print_receipt') }}
                     </button>
                 </div>
             </div>
 
             <div class="mb-4">
-                @if ($selectedTransaction->status === 'ordered')
+                @php
+                    $isQrisPending = $selectedTransaction->payment_method === 'qris' && $selectedTransaction->payment_status === 'pending';
+                @endphp
+
+                @if ($isQrisPending)
+                    <div class="alert alert-warning mb-3">
+                        {{ trans('common.transaction.qris_pending_action_blocked') }}
+                    </div>
+                @endif
+
+                @if ($selectedTransaction->status === 'ordered' && !$isQrisPending)
                     <button type="button" class="btn btn-warning transaction-status-btn"
                         data-id="{{ $selectedTransaction->id }}" data-status="processing">
-                        <i class="fa fa-play mr-1"></i> Process Order
+                        <i class="fa fa-play mr-1"></i> {{ trans('common.transaction.process_order') }}
                     </button>
                 @endif
 
-                @if (in_array($selectedTransaction->status, ['ordered', 'processing'], true))
+                @if (in_array($selectedTransaction->status, ['ordered', 'processing'], true) && !$isQrisPending)
                     <button type="button" class="btn btn-success transaction-status-btn"
                         data-id="{{ $selectedTransaction->id }}" data-status="completed">
-                        <i class="fa fa-check mr-1"></i> Order Selesai
+                        <i class="fa fa-check mr-1"></i> {{ trans('common.transaction.complete_order') }}
                     </button>
                 @endif
             </div>
@@ -41,30 +51,30 @@
 
             <div class="row mb-4">
                 <div class="col-md-4 mb-3">
-                    <div class="transaction-meta__label">Processed By</div>
+                    <div class="transaction-meta__label">{{ trans('common.transaction.processed_by') }}</div>
                     <div class="transaction-meta__value">
                         {{ optional($selectedTransaction->processedBy)->username ?? '-' }}
                     </div>
                 </div>
                 <div class="col-md-4 mb-3">
-                    <div class="transaction-meta__label">Completed By</div>
+                    <div class="transaction-meta__label">{{ trans('common.transaction.completed_by') }}</div>
                     <div class="transaction-meta__value">
                         {{ optional($selectedTransaction->completedBy)->username ?? '-' }}
                     </div>
                 </div>
                 <div class="col-md-4 mb-3">
-                    <div class="transaction-meta__label">Guest / Room</div>
+                    <div class="transaction-meta__label">{{ trans('common.transaction.guest_room') }}</div>
                     <div class="transaction-meta__value">
                         {{ optional($selectedTransaction->player)->alias ?? '-' }}
                     </div>
                 </div>
                 <div class="col-md-4 mb-3">
-                    <div class="transaction-meta__label">Payment Method</div>
+                    <div class="transaction-meta__label">{{ trans('common.transaction.payment_method') }}</div>
                     <div class="transaction-meta__value">{{ strtoupper($selectedTransaction->payment_method) }}</div>
                 </div>
                 @if (optional($selectedTransaction->cancelledBy)->username)
                     <div class="col-md-4 mb-3">
-                        <div class="transaction-meta__label">Cancelled By</div>
+                        <div class="transaction-meta__label">{{ trans('common.transaction.cancelled_by') }}</div>
                         <div class="transaction-meta__value">
                             {{ optional($selectedTransaction->cancelledBy)->username }}
                         </div>
@@ -72,7 +82,7 @@
                 @endif
             </div>
 
-            <h6 class="text-muted text-uppercase mb-3">Items Purchased</h6>
+            <h6 class="text-muted text-uppercase mb-3">{{ trans('common.transaction.items_purchased') }}</h6>
 
             @foreach ($selectedTransaction->details as $detail)
                 @php
@@ -85,18 +95,18 @@
                     </div>
                     <div class="transaction-item__content">
                         <div class="font-weight-bold">{{ $detail->menu_name }}</div>
-                        <div class="text-muted small">{{ $detail->notes ?: 'Pantry item' }}</div>
+                        <div class="text-muted small">{{ $detail->notes ?: trans('common.transaction.pantry_item') }}</div>
                     </div>
                     <div class="transaction-item__qty">
-                        <div class="text-muted small">Qty</div>
+                        <div class="text-muted small">{{ trans('common.qty') }}</div>
                         <strong>{{ $detail->quantity }}</strong>
                     </div>
                     <div class="transaction-item__price">
-                        <div class="text-muted small">Unit Price</div>
+                        <div class="text-muted small">{{ trans('common.transaction.unit_price') }}</div>
                         <strong>{{ number_format((float) $detail->price, 0) }}</strong>
                     </div>
                     <div class="transaction-item__total text-right">
-                        <div class="text-muted small">Total</div>
+                        <div class="text-muted small">{{ trans('common.total') }}</div>
                         <strong>{{ number_format((float) $detail->subtotal, 0) }}</strong>
                     </div>
                 </div>
@@ -104,15 +114,19 @@
 
             <div class="transaction-summary">
                 <div class="d-flex justify-content-between mb-2">
-                    <span class="text-muted">Subtotal</span>
+                    <span class="text-muted">{{ trans('common.transaction.subtotal') }}</span>
                     <span>{{ number_format((float) $selectedTransaction->total_amount, 0) }}</span>
                 </div>
                 <div class="d-flex justify-content-between mb-2">
-                    <span class="text-muted">Tax</span>
+                    <span class="text-muted">{{ trans('common.transaction.tax') }}</span>
                     <span>{{ number_format((float) $selectedTransaction->tax_amount, 0) }}</span>
                 </div>
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">{{ trans('common.transaction.service_charge') }}</span>
+                    <span>{{ number_format((float) $selectedTransaction->service_amount, 0) }}</span>
+                </div>
                 <div class="d-flex justify-content-between">
-                    <strong>Grand Total</strong>
+                    <strong>{{ trans('common.transaction.grand_total') }}</strong>
                     <strong
                         class="text-primary">{{ number_format((float) $selectedTransaction->grand_total, 0) }}</strong>
                 </div>
@@ -121,7 +135,7 @@
             {{-- AREA KHUSUS PRINT --}}
             <div id="receipt-print-area" style="display:none;">
                 <div class="receipt-print">
-                    <div style="text-align:center; font-weight:bold; font-size:18px;">PANTRY RECEIPT</div>
+                    <div style="text-align:center; font-weight:bold; font-size:18px;">{{ trans('common.transaction.pantry_receipt') }}</div>
                     <div style="text-align:center; margin-bottom:10px;">
                         {{ optional($selectedTransaction->invoice)->invoice_number ?? 'TRX-' . $selectedTransaction->id }}
                     </div>
@@ -130,23 +144,23 @@
 
                     <table style="width:100%; font-size:12px;">
                         <tr>
-                            <td>Tanggal</td>
+                            <td>{{ trans('common.date') }}</td>
                             <td style="text-align:right;">
                                 {{ formatDate($selectedTransaction->created_at, true, 'd/m/Y H:i') }}</td>
                         </tr>
                         <tr>
-                            <td>Room</td>
+                            <td>{{ trans('common.transaction.room') }}</td>
                             <td style="text-align:right;">{{ optional($selectedTransaction->player)->alias ?? '-' }}
                             </td>
                         </tr>
                         @if (!empty($selectedTransaction->guest_name) && $selectedTransaction->guest_name != '-')
                             <tr>
-                                <td>Guest</td>
+                                <td>{{ trans('common.transaction.guest') }}</td>
                                 <td style="text-align:right;">{{ $selectedTransaction->guest_name ?? '-' }}</td>
                             </tr>
                         @endif
                         <tr>
-                            <td>Payment</td>
+                            <td>{{ trans('common.transaction.payment') }}</td>
                             <td style="text-align:right;">{{ strtoupper($selectedTransaction->payment_method) }}</td>
                         </tr>
                     </table>
@@ -170,7 +184,7 @@
                                 <span>{{ number_format($lineSubtotal, 0) }}</span>
                             </div>
                             @if ($detail->notes)
-                                <div style="font-size:11px;">Note: {{ $detail->notes }}</div>
+                                <div style="font-size:11px;">{{ trans('common.notes') }}: {{ $detail->notes }}</div>
                             @endif
                         </div>
                     @endforeach
@@ -179,21 +193,21 @@
 
                     <table style="width:100%; font-size:12px;">
                         <tr>
-                            <td>Subtotal</td>
+                            <td>{{ trans('common.transaction.subtotal') }}</td>
                             <td style="text-align:right;">{{ number_format($receiptSubtotal, 0) }}</td>
                         </tr>
                         <tr>
-                            <td>Tax</td>
+                            <td>{{ trans('common.transaction.tax') }}</td>
                             <td style="text-align:right;">
                                 {{ number_format((float) $selectedTransaction->tax_amount, 0) }}</td>
                         </tr>
                         <tr>
-                            <td>Service</td>
+                            <td>{{ trans('common.transaction.service') }}</td>
                             <td style="text-align:right;">
                                 {{ number_format((float) $selectedTransaction->service_amount, 0) }}</td>
                         </tr>
                         <tr>
-                            <td style="font-weight:bold;">Grand Total</td>
+                            <td style="font-weight:bold;">{{ trans('common.transaction.grand_total') }}</td>
                             <td style="text-align:right; font-weight:bold;">
                                 {{ number_format($receiptSubtotal + (float) $selectedTransaction->tax_amount + (float) $selectedTransaction->service_amount, 0) }}
                             </td>
@@ -201,7 +215,7 @@
                     </table>
 
                     <div style="border-top:1px dashed #000; margin:8px 0;"></div>
-                    <div style="text-align:center; font-size:12px;">Terima kasih</div>
+                    <div style="text-align:center; font-size:12px;">{{ trans('common.transaction.thank_you') }}</div>
                 </div>
             </div>
         </div>
@@ -209,7 +223,7 @@
 @else
     <div class="card">
         <div class="card-body text-center text-muted py-5">
-            No transaction selected.
+            {{ trans('common.transaction.no_transaction_selected') }}
         </div>
     </div>
 @endif
@@ -222,7 +236,7 @@
             const receiptContent = document.getElementById('receipt-print-area');
 
             if (!receiptContent) {
-                alert('Receipt tidak ditemukan.');
+                alert("{{ trans('common.transaction.receipt_not_found') }}");
                 return;
             }
 
@@ -232,7 +246,7 @@
             printWindow.document.write(`
                 <html>
                     <head>
-                        <title>Print Receipt</title>
+                        <title>{{ trans('common.transaction.print_receipt') }}</title>
                         <style>
                             body {
                                 font-family: monospace, Arial, sans-serif;

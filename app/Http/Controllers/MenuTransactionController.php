@@ -82,6 +82,15 @@ class MenuTransactionController extends Controller
             ], 404);
         }
 
+        if (
+            $transaction->payment_method === 'qris' &&
+            $transaction->payment_status === 'pending'
+        ) {
+            return response()->json([
+                'message' => 'QRIS transaction cannot be processed or completed while payment is still pending.',
+            ], 422);
+        }
+
         if ($validated['status'] === 'processing' && $transaction->status !== 'ordered') {
             return response()->json([
                 'message' => 'Transaction cannot be processed from the current status.',
