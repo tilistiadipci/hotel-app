@@ -43,87 +43,91 @@
                         <i class="metismenu-icon fa fa-calendar"></i> Checkin/Checkout
                     </a>
                 </li>
-                <li class="{{ $page == 'tv channels' ? 'mm-active' : '' }}">
-                    <a href="{{ url('/tv-channels') }}" class="{{ $page == 'tv channels' ? 'mm-active' : '' }}">
-                        <i class="metismenu-icon pe-7s-monitor"></i> TV Channels
-                    </a>
-                </li>
-                <li class="{{ $page == 'songs' ? 'mm-active' : '' }}">
-                    <a href="{{ url('/songs') }}" class="{{ $page == 'songs' ? 'mm-active' : '' }}">
-                        <i class="metismenu-icon pe-7s-music"></i> {{ trans('common.song.title') }}
-                    </a>
-                </li>
-                <li class="{{ $page == 'movies' ? 'mm-active' : '' }}">
-                    <a href="{{ url('/movies') }}" class="{{ $page == 'movies' ? 'mm-active' : '' }}">
-                        <i class="metismenu-icon pe-7s-film"></i> {{ trans('common.movie.title') }}
-                    </a>
-                </li>
-                <li class="{{ $page == 'players' ? 'mm-active' : '' }}">
-                    <a href="{{ url('/players') }}" class="{{ $page == 'players' ? 'mm-active' : '' }}">
-                        <i class="metismenu-icon pe-7s-play"></i> {{ trans('common.player.title') }}
-                    </a>
-                </li>
-                <li class="{{ $page == 'places' ? 'mm-active' : '' }}">
-                    <a href="{{ url('/places') }}" class="{{ $page == 'places' ? 'mm-active' : '' }}">
-                        <i class="metismenu-icon pe-7s-map-marker"></i> {{ trans('common.place.title') }}
-                    </a>
-                </li>
-                <li class="{{ $page == 'guides' ? 'mm-active' : '' }}">
-                    <a href="{{ url('/guides') }}" class="{{ $page == 'guides' ? 'mm-active' : '' }}">
-                        <i class="metismenu-icon pe-7s-date"></i> {{ trans('common.guide.title') }}
-                    </a>
-                </li>
+                @if (in_array(auth()->user()->role_id ?? null, [1, 2], true))
+                    <li class="{{ $page == 'tv channels' ? 'mm-active' : '' }}">
+                        <a href="{{ url('/tv-channels') }}" class="{{ $page == 'tv channels' ? 'mm-active' : '' }}">
+                            <i class="metismenu-icon pe-7s-monitor"></i> TV Channels
+                        </a>
+                    </li>
+                    <li class="{{ $page == 'songs' ? 'mm-active' : '' }}">
+                        <a href="{{ url('/songs') }}" class="{{ $page == 'songs' ? 'mm-active' : '' }}">
+                            <i class="metismenu-icon pe-7s-music"></i> {{ trans('common.song.title') }}
+                        </a>
+                    </li>
+                    <li class="{{ $page == 'movies' ? 'mm-active' : '' }}">
+                        <a href="{{ url('/movies') }}" class="{{ $page == 'movies' ? 'mm-active' : '' }}">
+                            <i class="metismenu-icon pe-7s-film"></i> {{ trans('common.movie.title') }}
+                        </a>
+                    </li>
+                    <li class="{{ $page == 'players' ? 'mm-active' : '' }}">
+                        <a href="{{ url('/players') }}" class="{{ $page == 'players' ? 'mm-active' : '' }}">
+                            <i class="metismenu-icon pe-7s-play"></i> {{ trans('common.player.title') }}
+                        </a>
+                    </li>
+                    <li class="{{ $page == 'places' ? 'mm-active' : '' }}">
+                        <a href="{{ url('/places') }}" class="{{ $page == 'places' ? 'mm-active' : '' }}">
+                            <i class="metismenu-icon pe-7s-map-marker"></i> {{ trans('common.place.title') }}
+                        </a>
+                    </li>
+                    <li class="{{ $page == 'guides' ? 'mm-active' : '' }}">
+                        <a href="{{ url('/guides') }}" class="{{ $page == 'guides' ? 'mm-active' : '' }}">
+                            <i class="metismenu-icon pe-7s-date"></i> {{ trans('common.guide.title') }}
+                        </a>
+                    </li>
 
-                {{-- media --}}
-                <li class="{{ $page == 'media-library' ? 'mm-active' : '' }}">
-                    <a href="{{ url('/media') }}" class="{{ $page == 'media-library' ? 'mm-active' : '' }}">
-                        <i class="metismenu-icon pe-7s-photo"></i>
-                        {{ trans('common.media.title') }}
-                    </a>
-                </li>
+                    {{-- media --}}
+                    <li class="{{ $page == 'media-library' ? 'mm-active' : '' }}">
+                        <a href="{{ url('/media') }}" class="{{ $page == 'media-library' ? 'mm-active' : '' }}">
+                            <i class="metismenu-icon pe-7s-photo"></i>
+                            {{ trans('common.media.title') }}
+                        </a>
+                    </li>
 
-                <li
-                    class="{{ in_array($page, ['guide-categories', 'place-categories', 'movie-categories']) ? 'mm-active' : '' }}">
-                    <a href="#">
-                        <i class="metismenu-icon pe-7s-folder"></i> {{ trans('common.category') }}
-                        <i class="metismenu-state-icon pe-7s-angle-down caret-left"></i>
-                    </a>
-                    <ul>
+                    <li
+                        class="{{ in_array($page, ['guide-categories', 'place-categories', 'movie-categories']) ? 'mm-active' : '' }}">
+                        <a href="#">
+                            <i class="metismenu-icon pe-7s-folder"></i> {{ trans('common.category') }}
+                            <i class="metismenu-state-icon pe-7s-angle-down caret-left"></i>
+                        </a>
+                        <ul>
 
-                        <li class="{{ $page == 'guide-categories' ? 'mm-active' : '' }}">
-                            <a href="{{ url('/guide-categories') }}"
-                                class="{{ $page == 'guide-categories' ? 'mm-active' : '' }}">
-                                <i class="metismenu-icon"></i> {{ trans('common.guide_category.title') }}
-                            </a>
-                        </li>
-                        <li class="{{ $page == 'place-categories' ? 'mm-active' : '' }}">
-                            <a href="{{ url('/place-categories') }}"
-                                class="{{ $page == 'place-categories' ? 'mm-active' : '' }}">
-                                <i class="metismenu-icon"></i> {{ trans('common.place_category.title') }}
-                            </a>
-                        </li>
-                        <li class="{{ $page == 'movie-categories' ? 'mm-active' : '' }}">
-                            <a href="{{ url('/movie-categories') }}"
-                                class="{{ $page == 'movie-categories' ? 'mm-active' : '' }}">
-                                <i class="metismenu-icon"></i> {{ trans('common.movie_category.title') }}
-                            </a>
-                        </li>
-                    </ul>
-                </li>
+                            <li class="{{ $page == 'guide-categories' ? 'mm-active' : '' }}">
+                                <a href="{{ url('/guide-categories') }}"
+                                    class="{{ $page == 'guide-categories' ? 'mm-active' : '' }}">
+                                    <i class="metismenu-icon"></i> {{ trans('common.guide_category.title') }}
+                                </a>
+                            </li>
+                            <li class="{{ $page == 'place-categories' ? 'mm-active' : '' }}">
+                                <a href="{{ url('/place-categories') }}"
+                                    class="{{ $page == 'place-categories' ? 'mm-active' : '' }}">
+                                    <i class="metismenu-icon"></i> {{ trans('common.place_category.title') }}
+                                </a>
+                            </li>
+                            <li class="{{ $page == 'movie-categories' ? 'mm-active' : '' }}">
+                                <a href="{{ url('/movie-categories') }}"
+                                    class="{{ $page == 'movie-categories' ? 'mm-active' : '' }}">
+                                    <i class="metismenu-icon"></i> {{ trans('common.movie_category.title') }}
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+                @endif
 
                 {{-- pantry --}}
                 <li class="app-sidebar__heading">Pantry</li>
-                <li class="{{ $page == 'menu-categories' ? 'mm-active' : '' }}">
-                    <a href="{{ url('/menu-categories') }}"
-                        class="{{ $page == 'menu-categories' ? 'mm-active' : '' }}">
-                        <i class="metismenu-icon pe-7s-notebook"></i> {{ trans('common.menu_category.title') }}
-                    </a>
-                </li>
-                <li class="{{ $page == 'menu-items' ? 'mm-active' : '' }}">
-                    <a href="{{ url('/menu') }}" class="{{ $page == 'menu-items' ? 'mm-active' : '' }}">
-                        <i class="metismenu-icon fa fa-utensils"></i> Menu
-                    </a>
-                </li>
+                @if (in_array(auth()->user()->role_id ?? null, [1, 2], true))
+                    <li class="{{ $page == 'menu-categories' ? 'mm-active' : '' }}">
+                        <a href="{{ url('/menu-categories') }}"
+                            class="{{ $page == 'menu-categories' ? 'mm-active' : '' }}">
+                            <i class="metismenu-icon pe-7s-notebook"></i> {{ trans('common.menu_category.title') }}
+                        </a>
+                    </li>
+                    <li class="{{ $page == 'menu-items' ? 'mm-active' : '' }}">
+                        <a href="{{ url('/menu') }}" class="{{ $page == 'menu-items' ? 'mm-active' : '' }}">
+                            <i class="metismenu-icon fa fa-utensils"></i> Menu
+                        </a>
+                    </li>
+                @endif
                 <li class="{{ $page == 'transactions' ? 'mm-active' : '' }}">
                     <a href="{{ url('/transactions') }}" class="{{ $page == 'transactions' ? 'mm-active' : '' }}">
                         <i class="metismenu-icon pe-7s-wallet"></i> {{ trans('common.transaction.title') }}

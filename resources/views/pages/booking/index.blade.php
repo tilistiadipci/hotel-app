@@ -5,10 +5,10 @@
         <div class="app-page-title">
             <div class="page-title-wrapper">
                 @include('templates.parts.breadcrumb', [
-                    'title' => "Checkin / Checkout",
+                    'title' => "Check In / Check Out",
                     'icon' => $icon,
                     'breadcrumbs' => [
-                        ['href' => '#', 'label' => "Checkin / Checkout"],
+                        ['href' => '#', 'label' => "Check In / Check Out"],
                     ],
                 ])
             </div>
@@ -23,19 +23,22 @@
                                 <label>{{ trans('common.booking.filter_guest_name') }}</label>
                                 <input type="text" name="guest_name" class="form-control"
                                     value="{{ $filters['guest_name'] ?? '' }}"
-                                    placeholder="{{ trans('common.booking.filter_guest_name_placeholder') }}">
+                                    placeholder="{{ trans('common.booking.filter_guest_name_placeholder') }}"
+                                    autocomplete="off">
                             </div>
                             <div class="form-group">
                                 <label>{{ trans('common.booking.filter_player_name') }}</label>
                                 <input type="text" name="player_name" class="form-control"
                                     value="{{ $filters['player_name'] ?? '' }}"
-                                    placeholder="{{ trans('common.booking.filter_player_name_placeholder') }}">
+                                    placeholder="{{ trans('common.booking.filter_player_name_placeholder') }}"
+                                    autocomplete="off">
                             </div>
                             <div class="form-group">
                                 <label>{{ trans('common.booking.filter_room_name') }}</label>
                                 <input type="text" name="room_name" class="form-control"
                                     value="{{ $filters['room_name'] ?? '' }}"
-                                    placeholder="{{ trans('common.booking.filter_room_name_placeholder') }}">
+                                    placeholder="{{ trans('common.booking.filter_room_name_placeholder') }}"
+                                    autocomplete="off">
                             </div>
                             <div class="form-group">
                                 <label>{{ trans('common.status') }}</label>
@@ -145,7 +148,7 @@
                     <div class="form-group mb-0">
                         <label for="guest_name">{{ trans('common.booking.guest_name') }}</label>
                         <input type="text" class="form-control booking-modal__input" id="guest_name" name="guest_name"
-                            maxlength="150" required>
+                            maxlength="150" required autocomplete="off">
                     </div>
                 </div>
                 <div class="booking-modal__footer">

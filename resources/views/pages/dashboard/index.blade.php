@@ -71,7 +71,7 @@
                         class="widget-chart widget-chart2 text-left mb-3 card-btm-border card-shadow-danger border-danger card">
                         <div class="widget-chat-wrapper-outer">
                             <a href="" class="text-dark widget-chart-content text-decoration-none">
-                                <div class="widget-title opacity-5 text-uppercase">{{ trans('common.accessory.title') }}
+                                <div class="widget-title opacity-5 text-uppercase">{{ trans('common.player.title') }}
                                 </div>
                                 <div class="widget-numbers mt-2 fsize-4 mb-0 w-100">
                                     <div class="widget-chart-flex align-items-center">
