@@ -337,7 +337,7 @@ return [
     ],
 
     'settings_page' => [
-        'title' => 'Pengaturan API',
+        'title' => 'Pengaturan Umum',
         'subtitle' => 'Kelola kunci application programming interface dan status akses untuk pengaturan aplikasi hotel.',
         'api_key_status' => 'Status API Key',
         'api_key_value' => 'Nilai API Key',

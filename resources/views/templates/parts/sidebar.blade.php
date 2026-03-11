@@ -141,7 +141,7 @@
                 @endif
                 <li class="{{ $page == 'settings' ? 'mm-active' : '' }}">
                     <a href="{{ url('/settings') }}" class="{{ $page == 'settings' ? 'mm-active' : '' }}">
-                        <i class="metismenu-icon pe-7s-settings"></i> {{ trans('common.settings') }}
+                        <i class="metismenu-icon pe-7s-settings"></i> General
                     </a>
                 </li>
                 @if (in_array(auth()->user()->role->category ?? null, ['admin', 'master'], true))

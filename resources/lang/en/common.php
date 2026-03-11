@@ -349,7 +349,7 @@ return [
     ],
 
     'settings_page' => [
-        'title' => 'API Settings',
+        'title' => 'General Settings',
         'subtitle' => 'Manage your application programming interface keys and access status for hotel app settings.',
         'api_key_status' => 'API Key Status',
         'api_key_value' => 'API Key Value',
