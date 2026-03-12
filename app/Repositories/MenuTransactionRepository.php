@@ -39,7 +39,6 @@ class MenuTransactionRepository extends BaseRepository
     public function paginateFiltered(string $status, string $paymentMethod, int $perPage = 10)
     {
         return $this->baseQuery()
-            ->with(['player'])
             ->when(in_array($status, ['ordered', 'processing', 'completed', 'cancelled'], true), function ($query) use ($status) {
                 $query->where('status', $status);
             })
