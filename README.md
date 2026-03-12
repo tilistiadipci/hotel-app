@@ -12,7 +12,7 @@
    ```
 2. Navigate to the project folder, checkout branch main, install dependencies using Composer:
    ```
-   cd assets
+   cd hotel-app
    git checkout main
    composer install
    ```
