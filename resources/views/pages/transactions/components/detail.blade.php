@@ -47,6 +47,8 @@
 
             @php
                 $paymentMethodLabel = trans('common.transaction.payment_method_label.' . $selectedTransaction->payment_method);
+                $transactionGuestName = $selectedTransaction->guest_name ?: '-';
+                $transactionRoomLabel = optional($selectedTransaction->player)->alias ?? '-';
             @endphp
 
             <div class="row mb-4">
@@ -63,9 +65,15 @@
                     </div>
                 </div>
                 <div class="col-md-4 mb-3">
-                    <div class="transaction-meta__label">{{ trans('common.transaction.guest_room') }}</div>
+                    <div class="transaction-meta__label">{{ trans('common.transaction.room') }}</div>
                     <div class="transaction-meta__value">
-                        {{ optional($selectedTransaction->player)->alias ?? '-' }}
+                        {{ $transactionRoomLabel }}
+                    </div>
+                </div>
+                <div class="col-md-4 mb-3">
+                    <div class="transaction-meta__label">{{ trans('common.transaction.guest') }}</div>
+                    <div class="transaction-meta__value">
+                        {{ $transactionGuestName }}
                     </div>
                 </div>
                 <div class="col-md-4 mb-3">
@@ -150,13 +158,13 @@
                         </tr>
                         <tr>
                             <td>{{ trans('common.transaction.room') }}</td>
-                            <td style="text-align:right;">{{ optional($selectedTransaction->player)->alias ?? '-' }}
+                            <td style="text-align:right;">{{ $transactionRoomLabel }}
                             </td>
                         </tr>
-                        @if (!empty($selectedTransaction->guest_name) && $selectedTransaction->guest_name != '-')
+                        @if (!empty($transactionGuestName) && $transactionGuestName != '-')
                             <tr>
                                 <td>{{ trans('common.transaction.guest') }}</td>
-                                <td style="text-align:right;">{{ $selectedTransaction->guest_name ?? '-' }}</td>
+                                <td style="text-align:right;">{{ $transactionGuestName }}</td>
                             </tr>
                         @endif
                         <tr>
