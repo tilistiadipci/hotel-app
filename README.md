@@ -49,3 +49,4 @@
    php artisan serve
    ```
 10. Access the application in your browser at: `http://127.0.0.1:8000`
+11. Copy lang.json.example to lang.json on folder settings
