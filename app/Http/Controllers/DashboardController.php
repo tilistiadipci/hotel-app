@@ -21,7 +21,7 @@ class DashboardController extends Controller
         $data['showDateFilter'] = false;
         $data['playerCount'] = $this->dashboardRepository->playerCount();
         $data['pantryTransactionCount'] = $this->dashboardRepository->pantryTransactionCountToday();
-        $data['bookingCheckinCount'] = $this->dashboardRepository->bookingCheckinCountToday();
+        // $data['bookingCheckinCount'] = $this->dashboardRepository->bookingCheckinCountToday();
         $data['bookingCheckoutCount'] = $this->dashboardRepository->bookingCheckoutCountToday();
         $data['transactionDonutChart'] = $this->dashboardRepository->checkinPlayerDonutChart();
         $data['bookingActivityChart'] = $this->dashboardRepository->pantryTransactionDailyActivityChart();

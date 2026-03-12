@@ -88,7 +88,7 @@
 
         <div class="tabs-animation">
             <div class="row">
-                <div class="col-md-6 col-xl-3">
+                <div class="col-md-6 col-xl-4">
                     <div class="card dashboard-card mb-4">
                         <div class="dashboard-card__body d-flex align-items-center justify-content-between">
                             <div>
@@ -102,7 +102,7 @@
                         <div class="dashboard-card__accent" style="background: #2563eb;"></div>
                     </div>
                 </div>
-                <div class="col-md-6 col-xl-3">
+                <div class="col-md-6 col-xl-4">
                     <div class="card dashboard-card mb-4">
                         <div class="dashboard-card__body d-flex align-items-center justify-content-between">
                             <div>
@@ -116,7 +116,7 @@
                         <div class="dashboard-card__accent" style="background: #f97316;"></div>
                     </div>
                 </div>
-                <div class="col-md-6 col-xl-3">
+                {{-- <div class="col-md-6 col-xl-4">
                     <div class="card dashboard-card mb-4">
                         <div class="dashboard-card__body d-flex align-items-center justify-content-between">
                             <div>
@@ -129,8 +129,8 @@
                         </div>
                         <div class="dashboard-card__accent" style="background: #10b981;"></div>
                     </div>
-                </div>
-                <div class="col-md-6 col-xl-3">
+                </div> --}}
+                <div class="col-md-6 col-xl-4">
                     <div class="card dashboard-card mb-4">
                         <div class="dashboard-card__body d-flex align-items-center justify-content-between">
                             <div>
@@ -178,6 +178,16 @@
         document.addEventListener('DOMContentLoaded', function() {
             const bookingActivityChart = @json($bookingActivityChart);
             const transactionDonutChart = @json($transactionDonutChart);
+            const donutSeriesData = transactionDonutChart.labels.map(function(label, index) {
+                return {
+                    name: label,
+                    y: transactionDonutChart.series[index] || 0
+                };
+            });
+            const donutTotal = donutSeriesData.reduce(function(total, point) {
+                return total + point.y;
+            }, 0);
+            const hasDonutData = donutTotal > 0;
 
             Highcharts.chart('bookingActivityChart', {
                 chart: {
@@ -218,28 +228,44 @@
                     type: 'pie'
                 },
                 title: {
-                    text: null
+                    text: donutTotal.toString(),
+                    verticalAlign: 'middle',
+                    y: 22,
+                    style: {
+                        fontSize: '2.0rem',
+                        fontWeight: '700',
+                        color: '#0f172a'
+                    }
+                },
+                subtitle: {
+                    text: '{{ trans('common.total') }}',
+                    verticalAlign: 'middle',
+                    y: 27,
+                    style: {
+                        color: '#64748b',
+                        fontSize: '1rem'
+                    }
                 },
                 tooltip: {
-                    pointFormat: '<b>{point.y}</b>'
+                    pointFormat: hasDonutData ? '<b>{point.y}</b>' : ''
                 },
                 plotOptions: {
                     pie: {
                         innerSize: '62%',
                         dataLabels: {
-                            enabled: true,
+                            enabled: hasDonutData,
                             format: '{point.name}: {point.y}'
-                        }
+                        },
+                        enableMouseTracking: hasDonutData
                     }
                 },
                 series: [{
                     name: '{{ trans('common.dashboard.transaction_donut_title') }}',
-                    data: transactionDonutChart.labels.map(function(label, index) {
-                        return {
-                            name: label,
-                            y: transactionDonutChart.series[index] || 0
-                        };
-                    })
+                    data: hasDonutData ? donutSeriesData : [{
+                        name: 'No data',
+                        y: 1,
+                        color: '#e2e8f0'
+                    }]
                 }]
             });
         });

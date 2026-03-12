@@ -37,7 +37,6 @@ class BookingRepository extends BaseRepository
                     $query->whereDoesntHave('currentBooking');
                 }
             })
-            ->orderBy('alias')
             ->get();
     }
 

@@ -2,7 +2,7 @@
 
 @section('content')
     <div class="app-main__inner">
-        <div class="app-page-title">
+        {{-- <div class="app-page-title">
             <div class="page-title-wrapper">
                 @include('templates.parts.breadcrumb', [
                     'title' => "Check In / Check Out",
@@ -12,11 +12,11 @@
                     ],
                 ])
             </div>
-        </div>
+        </div> --}}
 
-        <div class="row">
-            <div class="col-lg-3">
-                <div class="card mb-4">
+        <div class="row booking-layout">
+            <div class="col-lg-3 booking-layout__sidebar">
+                <div class="card mb-4 booking-filter-card">
                     <div class="card-body">
                         <form action="{{ route('booking.index') }}" method="GET">
                             <div class="form-group">
@@ -62,8 +62,8 @@
                     </div>
                 </div>
             </div>
-            <div class="col-lg-9">
-                <div class="row">
+            <div class="col-lg-9 booking-layout__content">
+                <div class="row booking-card-grid">
                     @forelse ($players as $player)
                         @php
                             $booking = $player->currentBooking;
@@ -165,6 +165,29 @@
 @section('css')
     @parent
     <style>
+        .booking-layout {
+            min-height: calc(100vh - 220px);
+        }
+
+        .booking-layout__sidebar,
+        .booking-layout__content {
+            min-height: calc(100vh - 220px);
+        }
+
+        .booking-filter-card {
+            position: sticky;
+            top: 1rem;
+            max-height: calc(100vh - 150px);
+            overflow-y: auto;
+        }
+
+        .booking-card-grid {
+            max-height: calc(100vh - 150px);
+            overflow-y: auto;
+            padding-right: 0.35rem;
+            align-content: flex-start;
+        }
+
         .booking-card {
             border: 1px solid #dfe6ee;
             border-radius: 16px;
@@ -339,6 +362,21 @@
 
         body.booking-modal-open {
             overflow: hidden;
+        }
+
+        @media (max-width: 991.98px) {
+            .booking-layout,
+            .booking-layout__sidebar,
+            .booking-layout__content {
+                min-height: auto;
+            }
+
+            .booking-filter-card,
+            .booking-card-grid {
+                position: static;
+                max-height: none;
+                overflow: visible;
+            }
         }
     </style>
 @endsection
