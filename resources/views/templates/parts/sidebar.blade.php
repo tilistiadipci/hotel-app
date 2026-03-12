@@ -114,8 +114,8 @@
                 @endif
 
                 {{-- pantry --}}
-                <li class="app-sidebar__heading">Pantry</li>
                 @if (in_array(auth()->user()->role_id ?? null, [1, 2], true))
+                    <li class="app-sidebar__heading">Pantry</li>
                     <li class="{{ $page == 'menu-categories' ? 'mm-active' : '' }}">
                         <a href="{{ url('/menu-categories') }}"
                             class="{{ $page == 'menu-categories' ? 'mm-active' : '' }}">
@@ -134,14 +134,9 @@
                     </a>
                 </li>
 
-                <li class="app-sidebar__heading">{{ trans('common.settings') }}</li>
-                <li class="{{ $page == 'account' ? 'mm-active' : '' }}">
-                    <a href="{{ url('/profile') }}" class="{{ $page == 'account' ? 'mm-active' : '' }}">
-                        <i class="metismenu-icon pe-7s-user"></i> {{ trans('common.account') }}
-                    </a>
-                </li>
 
                 @if (in_array(auth()->user()->role_id ?? null, [1, 2], true))
+                    <li class="app-sidebar__heading">{{ trans('common.settings') }}</li>
                     {{-- settings --}}
                     <li class="{{ $page == 'users' ? 'mm-active' : '' }}">
                         <a href="{{ url('/users') }}" class="{{ $page == 'users' ? 'mm-active' : '' }}">
@@ -159,6 +154,11 @@
                         </a>
                     </li>
                 @endif
+                <li class="{{ $page == 'account' ? 'mm-active' : '' }}">
+                    <a href="{{ url('/profile') }}" class="{{ $page == 'account' ? 'mm-active' : '' }}">
+                        <i class="metismenu-icon pe-7s-user"></i> {{ trans('common.account') }}
+                    </a>
+                </li>
             </ul>
         </div>
     </div>
