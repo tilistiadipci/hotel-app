@@ -70,7 +70,13 @@
                             $isOccupied = (bool) $booking;
                         @endphp
                         <div class="col-md-6 col-xl-4">
-                            <div class="card booking-card {{ $isOccupied ? 'booking-card--occupied' : 'booking-card--available' }}">
+                            <div class="card booking-card {{ $isOccupied ? 'booking-card--occupied' : 'booking-card--available' }}"
+                                role="button"
+                                tabindex="0"
+                                data-booking-action="{{ $isOccupied ? 'checkout' : 'checkin' }}"
+                                data-player-alias="{{ $player->alias }}"
+                                data-checkin-url="{{ route('booking.store', $player->uuid) }}"
+                                data-checkout-url="{{ route('booking.checkout', $player->uuid) }}">
                                 <div class="card-body">
                                     <div class="d-flex justify-content-between align-items-start mb-3">
                                         <div>
@@ -95,12 +101,12 @@
                                         <div class="booking-card__value">{{ $booking?->guest_name ?? '-' }}</div>
                                     </div>
 
-                                    <div class="booking-card__guest mb-4">
+                                    <div class="booking-card__guest">
                                         <div class="booking-card__label">{{ trans('common.booking.alias') }}</div>
                                         <div class="booking-card__value">{{ $player->alias }}</div>
                                     </div>
 
-                                    @if ($booking)
+                                    {{-- @if ($booking)
                                         <button type="button" class="btn btn-outline-danger btn-block btn-checkout-booking"
                                             data-url="{{ route('booking.checkout', $player->uuid) }}">
                                            <i class="fa fa-times"></i> {{ trans('common.booking.checkout') }}
@@ -111,7 +117,7 @@
                                             data-url="{{ route('booking.store', $player->uuid) }}">
                                             <i class="fa fa-check"></i> {{ trans('common.booking.book_now') }}
                                         </button>
-                                    @endif
+                                    @endif --}}
                                 </div>
                             </div>
                         </div>
@@ -194,6 +200,9 @@
             box-shadow: 0 12px 30px rgba(15, 23, 42, 0.06);
             margin-bottom: 1.5rem;
             overflow: hidden;
+            cursor: pointer;
+            transform: translateY(0);
+            transition: transform 0.18s ease, box-shadow 0.18s ease, border-color 0.18s ease;
         }
 
         .booking-card--available {
@@ -202,6 +211,16 @@
 
         .booking-card--occupied {
             background: linear-gradient(180deg, #ffffff 0%, #fff7ed 100%);
+        }
+
+        .booking-card--available:hover {
+            background: linear-gradient(180deg, #f8fffb 0%, #dcfce7 100%);
+            border-color: #86efac;
+        }
+
+        .booking-card--occupied:hover {
+            background: linear-gradient(180deg, #fffaf5 0%, #ffedd5 100%);
+            border-color: #fdba74;
         }
 
         .booking-card__alias {
@@ -229,6 +248,24 @@
             font-size: 0.76rem;
             font-weight: 600;
             color: #64748b;
+        }
+
+        .booking-card:hover {
+            transform: translateY(-6px);
+            box-shadow: 0 18px 36px rgba(15, 23, 42, 0.12);
+        }
+
+        .booking-card:active {
+            transform: translateY(-1px) scale(0.995);
+            box-shadow: 0 10px 20px rgba(15, 23, 42, 0.1);
+        }
+
+        .booking-card:focus {
+            outline: none;
+        }
+
+        .booking-card:focus-visible {
+            box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.22), 0 18px 36px rgba(15, 23, 42, 0.12);
         }
 
         .booking-empty {
@@ -405,12 +442,59 @@
                 document.body.classList.remove('booking-modal-open');
             }
 
-            document.querySelectorAll('.btn-open-booking-modal').forEach(function(button) {
-                button.addEventListener('click', function() {
-                    currentBookingUrl = this.dataset.url;
-                    bookingPlayerLabel.textContent = `${this.dataset.playerAlias}`;
+            function handleBookingCardAction(card) {
+                const action = card.dataset.bookingAction;
+
+                if (action === 'checkin') {
+                    currentBookingUrl = card.dataset.checkinUrl;
+                    bookingPlayerLabel.textContent = card.dataset.playerAlias;
                     guestNameInput.value = '';
                     openBookingModal();
+                    return;
+                }
+
+                if (action === 'checkout') {
+                    const url = card.dataset.checkoutUrl;
+
+                    swal({
+                        title: "{{ trans('common.are_you_sure') }}",
+                        text: "{{ trans('common.booking.checkout_confirm') }}",
+                        icon: 'warning',
+                        buttons: true,
+                        dangerMode: true,
+                    }).then(function(willCheckout) {
+                        if (!willCheckout) {
+                            return;
+                        }
+
+                        $.ajax({
+                            url: url,
+                            method: 'POST',
+                            data: {
+                                _token: "{{ csrf_token() }}"
+                            },
+                            success: function(res) {
+                                toastr["success"](res.message, "Success");
+                                window.location.reload();
+                            },
+                            error: function(xhr) {
+                                toastr["error"](xhr.responseJSON?.message || "{{ trans('common.error.500') }}", "Error");
+                            }
+                        });
+                    });
+                }
+            }
+
+            document.querySelectorAll('.booking-card').forEach(function(card) {
+                card.addEventListener('click', function() {
+                    handleBookingCardAction(card);
+                });
+
+                card.addEventListener('keydown', function(event) {
+                    if (event.key === 'Enter' || event.key === ' ') {
+                        event.preventDefault();
+                        handleBookingCardAction(card);
+                    }
                 });
             });
 
@@ -445,38 +529,6 @@
                 });
             });
 
-            document.querySelectorAll('.btn-checkout-booking').forEach(function(button) {
-                button.addEventListener('click', function() {
-                    const url = this.dataset.url;
-
-                    swal({
-                        title: "{{ trans('common.are_you_sure') }}",
-                        text: "{{ trans('common.booking.checkout_confirm') }}",
-                        icon: 'warning',
-                        buttons: true,
-                        dangerMode: true,
-                    }).then(function(willCheckout) {
-                        if (!willCheckout) {
-                            return;
-                        }
-
-                        $.ajax({
-                            url: url,
-                            method: 'POST',
-                            data: {
-                                _token: "{{ csrf_token() }}"
-                            },
-                            success: function(res) {
-                                toastr["success"](res.message, "Success");
-                                window.location.reload();
-                            },
-                            error: function(xhr) {
-                                toastr["error"](xhr.responseJSON?.message || "{{ trans('common.error.500') }}", "Error");
-                            }
-                        });
-                    });
-                });
-            });
         });
     </script>
 @endsection
