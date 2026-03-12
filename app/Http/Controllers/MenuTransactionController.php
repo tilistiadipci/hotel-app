@@ -110,7 +110,11 @@ class MenuTransactionController extends Controller
             $transaction->processed_by = auth()->id();
         }
 
-        if ($validated['status'] === 'completed' && $transaction->payment_status === 'pending') {
+        if (
+            $validated['status'] === 'completed' &&
+            $transaction->payment_method === 'qris' &&
+            $transaction->payment_status === 'pending'
+        ) {
             $transaction->payment_status = 'paid';
             $transaction->paid_at = now();
         }

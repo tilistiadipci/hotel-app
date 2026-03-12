@@ -85,6 +85,7 @@ Route::middleware(['auth'])->group(function () {
         ->name('booking.')
         ->group(function () {
             Route::get('/', [BookingController::class, 'index'])->name('index');
+            Route::get('/{player}/pending-bills', [BookingController::class, 'pendingBills'])->name('pending-bills');
             Route::post('/{player}/store', [BookingController::class, 'store'])->name('store');
             Route::post('/{player}/checkout', [BookingController::class, 'checkout'])->name('checkout');
         });

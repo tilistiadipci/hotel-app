@@ -15,13 +15,14 @@
         <div class="d-flex justify-content-between align-items-start mb-2">
             <strong>{{ optional($transaction->invoice)->invoice_number ?? 'TRX-' . $transaction->id }}</strong>
             <div class="text-right d-flex">
+                <span class="badge text-muted">{{ $transaction->details->count() }} items</span>
                 <span class="badge mx-1 badge-{{ $statusClass }}">{{ strtoupper($transaction->status) }}</span>
                 <span class="badge badge-dark">{{ strtoupper($transaction->payment_method) }}</span>
             </div>
         </div>
-        <div class="text-muted small mb-2">{{ formatDate($transaction->created_at, true, 'M d, Y - h:i A') }}</div>
+        <div class="text-muted small mb-2">{{ formatDate($transaction->created_at, true, 'M d, Y - h:i:s') }}</div>
         <div class="d-flex justify-content-between align-items-center">
-            <span class="text-muted small">{{ $transaction->details->count() }} items</span>
+            <div class="text-muted">{{ $transaction->player->alias }} - {{ $transaction->guest_name }}</div>
             <strong>{{ number_format((float) $transaction->grand_total, 0) }}</strong>
         </div>
     </button>

@@ -39,6 +39,7 @@ class MenuTransactionRepository extends BaseRepository
     public function paginateFiltered(string $status, string $paymentMethod, int $perPage = 10)
     {
         return $this->baseQuery()
+            ->with(['player'])
             ->when(in_array($status, ['ordered', 'processing', 'completed', 'cancelled'], true), function ($query) use ($status) {
                 $query->where('status', $status);
             })
@@ -46,7 +47,7 @@ class MenuTransactionRepository extends BaseRepository
                 $query->where('payment_method', $paymentMethod);
             })
             ->orderByRaw("CASE WHEN status = 'completed' THEN 1 ELSE 0 END ASC")
-            ->orderByDesc('created_at')
+            ->orderBy('created_at')
             ->paginate($perPage);
     }
 

@@ -92,6 +92,44 @@ class BookingController extends Controller
                     ], 422);
                 }
 
+                $pendingBills = $this->bookingRepository->getPendingBillTransactionsByPlayerIdForUpdate($player->id);
+                $shouldIgnorePendingBill = request()->boolean('ignore_pending_bill');
+                $isPreviewCheckout = request()->boolean('preview_checkout');
+
+                if ($isPreviewCheckout) {
+                    return response()->json([
+                        'status' => true,
+                        'preview_checkout' => true,
+                        'data' => [
+                            'player_alias' => $player->alias,
+                            'guest_name' => $booking->guest_name,
+                            'has_pending_bill' => $pendingBills->isNotEmpty(),
+                            'total_amount' => (float) $pendingBills->sum('grand_total'),
+                            'detail_url' => $pendingBills->isNotEmpty()
+                                ? route('booking.pending-bills', $playerUuid)
+                                : null,
+                        ],
+                    ]);
+                }
+
+                if ($pendingBills->isNotEmpty() && !$shouldIgnorePendingBill) {
+                    return response()->json([
+                        'status' => false,
+                        'message' => trans('common.booking.pending_bill_settlement_required'),
+                        'requires_bill_settlement' => true,
+                        'data' => [
+                            'player_alias' => $player->alias,
+                            'guest_name' => $booking->guest_name,
+                            'total_amount' => (float) $pendingBills->sum('grand_total'),
+                            'detail_url' => route('booking.pending-bills', $playerUuid),
+                        ],
+                    ], 422);
+                }
+
+                if ($pendingBills->isNotEmpty() && $shouldIgnorePendingBill) {
+                    $this->bookingRepository->settlePendingBillsByPlayerId($player->id);
+                }
+
                 $this->bookingRepository->checkout($booking);
 
                 return response()->json([
@@ -104,5 +142,28 @@ class BookingController extends Controller
         } catch (\Exception $e) {
             return $this->debugErrorResJson($e);
         }
+    }
+
+    public function pendingBills(string $playerUuid)
+    {
+        $player = $this->playerRepository->findUid($playerUuid);
+        if (!$player) {
+            abort(404);
+        }
+
+        $transactions = $this->bookingRepository->getPendingBillTransactionsByPlayerId($player->id);
+        $groupedTransactions = $transactions->groupBy(function ($transaction) {
+            return optional($transaction->created_at)->format('Y-m-d');
+        });
+
+        return view('pages.booking.pending-bills', [
+            'page' => $this->page,
+            'icon' => $this->icon,
+            'player' => $player,
+            'booking' => $this->bookingRepository->findActiveByPlayerId($player->id),
+            'transactions' => $transactions,
+            'groupedTransactions' => $groupedTransactions,
+            'grandTotal' => (float) $transactions->sum('grand_total'),
+        ]);
     }
 }

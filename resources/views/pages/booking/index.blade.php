@@ -166,6 +166,44 @@
             </form>
         </div>
     </div>
+
+    <div class="booking-modal" id="checkoutBillModal" aria-hidden="true">
+        <div class="booking-modal__backdrop" data-booking-modal-close></div>
+        <div class="booking-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="checkoutBillModalLabel">
+            <div class="booking-modal__content">
+                <div class="booking-modal__header">
+                    <div>
+                        <h5 class="booking-modal__title" id="checkoutBillModalLabel">{{ trans('common.booking.checkout') }}</h5>
+                    </div>
+                    <button type="button" class="booking-modal__close" data-booking-modal-close aria-label="{{ trans('common.close') }}">
+                        <span aria-hidden="true">&times;</span>
+                    </button>
+                </div>
+                <div class="booking-modal__body">
+                    <div class="booking-modal__player" id="checkoutBillPlayerLabel"></div>
+                    <div class="booking-modal__player-subtext" id="checkoutBillGuestLabel"></div>
+                    <div class="alert alert-warning d-none" id="checkoutBillError"></div>
+                    <p class="text-muted mb-3" id="checkoutBillDescription">{{ trans('common.booking.pending_bill_description') }}</p>
+                    <div class="booking-bill-total d-none" id="checkoutBillTotalSection">
+                        <span>{{ trans('common.booking.pending_bill_total') }}</span>
+                        <button type="button" class="booking-bill-total__link" id="checkoutBillTotalLink">0</button>
+                    </div>
+                    <div class="custom-control custom-checkbox mt-3 d-none" id="checkoutBillIgnoreWrap">
+                        <input type="checkbox" class="custom-control-input" id="checkoutBillConfirmPaid">
+                        <label class="custom-control-label" for="checkoutBillConfirmPaid">
+                            {{ trans('common.booking.pending_bill_ignore') }}
+                        </label>
+                    </div>
+                </div>
+                <div class="booking-modal__footer">
+                    <button type="button" class="btn btn-light border" data-booking-modal-close>{{ trans('common.cancel') }}</button>
+                    <button type="button" class="btn btn-success" id="checkoutBillSubmit" disabled>
+                        {{ trans('common.booking.pending_bill_action') }}
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 @endsection
 
 @section('css')
@@ -382,6 +420,13 @@
             color: #22304a;
         }
 
+        .booking-modal__player-subtext {
+            margin-top: -0.45rem;
+            margin-bottom: 1rem;
+            font-size: 0.82rem;
+            color: #64748b;
+        }
+
         .booking-modal__input {
             height: 48px;
             border-radius: 12px;
@@ -395,6 +440,28 @@
             justify-content: flex-end;
             gap: 0.75rem;
             border-top: 1px solid #e7edf3;
+        }
+
+        .booking-bill-total {
+            margin-top: 1rem;
+            padding-top: 1rem;
+            border-top: 1px solid #e7edf3;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            font-size: 1rem;
+            color: #22304a;
+        }
+
+        .booking-bill-total__link {
+            border: 0;
+            background: transparent;
+            padding: 0;
+            font-size: 1rem;
+            font-weight: 700;
+            color: #2563eb;
+            text-decoration: underline;
+            cursor: pointer;
         }
 
         body.booking-modal-open {
@@ -423,23 +490,135 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const bookingModal = document.getElementById('bookingModal');
+            const checkoutBillModal = document.getElementById('checkoutBillModal');
             const bookingForm = document.getElementById('bookingForm');
             const guestNameInput = document.getElementById('guest_name');
             const bookingPlayerLabel = document.getElementById('bookingPlayerLabel');
+            const checkoutBillPlayerLabel = document.getElementById('checkoutBillPlayerLabel');
+            const checkoutBillGuestLabel = document.getElementById('checkoutBillGuestLabel');
+            const checkoutBillError = document.getElementById('checkoutBillError');
+            const checkoutBillDescription = document.getElementById('checkoutBillDescription');
+            const checkoutBillTotalSection = document.getElementById('checkoutBillTotalSection');
+            const checkoutBillTotalLink = document.getElementById('checkoutBillTotalLink');
+            const checkoutBillIgnoreWrap = document.getElementById('checkoutBillIgnoreWrap');
+            const checkoutBillConfirmPaid = document.getElementById('checkoutBillConfirmPaid');
+            const checkoutBillSubmit = document.getElementById('checkoutBillSubmit');
             const modalCloseButtons = document.querySelectorAll('[data-booking-modal-close]');
             let currentBookingUrl = '';
+            let currentCheckoutUrl = '';
+            let currentBillDetailUrl = '';
+            let currentCheckoutHasPendingBill = false;
+
+            function openModal(modal) {
+                modal.classList.add('is-open');
+                modal.setAttribute('aria-hidden', 'false');
+                document.body.classList.add('booking-modal-open');
+            }
+
+            function closeModal(modal) {
+                modal.classList.remove('is-open');
+                modal.setAttribute('aria-hidden', 'true');
+            }
+
+            function closeAllModals() {
+                closeModal(bookingModal);
+                closeModal(checkoutBillModal);
+                document.body.classList.remove('booking-modal-open');
+            }
 
             function openBookingModal() {
-                bookingModal.classList.add('is-open');
-                bookingModal.setAttribute('aria-hidden', 'false');
-                document.body.classList.add('booking-modal-open');
+                openModal(bookingModal);
                 setTimeout(() => guestNameInput.focus(), 100);
             }
 
-            function closeBookingModal() {
-                bookingModal.classList.remove('is-open');
-                bookingModal.setAttribute('aria-hidden', 'true');
-                document.body.classList.remove('booking-modal-open');
+            function formatCurrency(amount) {
+                return Number(amount || 0).toLocaleString('id-ID');
+            }
+
+            function setCheckoutBillError(message) {
+                if (!message) {
+                    checkoutBillError.textContent = '';
+                    checkoutBillError.classList.add('d-none');
+                    return;
+                }
+
+                checkoutBillError.textContent = message;
+                checkoutBillError.classList.remove('d-none');
+            }
+
+            function renderPendingBillModal(summary) {
+                const playerAlias = summary.player_alias || '';
+                const guestName = summary.guest_name || '-';
+
+                checkoutBillPlayerLabel.textContent = playerAlias;
+                checkoutBillGuestLabel.textContent = guestName !== '-'
+                    ? `Guest: ${guestName}`
+                    : '';
+                checkoutBillGuestLabel.classList.toggle('d-none', guestName === '-');
+                currentCheckoutHasPendingBill = Boolean(summary.has_pending_bill);
+                checkoutBillDescription.textContent = currentCheckoutHasPendingBill
+                    ? "{{ trans('common.booking.pending_bill_description') }}"
+                    : "{{ trans('common.booking.checkout_confirm') }}";
+                checkoutBillTotalSection.classList.toggle('d-none', !currentCheckoutHasPendingBill);
+                checkoutBillIgnoreWrap.classList.toggle('d-none', !currentCheckoutHasPendingBill);
+                checkoutBillTotalLink.textContent = formatCurrency(summary.total_amount);
+                currentBillDetailUrl = summary.detail_url || '';
+                setCheckoutBillError(summary.message || '');
+                checkoutBillConfirmPaid.checked = false;
+                checkoutBillSubmit.disabled = currentCheckoutHasPendingBill;
+                openModal(checkoutBillModal);
+            }
+
+            function previewCheckout(url) {
+                $.ajax({
+                    url: url,
+                    method: 'POST',
+                    global: false,
+                    data: {
+                        _token: "{{ csrf_token() }}",
+                        preview_checkout: 1
+                    },
+                    success: function(res) {
+                        renderPendingBillModal(res.data || {});
+                    },
+                    error: function(xhr) {
+                        const response = xhr.responseJSON || {};
+                        toastr["error"](response.message || "{{ trans('common.error.500') }}", "Error");
+                    }
+                });
+            }
+
+            function submitCheckout(url, ignorePendingBill) {
+                $.ajax({
+                    url: url,
+                    method: 'POST',
+                    global: false,
+                    data: {
+                        _token: "{{ csrf_token() }}",
+                        ignore_pending_bill: ignorePendingBill ? 1 : 0
+                    },
+                    success: function(res) {
+                        closeAllModals();
+                        toastr["success"](res.message, "Success");
+                        window.location.reload();
+                    },
+                    error: function(xhr) {
+                        const response = xhr.responseJSON || {};
+
+                        if (xhr.status === 422 && response.requires_bill_settlement && response.data) {
+                            response.data.message = response.message || '';
+                            renderPendingBillModal(response.data);
+                            return;
+                        }
+
+                        if (checkoutBillModal.classList.contains('is-open')) {
+                            setCheckoutBillError(response.message || "{{ trans('common.error.500') }}");
+                            return;
+                        }
+
+                        toastr["error"](response.message || "{{ trans('common.error.500') }}", "Error");
+                    }
+                });
             }
 
             function handleBookingCardAction(card) {
@@ -454,34 +633,8 @@
                 }
 
                 if (action === 'checkout') {
-                    const url = card.dataset.checkoutUrl;
-
-                    swal({
-                        title: "{{ trans('common.are_you_sure') }}",
-                        text: "{{ trans('common.booking.checkout_confirm') }}",
-                        icon: 'warning',
-                        buttons: true,
-                        dangerMode: true,
-                    }).then(function(willCheckout) {
-                        if (!willCheckout) {
-                            return;
-                        }
-
-                        $.ajax({
-                            url: url,
-                            method: 'POST',
-                            data: {
-                                _token: "{{ csrf_token() }}"
-                            },
-                            success: function(res) {
-                                toastr["success"](res.message, "Success");
-                                window.location.reload();
-                            },
-                            error: function(xhr) {
-                                toastr["error"](xhr.responseJSON?.message || "{{ trans('common.error.500') }}", "Error");
-                            }
-                        });
-                    });
+                    currentCheckoutUrl = card.dataset.checkoutUrl;
+                    previewCheckout(currentCheckoutUrl);
                 }
             }
 
@@ -499,12 +652,14 @@
             });
 
             modalCloseButtons.forEach(function(button) {
-                button.addEventListener('click', closeBookingModal);
+                button.addEventListener('click', function() {
+                    closeAllModals();
+                });
             });
 
             document.addEventListener('keydown', function(event) {
-                if (event.key === 'Escape' && bookingModal.classList.contains('is-open')) {
-                    closeBookingModal();
+                if (event.key === 'Escape' && (bookingModal.classList.contains('is-open') || checkoutBillModal.classList.contains('is-open'))) {
+                    closeAllModals();
                 }
             });
 
@@ -519,7 +674,7 @@
                         guest_name: guestNameInput.value
                     },
                     success: function(res) {
-                        closeBookingModal();
+                        closeAllModals();
                         toastr["success"](res.message, "Success");
                         window.location.reload();
                     },
@@ -529,6 +684,30 @@
                 });
             });
 
+            checkoutBillConfirmPaid?.addEventListener('change', function() {
+                checkoutBillSubmit.disabled = currentCheckoutHasPendingBill ? !this.checked : false;
+            });
+
+            checkoutBillSubmit?.addEventListener('click', function() {
+                if (!currentCheckoutUrl) {
+                    return;
+                }
+
+                if (currentCheckoutHasPendingBill && !checkoutBillConfirmPaid.checked) {
+                    setCheckoutBillError("{{ trans('common.booking.pending_bill_settlement_required') }}");
+                    return;
+                }
+
+                submitCheckout(currentCheckoutUrl, currentCheckoutHasPendingBill);
+            });
+
+            checkoutBillTotalLink?.addEventListener('click', function() {
+                if (!currentBillDetailUrl) {
+                    return;
+                }
+
+                window.open(currentBillDetailUrl, '_blank');
+            });
         });
     </script>
 @endsection

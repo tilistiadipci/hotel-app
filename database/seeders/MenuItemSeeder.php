@@ -63,7 +63,7 @@ class MenuItemSeeder extends Seeder
             [
                 'name' => 'Chocolate Lava Cake',
                 'category' => 'desserts',
-                'price' => 52000,
+                'price' => 1500,
                 'discount_price' => null,
                 'description' => 'Warm chocolate cake with molten center, vanilla ice cream.',
                 'is_available' => true,
