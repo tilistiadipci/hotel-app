@@ -8,12 +8,12 @@
 #### Run Project:
 1. Clone the repository:
    ```
-   git clone https://adi27-admin@bitbucket.org/bioexperience/assets.git
+   git clone https://github.com/tilistiadipci/hotel-app.git
    ```
-2. Navigate to the project folder, checkout branch dev, install dependencies using Composer:
+2. Navigate to the project folder, checkout branch main, install dependencies using Composer:
    ```
    cd assets
-   git checkout dev
+   git checkout main
    composer install
    ```
 3. Create a .env file by copying the contents of .env.example:
