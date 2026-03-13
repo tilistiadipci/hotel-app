@@ -154,8 +154,16 @@ class MediaController extends Controller
 
         $chunk->move($tempDir, 'chunk_' . $chunkNumber);
 
-        // Belum chunk terakhir
-        if ($chunkNumber < $totalChunks) {
+        $allChunksUploaded = true;
+        for ($i = 1; $i <= $totalChunks; $i++) {
+            if (!is_file($tempDir . '/chunk_' . $i)) {
+                $allChunksUploaded = false;
+                break;
+            }
+        }
+
+        // Jangan merge sebelum semua chunk lengkap.
+        if (!$allChunksUploaded) {
             return response()->json([
                 'uploaded' => $chunkNumber,
                 'total' => $totalChunks
