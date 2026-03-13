@@ -111,10 +111,9 @@
                             </li>
                         </ul>
                     </li>
-                @endif
 
-                {{-- pantry --}}
-                @if (in_array(auth()->user()->role_id ?? null, [1, 2], true))
+
+                    {{-- pantry --}}
                     <li class="app-sidebar__heading">Pantry</li>
                     <li class="{{ $page == 'menu-categories' ? 'mm-active' : '' }}">
                         <a href="{{ url('/menu-categories') }}"
@@ -128,6 +127,7 @@
                         </a>
                     </li>
                 @endif
+
                 <li class="{{ $page == 'transactions' ? 'mm-active' : '' }}">
                     <a href="{{ url('/transactions') }}" class="{{ $page == 'transactions' ? 'mm-active' : '' }}">
                         <i class="metismenu-icon pe-7s-wallet"></i> {{ trans('common.transaction.title') }}
