@@ -91,7 +91,7 @@ class ThemeController extends Controller
 
             DB::commit();
 
-            return redirect()->route('themes.index')->with('success', trans('common.success.update'));
+            return redirect()->back()->with('success', trans('common.success.update'));
         } catch (\Exception $e) {
             DB::rollBack();
             app(HelperController::class)->cleanupMedia($createdMediaIds, $storedPaths);
@@ -138,7 +138,11 @@ class ThemeController extends Controller
         $keys = $request->input('detail_keys', []);
         $values = $request->input('detail_values', []);
         $details = [];
-        $existingKeys = $theme->details()->pluck('key')->values()->all();
+        $existingKeys = $theme->details()
+            ->pluck('key')
+            ->reject(fn ($key) => $this->isDeprecatedDetailKey((string) $key))
+            ->values()
+            ->all();
         $canManageKeys = $this->canManageDetailKeys();
 
         foreach ($keys as $index => $key) {
@@ -161,13 +165,26 @@ class ThemeController extends Controller
                 ]);
             }
 
-            if ($normalizedKey === 'background_theme_color' && !in_array($value, ['dark-mode', 'light-mode'], true)) {
-                throw ValidationException::withMessages([
-                    "detail_values.$index" => 'Value background_theme_color hanya boleh dark-mode atau light-mode.',
-                ]);
+            if ($this->isDeprecatedDetailKey($normalizedKey)) {
+                continue;
             }
 
-            $details[$normalizedKey] = $value;
+            if ($this->isImageDetailKey($normalizedKey) && $value !== null && $value !== '') {
+                if (!ctype_digit($value)) {
+                    throw ValidationException::withMessages([
+                        "detail_values.$index" => "Value {$normalizedKey} harus berupa image media id.",
+                    ]);
+                }
+
+                $media = $this->mediaRepository->find((int) $value);
+                if (!$media || $media->type !== 'image') {
+                    throw ValidationException::withMessages([
+                        "detail_values.$index" => "Value {$normalizedKey} harus berupa media image yang valid.",
+                    ]);
+                }
+            }
+
+            $details[$normalizedKey] = $this->normalizeDetailValue($normalizedKey, $value);
         }
 
         if (!$canManageKeys) {
@@ -185,6 +202,34 @@ class ThemeController extends Controller
         }
 
         return $details;
+    }
+
+    private function normalizeDetailValue(string $key, ?string $value): ?string
+    {
+        if ($value === null) {
+            return null;
+        }
+
+        if ($this->isMultilineDetailKey($key)) {
+            return preg_replace('/\r\n|\r|\n/', '<br>', $value);
+        }
+
+        return $value;
+    }
+
+    private function isMultilineDetailKey(string $key): bool
+    {
+        return in_array($key, ['running_text', 'marquee_text'], true);
+    }
+
+    private function isDeprecatedDetailKey(string $key): bool
+    {
+        return $key === 'background_theme_color';
+    }
+
+    private function isImageDetailKey(string $key): bool
+    {
+        return preg_match('/^image(_id)?_\d+$/', $key) === 1;
     }
 
     private function syncDetails(Theme $theme, array $details): void
