@@ -35,8 +35,6 @@ class SettingWebsiteController extends Controller
             'profile' => true,
             'page' => 'settings',
             'settings' => [
-                'api_key_status' => $this->settingRepository->getValueByKey('api_key_status', 'inactive'),
-                'api_key_value' => $this->settingRepository->getValueByKey('api_key_value', ''),
                 'default_language' => $this->getLanguageSetting(),
                 'notification_email_alerts' => $this->settingRepository->getBoolValueByKey('notification_email_alerts', true),
                 'notification_push_notifications' => $this->settingRepository->getBoolValueByKey('notification_push_notifications', false),
@@ -53,24 +51,8 @@ class SettingWebsiteController extends Controller
     {
         $section = $request->input('section');
 
-        if (!in_array($section, ['api_status', 'api_key', 'language', 'notifications', 'transaction_charge'], true)) {
+        if (!in_array($section, ['language', 'notifications', 'transaction_charge'], true)) {
             return redirect()->route('settings.index')->with('error', 'Invalid settings section.');
-        }
-
-        if ($section === 'api_status') {
-            $validated = $request->validate([
-                'api_key_status' => ['required', Rule::in(['active', 'inactive'])],
-            ]);
-
-            $this->settingRepository->saveByKey('API Key Status', 'api_key_status', $validated['api_key_status']);
-        }
-
-        if ($section === 'api_key') {
-            $validated = $request->validate([
-                'api_key_value' => ['required', 'string', 'min:16', 'max:255'],
-            ]);
-
-            $this->settingRepository->saveByKey('API Key', 'api_key_value', $validated['api_key_value']);
         }
 
         if ($section === 'language') {
