@@ -11,6 +11,7 @@
         trans('common.movie.release_date') => optional($movie->release_date)->format('Y-m-d') ?? '-',
         trans('common.movie.duration') => $time,
         trans('common.status') => $movie->is_active ? trans('common.active') : trans('common.inactive'),
+        'Favorit' => $movie->is_favorit ? 'Ya' : 'Tidak',
         trans('common.created_at') => $movie->created_at ?? '-',
     ];
 @endphp

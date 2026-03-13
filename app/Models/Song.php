@@ -22,6 +22,7 @@ class Song extends Model
         'image_id',
         'sort_order',
         'is_active',
+        'is_favorit',
         'created_by',
         'updated_by',
         'deleted_by',
@@ -29,6 +30,7 @@ class Song extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
+        'is_favorit' => 'boolean',
     ];
 
     protected static function booted()

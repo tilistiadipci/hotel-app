@@ -195,6 +195,7 @@ class PlaceController extends Controller
             'distance_km' => 'nullable|numeric',
             'google_maps_url' => 'nullable|url|max:255',
             'is_active' => 'required|boolean',
+            'is_favorit' => 'required|boolean',
         ];
 
         $validated = $request->validate($rules);

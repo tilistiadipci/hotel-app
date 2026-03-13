@@ -16,6 +16,7 @@ class Place extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
+        'is_favorit' => 'boolean',
         'latitude' => 'float',
         'longitude' => 'float',
         'distance_km' => 'float',

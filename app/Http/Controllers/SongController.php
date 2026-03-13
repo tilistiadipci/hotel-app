@@ -228,6 +228,7 @@ class SongController extends Controller
             'audio_media_id' => 'nullable|integer|exists:medias,id',
             'sort_order' => 'nullable|integer|min:0',
             'is_active' => 'required|boolean',
+            'is_favorit' => 'required|boolean',
         ];
 
         $validated = $request->validate($rules);

@@ -122,6 +122,19 @@
                         </select>
                     </div>
                 </div>
+
+                <div class="position-relative row form-group">
+                    <label class="col-sm-4 col-form-label text-sm-right">Favorit</label>
+                    <div class="col-sm-8">
+                        @php
+                            $isFavorit = $place->is_favorit ?? old('is_favorit', 0);
+                        @endphp
+                        <select name="is_favorit" id="is_favorit" class="form-control select2" style="width: 100%;">
+                            <option value="1" {{ $isFavorit == 1 ? 'selected' : '' }}>Ya</option>
+                            <option value="0" {{ $isFavorit == 0 ? 'selected' : '' }}>Tidak</option>
+                        </select>
+                    </div>
+                </div>
             </div>
 
             <div class="col-md-6">
@@ -245,7 +258,7 @@
     <script>
         (function waitForjQuery() {
             if (window.jQuery) {
-                ['#category_id', '#is_active'].forEach(selector => {
+                ['#category_id', '#is_active', '#is_favorit'].forEach(selector => {
                     const el = $(selector);
                     if (el.hasClass('select2-hidden-accessible')) {
                         el.select2('destroy');

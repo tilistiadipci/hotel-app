@@ -11,6 +11,7 @@
         trans('common.song.album') => $song->album->title ?? 'Single',
         trans('common.song.duration') => $time,
         trans('common.status') => $song->is_active ? trans('common.active') : trans('common.inactive'),
+        'Favorit' => $song->is_favorit ? 'Ya' : 'Tidak',
         trans('common.created_at') => $channel->created_at ?? '-',
     ];
 @endphp

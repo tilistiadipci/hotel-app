@@ -197,6 +197,7 @@ class MovieController extends Controller
             'release_date' => 'nullable|date',
             'rating' => 'nullable|max:10',
             'is_active' => 'required|boolean',
+            'is_favorit' => 'required|boolean',
             'category_ids' => 'nullable|array',
             'category_ids.*' => 'integer|exists:movies_categories,id',
         ];
@@ -357,4 +358,3 @@ class MovieController extends Controller
         ]);
     }
 }
-

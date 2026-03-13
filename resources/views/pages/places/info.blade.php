@@ -10,6 +10,7 @@
         trans('common.place.distance') => $place->distance_km ? number_format($place->distance_km, 2) . ' km' : '-',
         trans('common.sort_order') => $place->sort_order ?? '-',
         'Status' => $place->is_active ? trans('common.active') : trans('common.inactive'),
+        'Favorit' => $place->is_favorit ? 'Ya' : 'Tidak',
         'Maps' => !empty($place->google_maps_url) ? '<a href="' . $place->google_maps_url . '" target="_blank" rel="noopener">Open Map</a>' : '-',
         trans('common.created_at') => $place->created_at ?? '-',
         // trans('common.updated_at') => $place->updated_at ?? '-',

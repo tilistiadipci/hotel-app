@@ -138,7 +138,7 @@ class MediaController extends Controller
             File::delete($tempDir);
         }
 
-        File::ensureDirectoryExists($tempDir, 0755, true);
+        $this->ensureDirectoryExistsSafely($tempDir);
 
         // Handle chunk check (GET)
         if ($request->isMethod('get')) {
@@ -178,7 +178,7 @@ class MediaController extends Controller
         $finalPath = $this->mediaAbsolutePath($finalRelative);
 
         // Ensure destination directory exists
-        File::ensureDirectoryExists(dirname($finalPath), 0755, true);
+        $this->ensureDirectoryExistsSafely(dirname($finalPath));
 
         $out = fopen($finalPath, 'wb');
         if (!$out) {
@@ -457,6 +457,21 @@ class MediaController extends Controller
     private function sanitizeIdentifier(string $identifier): string
     {
         return preg_replace('/[^A-Za-z0-9_\\-]/', '', $identifier);
+    }
+
+    private function ensureDirectoryExistsSafely(string $path): void
+    {
+        if (is_dir($path)) {
+            return;
+        }
+
+        try {
+            File::ensureDirectoryExists($path, 0755, true);
+        } catch (\Throwable $e) {
+            if (!is_dir($path)) {
+                throw $e;
+            }
+        }
     }
 
     private function guessMimeFromExtension(string $ext): ?string

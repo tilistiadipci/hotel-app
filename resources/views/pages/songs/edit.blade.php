@@ -69,7 +69,7 @@
                 }
             };
 
-            ['#artist_id', '#album_id', '#is_active'].forEach((selector) => {
+            ['#artist_id', '#album_id', '#is_active', '#is_favorit'].forEach((selector) => {
                 const el = $(selector);
                 if (el.hasClass('select2-hidden-accessible')) {
                     el.select2('destroy');
@@ -82,6 +82,10 @@
                 placeholder: `{{ trans('common.song.album_placeholder') }}`
             }));
             $('#is_active').select2({
+                theme: 'bootstrap4',
+                width: '100%'
+            });
+            $('#is_favorit').select2({
                 theme: 'bootstrap4',
                 width: '100%'
             });

@@ -22,6 +22,7 @@ class Movie extends Model
         'release_date',
         'rating',
         'is_active',
+        'is_favorit',
         'created_by',
         'updated_by',
         'deleted_by',
@@ -29,6 +30,7 @@ class Movie extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
+        'is_favorit' => 'boolean',
         'release_date' => 'date',
     ];
 
