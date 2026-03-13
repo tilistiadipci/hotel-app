@@ -15,6 +15,7 @@ class Player extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
+        'token_expires_at' => 'datetime',
     ];
 
     protected static function booted(): void

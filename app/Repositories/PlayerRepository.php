@@ -4,6 +4,8 @@ namespace App\Repositories;
 
 use App\Models\Booking;
 use App\Models\Player;
+use Illuminate\Support\Carbon;
+use Illuminate\Support\Str;
 use Yajra\DataTables\Facades\DataTables;
 
 class PlayerRepository extends BaseRepository
@@ -17,6 +19,8 @@ class PlayerRepository extends BaseRepository
     {
         $attributes['is_active'] = $attributes['is_active'] ?? true;
         $attributes['theme_id'] = $attributes['theme_id'] ?? 1;
+        $attributes['token'] = $this->generateUniqueToken();
+        $attributes['token_expires_at'] = $this->generateTokenExpiry();
 
         return parent::create($attributes);
     }
@@ -25,6 +29,12 @@ class PlayerRepository extends BaseRepository
     {
         $attributes['is_active'] = $attributes['is_active'] ?? true;
         $attributes['theme_id'] = $attributes['theme_id'] ?? 1;
+
+        $player = $this->findUid($uid);
+        if ($player && array_key_exists('serial', $attributes) && (string) $attributes['serial'] !== (string) $player->serial) {
+            $attributes['token'] = $this->generateUniqueToken();
+            $attributes['token_expires_at'] = $this->generateTokenExpiry();
+        }
 
         return parent::updateByUid($uid, $attributes);
     }
@@ -86,5 +96,19 @@ class PlayerRepository extends BaseRepository
             ->active()
             ->where('player_id', $playerId)
             ->exists();
+    }
+
+    private function generateUniqueToken(): string
+    {
+        do {
+            $token = Str::lower(Str::random(40));
+        } while ($this->model->newQuery()->where('token', $token)->exists());
+
+        return $token;
+    }
+
+    private function generateTokenExpiry(): Carbon
+    {
+        return now()->addDays(3650);
     }
 }
