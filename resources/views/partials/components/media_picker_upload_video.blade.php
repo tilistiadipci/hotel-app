@@ -10,7 +10,8 @@
         value="{{ old('uploaded_video_filename') }}">
     <input type="hidden" name="video_media_id" id="video_media_id" value="{{ old('video_media_id') }}">
     <small class="text-muted d-block mt-1" id="videoHelp" style="font-style: normal;">Format:
-        MP4/MOV/MKV/WEBM/AVI</small>
+        MP4/MOV/MKV/WEBM/AVI. Max.
+        {{ config('media_upload.limits_mb.video', 2048) >= 1024 ? rtrim(rtrim(number_format(config('media_upload.limits_mb.video', 2048) / 1024, 2, '.', ''), '0'), '.') . 'GB' : config('media_upload.limits_mb.video', 2048) . 'MB' }}</small>
     <div class="progress mt-2 d-none" id="chunkProgressWrap" style="height: 18px;">
         <div class="progress-bar progress-bar-striped progress-bar-animated" role="progressbar" style="width: 0%;"
             id="chunkProgressBar">0%</div>

@@ -123,12 +123,12 @@ class MediaController extends Controller
             ], 422);
         }
 
-        // Validasi ukuran maksimal 2GB
-        $maxSize = 2 * 1024 * 1024 * 1024; // 2GB
+        $maxSize = (int) config('media_upload.limits_bytes.video', 2048 * 1024 * 1024);
+        $maxVideoMb = (int) config('media_upload.limits_mb.video', 2048);
         if ($totalSize > $maxSize) {
             return response()->json([
                 'status' => false,
-                'message' => 'Ukuran video melebihi batas maksimum 2GB.'
+                'message' => 'Ukuran video melebihi batas maksimum ' . $this->formatLimitLabel($maxVideoMb) . '.'
             ], 422);
         }
 
@@ -259,15 +259,15 @@ class MediaController extends Controller
         ];
 
         if ($type === 'image') {
-            $rules['file'] = 'required|file|mimes:jpg,jpeg,png|max:102400';
+            $rules['file'] = 'required|file|mimes:jpg,jpeg,png|max:' . (int) config('media_upload.limits_kb.image', 102400);
         }
 
         if ($type === 'audio') {
-            $rules['file'] = 'required|file|mimes:mp3,wav,flac,aac,m4a,ogg|max:512000';
+            $rules['file'] = 'required|file|mimes:mp3,wav,flac,aac,m4a,ogg|max:' . (int) config('media_upload.limits_kb.audio', 512000);
         }
 
         if ($type === 'video') {
-            $rules['file'] = 'required|file|mimes:mp4,mkv,webm,avi|max:2097152';
+            $rules['file'] = 'required|file|mimes:mp4,mkv,webm,avi|max:' . (int) config('media_upload.limits_kb.video', 2097152);
         }
 
         $validated = $request->validate($rules);
@@ -491,6 +491,20 @@ class MediaController extends Controller
             'ogg' => 'audio/ogg',
             default => null,
         };
+    }
+
+    private function formatLimitLabel(int $sizeMb): string
+    {
+        if ($sizeMb >= 1024) {
+            $sizeGb = $sizeMb / 1024;
+            $formatted = fmod($sizeGb, 1.0) === 0.0
+                ? number_format($sizeGb, 0)
+                : number_format($sizeGb, 2);
+
+            return $formatted . 'GB';
+        }
+
+        return $sizeMb . 'MB';
     }
 
     private function transformMedia($m)

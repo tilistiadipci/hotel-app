@@ -109,6 +109,18 @@
     <script src="{{ asset('js/resumable.js') }}"></script>
     <script>
         const apiService = `{{ config('app.app_service_api') }}`;
+        const mediaUploadLimitsMb = @json(config('media_upload.limits_mb'));
+        const mediaUploadLimitsBytes = @json(config('media_upload.limits_bytes'));
+        const formatLimitLabel = (sizeMb) => {
+            const mb = Number(sizeMb || 0);
+            if (mb >= 1024) {
+                const gb = mb / 1024;
+                const formatted = Number.isInteger(gb) ? gb.toString() : gb.toFixed(2).replace(/\.?0+$/, '');
+                return `${formatted}GB`;
+            }
+
+            return `${mb}MB`;
+        };
         const datasets = {
             image: {
                 items: @json($images),
@@ -139,6 +151,86 @@
         let videoResumable = null;
         let pendingVideoFile = null;
         let videoUploading = false;
+        const videoChunkMaxSize = mediaUploadLimitsBytes.video || (2048 * 1024 * 1024);
+
+        function extractAjaxErrorMessage(xhr, fallback = 'Upload gagal.') {
+            if (!xhr) return fallback;
+
+            const response = xhr.responseJSON || null;
+
+            if (response?.message) {
+                return response.message;
+            }
+
+            if (response?.errors && typeof response.errors === 'object') {
+                const firstField = Object.keys(response.errors)[0];
+                const firstError = firstField ? response.errors[firstField] : null;
+                if (Array.isArray(firstError) && firstError.length) {
+                    return firstError[0];
+                }
+                if (typeof firstError === 'string' && firstError.trim() !== '') {
+                    return firstError;
+                }
+            }
+
+            if (typeof xhr.responseText === 'string' && xhr.responseText.trim() !== '') {
+                const plainText = xhr.responseText.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+                if (plainText) {
+                    return plainText;
+                }
+            }
+
+            return fallback;
+        }
+
+        function extractResumableErrorMessage(message, fallback = 'Gagal upload video.') {
+            if (!message) return fallback;
+
+            if (typeof message === 'string') {
+                try {
+                    const parsed = JSON.parse(message);
+                    if (parsed?.message) return parsed.message;
+                    if (parsed?.errors && typeof parsed.errors === 'object') {
+                        const firstField = Object.keys(parsed.errors)[0];
+                        const firstError = firstField ? parsed.errors[firstField] : null;
+                        if (Array.isArray(firstError) && firstError.length) return firstError[0];
+                    }
+                } catch (e) {
+                    const plainText = message.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+                    if (plainText) return plainText;
+                }
+            }
+
+            const xhr = message?.xhr || message?.target || message;
+            if (xhr?.responseJSON?.message) return xhr.responseJSON.message;
+            if (xhr?.responseText) {
+                const plainText = String(xhr.responseText).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+                if (plainText) return plainText;
+            }
+
+            return fallback;
+        }
+
+        function validateChunkVideoFile(file, fallbackName = 'video') {
+            const fileName = (file?.name || file?.fileName || fallbackName).toLowerCase();
+            const ext = fileName.split('.').pop();
+            const allowedExt = ['mp4', 'mkv', 'webm', 'avi'];
+
+            if (!allowedExt.includes(ext)) {
+                return 'Format video tidak didukung. Gunakan MP4, MKV, WEBM, atau AVI.';
+            }
+
+            if (file?.size && file.size > videoChunkMaxSize) {
+                return `Ukuran video melebihi batas maksimum ${formatLimitLabel(mediaUploadLimitsMb.video)}.`;
+            }
+
+            const mime = String(file?.type || '').toLowerCase();
+            if (mime && !mime.startsWith('video/')) {
+                return 'File yang dipilih bukan video yang valid.';
+            }
+
+            return null;
+        }
 
         function resetProgress() {
             totalBytes = 0;
@@ -167,8 +259,9 @@
                     const r = new Resumable({
                         target: "{{ route('media.uploadChunk', [], false) }}",
                         chunkSize: 5 * 1024 * 1024,
-                        simultaneousUploads: 3,
+                        simultaneousUploads: 1,
                         testChunks: false,
+                        permanentErrors: [400, 404, 409, 413, 415, 422, 500, 501],
                         throttleProgressCallbacks: 1,
                         withCredentials: true,
                         query: () => ({
@@ -209,7 +302,9 @@
 
                     r.on('fileError', function(fileObj, message) {
                         console.error('Chunk upload error', message);
-                        toastr["error"]("Gagal upload video besar", "Error");
+                        r.cancel();
+                        r.removeFile(fileObj);
+                        toastr["error"](extractResumableErrorMessage(message, "Gagal upload video besar"), "Error");
                         resolve();
                     });
 
@@ -475,8 +570,9 @@
                 const r = new Resumable({
                     target: "{{ route('media.uploadChunk', [], false) }}",
                     chunkSize: 5 * 1024 * 1024,
-                    simultaneousUploads: 3,
+                    simultaneousUploads: 1,
                     testChunks: false,
+                    permanentErrors: [400, 404, 409, 413, 415, 422, 500, 501],
                     throttleProgressCallbacks: 1,
                     withCredentials: true,
                     query: function(file) {
@@ -549,16 +645,10 @@
                             return;
                         }
 
-                        if (!allowedExt.includes(ext)) {
+                        const validationMessage = validateChunkVideoFile(file.file, fileName);
+                        if (validationMessage) {
                             resetInvalidVideoSelection();
-                            alert('Format video tidak didukung. Gunakan MP4, MKV, WEBM, atau AVI.');
-                            return;
-                        }
-
-                        const mime = ((file.file && file.file.type) || '').toLowerCase();
-                        if (mime && !mime.startsWith('video/')) {
-                            resetInvalidVideoSelection();
-                            alert('File yang dipilih bukan video yang valid.');
+                            alert(validationMessage);
                             return;
                         }
 
@@ -649,17 +739,8 @@
 
                     r.on('fileError', function(file, message) {
                         console.error('Upload error', message);
-
-                        let errorText = 'Gagal upload video. Refresh halaman dan coba lagi.';
-
-                        try {
-                            const res = JSON.parse(message);
-                            errorText = res.message || res.msg || errorText;
-                        } catch (e) {
-                            if (typeof message === 'string' && message.trim() !== '') {
-                                errorText = message;
-                            }
-                        }
+                        const errorText = extractResumableErrorMessage(message,
+                            'Gagal upload video. Refresh halaman dan coba lagi.');
 
                         r.cancel();
                         r.removeFile(file);
@@ -744,9 +825,10 @@
                                     totals[t] = (totals[t] || 0) + 1;
                                 }
                             },
-                            error: function() {
-                                toastr["error"]("{{ trans('common.error.500') }}",
-                                    "Error");
+                            error: function(xhr) {
+                                const errorText = extractAjaxErrorMessage(xhr,
+                                    "{{ trans('common.error.500') }}");
+                                toastr["error"](errorText, "Error");
                             }
                         });
                         uploadedBytes += file.size;

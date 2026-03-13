@@ -1,6 +1,18 @@
 <script src="{{ asset('js/resumable.js') }}"></script>
 <script>
     (function movieMediaPicker() {
+        const mediaUploadLimitsMb = @json(config('media_upload.limits_mb'));
+        const mediaUploadLimitsBytes = @json(config('media_upload.limits_bytes'));
+        const formatLimitLabel = (sizeMb) => {
+            const mb = Number(sizeMb || 0);
+            if (mb >= 1024) {
+                const gb = mb / 1024;
+                const formatted = Number.isInteger(gb) ? gb.toString() : gb.toFixed(2).replace(/\.?0+$/, '');
+                return `${formatted}GB`;
+            }
+
+            return `${mb}MB`;
+        };
         const videoInput = document.getElementById('video');
         const durationInput = document.getElementById('duration');
         const hiddenUploaded = document.getElementById('uploaded_video_filename');
@@ -28,6 +40,7 @@
         const pickerProgressBar = $('#mediaPickerProgressBar');
         const uploadNameInput = document.getElementById('uploadName');
         const pickerHelp = document.getElementById('mediaPickerHelp');
+        const videoChunkMaxSize = mediaUploadLimitsBytes.video || (2048 * 1024 * 1024);
         const pickerAcceptMap = {
             image: 'image/*',
             audio: 'audio/*',
@@ -38,6 +51,85 @@
         let pickerResumable = null;
         let pickerNext = null;
         let pickerBusy = false;
+
+        function extractAjaxErrorMessage(xhr, fallback = 'Upload gagal.') {
+            if (!xhr) return fallback;
+
+            const response = xhr.responseJSON || null;
+
+            if (response?.message) {
+                return response.message;
+            }
+
+            if (response?.errors && typeof response.errors === 'object') {
+                const firstField = Object.keys(response.errors)[0];
+                const firstError = firstField ? response.errors[firstField] : null;
+                if (Array.isArray(firstError) && firstError.length) {
+                    return firstError[0];
+                }
+                if (typeof firstError === 'string' && firstError.trim() !== '') {
+                    return firstError;
+                }
+            }
+
+            if (typeof xhr.responseText === 'string' && xhr.responseText.trim() !== '') {
+                const plainText = xhr.responseText.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+                if (plainText) {
+                    return plainText;
+                }
+            }
+
+            return fallback;
+        }
+
+        function extractResumableErrorMessage(message, fallback = 'Gagal upload video.') {
+            if (!message) return fallback;
+
+            if (typeof message === 'string') {
+                try {
+                    const parsed = JSON.parse(message);
+                    if (parsed?.message) return parsed.message;
+                    if (parsed?.errors && typeof parsed.errors === 'object') {
+                        const firstField = Object.keys(parsed.errors)[0];
+                        const firstError = firstField ? parsed.errors[firstField] : null;
+                        if (Array.isArray(firstError) && firstError.length) return firstError[0];
+                    }
+                } catch (e) {
+                    const plainText = message.replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+                    if (plainText) return plainText;
+                }
+            }
+
+            const xhr = message?.xhr || message?.target || message;
+            if (xhr?.responseJSON?.message) return xhr.responseJSON.message;
+            if (xhr?.responseText) {
+                const plainText = String(xhr.responseText).replace(/<[^>]*>/g, ' ').replace(/\s+/g, ' ').trim();
+                if (plainText) return plainText;
+            }
+
+            return fallback;
+        }
+
+        function validateChunkVideoFile(file, fallbackName = 'video') {
+            const fileName = (file?.name || file?.fileName || fallbackName).toLowerCase();
+            const ext = fileName.split('.').pop();
+            const allowedExt = ['mp4', 'mkv', 'webm', 'avi'];
+
+            if (!allowedExt.includes(ext)) {
+                return 'Format video tidak didukung. Gunakan MP4, MKV, WEBM, atau AVI.';
+            }
+
+            if (file?.size && file.size > videoChunkMaxSize) {
+                return `Ukuran video melebihi batas maksimum ${formatLimitLabel(mediaUploadLimitsMb.video)}.`;
+            }
+
+            const mime = String(file?.type || '').toLowerCase();
+            if (mime && !mime.startsWith('video/')) {
+                return 'File yang dipilih bukan video yang valid.';
+            }
+
+            return null;
+        }
 
         // utility: get duration (seconds) for video/audio file using HTML5 metadata
         function getFileDuration(file) {
@@ -86,8 +178,9 @@
             const r = new Resumable({
                 target: "{{ route('media.uploadChunk', [], false) }}",
                 chunkSize: 5 * 1024 * 1024,
-                simultaneousUploads: 3,
+                simultaneousUploads: 1,
                 testChunks: false,
+                permanentErrors: [400, 404, 409, 413, 415, 422, 500, 501],
                 throttleProgressCallbacks: 1,
                 withCredentials: true,
                 query: file => ({
@@ -104,6 +197,20 @@
                 r.assignBrowse(videoInput);
 
                 r.on('fileAdded', function(file) {
+                    const validationMessage = validateChunkVideoFile(file.file, file.fileName || file.name);
+                    if (validationMessage) {
+                        r.removeFile(file);
+                        if (videoInput) videoInput.value = '';
+                        saveBtn && (saveBtn.disabled = false);
+                        if (progressWrap) progressWrap.classList.add('d-none');
+                        if (progressBar) {
+                            progressBar.style.width = '0%';
+                            progressBar.textContent = '0%';
+                        }
+                        alert(validationMessage);
+                        return;
+                    }
+
                     hiddenUploaded && (hiddenUploaded.value = '');
                     progressWrap && progressWrap.classList.remove('d-none');
                     saveBtn && (saveBtn.disabled = true);
@@ -177,7 +284,9 @@
 
                 r.on('fileError', function(file, message) {
                     console.error('Upload error', message);
-                    alert('Gagal upload. Refresh halaman dan coba lagi.');
+                    r.cancel();
+                    r.removeFile(file);
+                    alert(extractResumableErrorMessage(message, 'Gagal upload. Refresh halaman dan coba lagi.'));
                     saveBtn && (saveBtn.disabled = false);
                     if (progressWrap) progressWrap.classList.add('d-none');
                     if (progressBar) {
@@ -289,10 +398,10 @@
             if (pickerInput) pickerInput.setAttribute('accept', pickerAcceptMap[type] || 'image/*,audio/*,video/*');
             if (pickerHelp) {
                 pickerHelp.textContent = type === 'image' ?
-                    'Format: JPG, JPEG, PNG. Max. 100MB' :
+                    `Format: JPG, JPEG, PNG. Max. ${formatLimitLabel(mediaUploadLimitsMb.image)}` :
                     (type === 'audio' ?
-                        'Format: MP3, WAV, FLAC, AAC, M4A, OGG. Max. 500MB' :
-                        'Format: MP4, MKV, WEBM, AVI. Max. 2GB');
+                        `Format: MP3, WAV, FLAC, AAC, M4A, OGG. Max. ${formatLimitLabel(mediaUploadLimitsMb.audio)}` :
+                        `Format: MP4, MKV, WEBM, AVI. Max. ${formatLimitLabel(mediaUploadLimitsMb.video)}`);
             }
             // toggle inputs
             if (pickerVideoInput && pickerInput) {
@@ -360,8 +469,9 @@
             pickerResumable = new Resumable({
                 target: "{{ route('media.uploadChunk', [], false) }}",
                 chunkSize: 5 * 1024 * 1024,
-                simultaneousUploads: 3,
+                simultaneousUploads: 1,
                 testChunks: false,
+                permanentErrors: [400, 404, 409, 413, 415, 422, 500, 501],
                 throttleProgressCallbacks: 1,
                 withCredentials: true,
                 query: (file) => ({
@@ -399,13 +509,11 @@
                 };
 
                 pickerResumable.on('fileAdded', function(file) {
-                    const allowedExt = ['mp4', 'mkv', 'webm', 'avi'];
-                    const ext = (file.fileName || file.name || '').split('.').pop().toLowerCase();
-
-                    if (!allowedExt.includes(ext)) {
+                    const validationMessage = validateChunkVideoFile(file.file, file.fileName || file.name);
+                    if (validationMessage) {
                         pickerResumable.removeFile(file);
                         resetVideoUploadState();
-                        alert('Format video tidak didukung. Gunakan MP4, MKV, WEBM, atau AVI.');
+                        alert(validationMessage);
                         return;
                     }
 
@@ -455,17 +563,7 @@
 
                 pickerResumable.on('fileError', function(file, message) {
                     console.error('Upload chunk error', message);
-
-                    let errorMessage = 'Gagal upload video.';
-
-                    try {
-                        const res = JSON.parse(message);
-                        errorMessage = res.message || res.msg || errorMessage;
-                    } catch (e) {
-                        if (typeof message === 'string' && message.trim() !== '') {
-                            errorMessage = message;
-                        }
-                    }
+                    const errorMessage = extractResumableErrorMessage(message, 'Gagal upload video.');
 
                     pickerResumable.cancel();
                     pickerResumable.removeFile(file);
@@ -503,18 +601,18 @@
             let maxSize = 0;
 
             if (pickerType === 'image') {
-                maxSize = 100 * 1024 * 1024; // 100MB
+                maxSize = mediaUploadLimitsBytes.image || (100 * 1024 * 1024);
             } else if (pickerType === 'audio') {
-                maxSize = 500 * 1024 * 1024; // 500MB
+                maxSize = mediaUploadLimitsBytes.audio || (500 * 1024 * 1024);
             } else if (pickerType === 'video') {
-                maxSize = 2 * 1024 * 1024 * 1024; // 2GB
+                maxSize = mediaUploadLimitsBytes.video || (2048 * 1024 * 1024);
             }
 
             if (file.size && file.size > maxSize) {
                 let msg = '';
-                if (pickerType === 'image') msg = 'Ukuran gambar maksimal 100MB.';
-                if (pickerType === 'audio') msg = 'Ukuran audio maksimal 500MB.';
-                if (pickerType === 'video') msg = 'Ukuran video maksimal 2GB.';
+                if (pickerType === 'image') msg = `Ukuran gambar maksimal ${formatLimitLabel(mediaUploadLimitsMb.image)}.`;
+                if (pickerType === 'audio') msg = `Ukuran audio maksimal ${formatLimitLabel(mediaUploadLimitsMb.audio)}.`;
+                if (pickerType === 'video') msg = `Ukuran video maksimal ${formatLimitLabel(mediaUploadLimitsMb.video)}.`;
 
                 alert(msg);
                 return;
@@ -576,8 +674,8 @@
                 } else {
                     alert('Upload gagal.');
                 }
-            }).fail(function() {
-                alert('Upload gagal.');
+            }).fail(function(xhr) {
+                alert(extractAjaxErrorMessage(xhr, 'Upload gagal.'));
             }).always(function() {
                 pickerProgress.addClass('d-none');
                 pickerProgressBar.css('width', '0%').text('0%');
