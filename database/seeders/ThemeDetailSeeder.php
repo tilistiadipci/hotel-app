@@ -19,7 +19,6 @@ class ThemeDetailSeeder extends Seeder
                 'header_scale' => '1',
                 'footer_scale' => '1',
                 'font_scale' => '1',
-                'running_text' => 'Our well trained staffs eagerly await to serve and provide you with a truly memorable stay at our hotel',
                 'image_id_1' => '1',
                 'image_id_2' => '2',
             ],
