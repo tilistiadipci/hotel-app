@@ -68,8 +68,8 @@ class UserSeeder extends Seeder
         ]);
 
         User::factory()->create([
-            'username' => 'Super Admin',
-            'email' => 'superadmin@gmail.com',
+            'username' => 'superadmin',
+            'email' => 'superadmin@mail.com',
             'password' => Hash::make('superadmin'),
             'role_id' => 1,
         ])->profile()->create([
@@ -82,8 +82,8 @@ class UserSeeder extends Seeder
 
         // create user admin
         User::factory()->create([
-            'username' => 'Admin',
-            'email' => 'admin@gmail.com',
+            'username' => 'admin',
+            'email' => 'admin@mail.com',
             'password' => Hash::make('admin'),
             'role_id' => 2,
         ])->profile()->create([
@@ -96,7 +96,7 @@ class UserSeeder extends Seeder
 
         // create user operator
         User::factory()->create([
-            'username' => 'Operator',
+            'username' => 'operator',
             'email' => 'operator@gmail.com',
             'password' => Hash::make('operator'),
             'role_id' => 3,

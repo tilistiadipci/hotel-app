@@ -51,6 +51,66 @@
                         </div>
                     </form>
                 </div>
+
+                <div class="card mb-3">
+                    <div class="card-header">
+                        <i class="fa fa-cog mr-2"></i> General App Settings
+                    </div>
+                    <form method="POST" action="{{ route('settings.update') }}">
+                        @csrf
+                        <input type="hidden" name="section" value="general">
+
+                        <div class="card-body">
+                            <div class="form-group">
+                                <label for="general_app_name">App Name</label>
+                                <input type="text" class="form-control @error('general_app_name') is-invalid @enderror"
+                                    id="general_app_name" name="general_app_name"
+                                    value="{{ old('general_app_name', $generalAppName ?? '') }}">
+                                @error('general_app_name')
+                                    <div class="text-danger small mt-2">{{ $message }}</div>
+                                @enderror
+                            </div>
+
+                            <div class="form-group mb-0">
+                                <label class="d-block">App Logo</label>
+                                <div class="d-flex align-items-center mb-2">
+                                    <button type="button" class="btn btn-outline-primary btn-sm mr-2" id="btnPickImage">
+                                        <i class="fa fa-image mr-1"></i> {{ trans('common.pick_file') }}
+                                    </button>
+                                    <div class="text-muted small" id="selectedImageLabel">
+                                        {{ trans('common.no_file_selected') }}
+                                    </div>
+                                </div>
+                                <input type="hidden" name="general_app_logo" id="image_media_id"
+                                    value="{{ old('general_app_logo', $generalAppLogoId ?? '') }}">
+
+                                @if (!empty($generalAppLogoUrl))
+                                    <div class="mt-2" id="currentCoverPreview">
+                                        <small class="text-muted d-block">Current image:</small>
+                                        <img src="{{ $generalAppLogoUrl }}" class="img-thumbnail shadow-sm"
+                                            style="max-height: 200px; object-fit: cover;" alt="App Logo">
+                                    </div>
+                                @endif
+
+                                <div class="mt-2 d-none" id="imagePreviewWrap">
+                                    <small class="text-muted d-block">Preview:</small>
+                                    <img id="imagePreview" class="img-thumbnail shadow-sm"
+                                        style="max-height: 200px; object-fit: cover;" alt="Preview">
+                                </div>
+
+                                @error('general_app_logo')
+                                    <div class="text-danger small mt-2">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        </div>
+
+                        <div class="card-footer text-right">
+                            <button type="submit" class="btn btn-primary">
+                                <i class="fa fa-save mr-1"></i> {{ trans('common.save') }}
+                            </button>
+                        </div>
+                    </form>
+                </div>
             </div>
 
             <div class="col-lg-6">
@@ -141,10 +201,18 @@
             </div>
         </div>
     </div>
+
+    @include('partials.components.media_picker_modal')
+@endsection
+
+@section('css')
+    @parent
+    @include('partials.components.media_picker_style')
 @endsection
 
 @section('js')
     @parent
+    @include('partials.components.media_picker_script')
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('.transaction-charge-toggle').forEach(function(toggle) {

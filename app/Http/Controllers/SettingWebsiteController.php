@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Media;
 use App\Repositories\SettingRepository;
 use App\Repositories\UserRepository;
 use Illuminate\Http\RedirectResponse;
@@ -30,11 +31,9 @@ class SettingWebsiteController extends Controller
             return redirect()->route('pages.errors.404');
         }
 
-        return view('pages.website.index', [
-            'user' => $user->load('profile'),
-            'profile' => true,
-            'page' => 'settings',
-            'settings' => [
+        $settings = session('settings');
+        if (!is_array($settings)) {
+            $settings = [
                 'default_language' => $this->getLanguageSetting(),
                 'notification_email_alerts' => $this->settingRepository->getBoolValueByKey('notification_email_alerts', true),
                 'notification_push_notifications' => $this->settingRepository->getBoolValueByKey('notification_push_notifications', false),
@@ -43,7 +42,28 @@ class SettingWebsiteController extends Controller
                 'tax_percentage_grand_total' => $this->settingRepository->getNumericValueByKey('tax_percentage_grand_total', 0),
                 'service_charge_status' => $this->settingRepository->getValueByKey('service_charge_status', 'inactive'),
                 'service_charge_fixed' => $this->settingRepository->getNumericValueByKey('service_charge_fixed', 0),
-            ],
+            ];
+            session(['settings' => $settings]);
+        }
+
+        $generalAppName = (string) $this->settingRepository->getValueByKey('general_app_name', config('app.name'));
+        $generalAppLogoId = $this->settingRepository->getValueByKey('general_app_logo', '');
+        $generalAppLogoMedia = null;
+        if (is_numeric($generalAppLogoId)) {
+            $generalAppLogoMedia = Media::query()->find((int) $generalAppLogoId);
+            if ($generalAppLogoMedia && $generalAppLogoMedia->type !== 'image') {
+                $generalAppLogoMedia = null;
+            }
+        }
+
+        return view('pages.website.index', [
+            'user' => $user->load('profile'),
+            'profile' => true,
+            'page' => 'settings',
+            'settings' => $settings,
+            'generalAppName' => $generalAppName,
+            'generalAppLogoId' => $generalAppLogoMedia?->id,
+            'generalAppLogoUrl' => $generalAppLogoMedia ? getMediaImageUrl($generalAppLogoMedia->storage_path, 200, 200) : null,
         ]);
     }
 
@@ -51,7 +71,7 @@ class SettingWebsiteController extends Controller
     {
         $section = $request->input('section');
 
-        if (!in_array($section, ['language', 'notifications', 'transaction_charge'], true)) {
+        if (!in_array($section, ['language', 'notifications', 'transaction_charge', 'general'], true)) {
             return redirect()->route('settings.index')->with('error', 'Invalid settings section.');
         }
 
@@ -61,6 +81,27 @@ class SettingWebsiteController extends Controller
             ]);
 
             $this->saveLanguageSetting($validated['default_language']);
+            session(['settings_refresh' => true]);
+        }
+
+        if ($section === 'general') {
+            $validated = $request->validate([
+                'general_app_name' => ['required', 'string', 'max:150'],
+                'general_app_logo' => ['nullable', 'integer', 'exists:medias,id'],
+            ]);
+
+            $this->settingRepository->saveByKey(
+                'General App Name',
+                'general_app_name',
+                $validated['general_app_name']
+            );
+            $this->settingRepository->saveByKey(
+                'General App Logo',
+                'general_app_logo',
+                $validated['general_app_logo'] ?? null
+            );
+
+            session(['settings_refresh' => true]);
         }
 
         if ($section === 'transaction_charge') {
@@ -91,6 +132,8 @@ class SettingWebsiteController extends Controller
                 'service_charge_fixed',
                 (string) $validated['service_charge_fixed']
             );
+
+            session(['settings_refresh' => true]);
         }
 
         return redirect()->route('settings.index')->with('success', trans('common.success.update'));
