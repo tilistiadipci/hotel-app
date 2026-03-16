@@ -90,6 +90,20 @@ class PlayerRepository extends BaseRepository
             ->first();
     }
 
+    public function regenerateTokenByUid(string $uid): ?Player
+    {
+        $player = $this->findUidForUpdate($uid);
+        if (!$player) {
+            return null;
+        }
+
+        $player->token = $this->generateUniqueToken();
+        $player->token_expires_at = $this->generateTokenExpiry();
+        $player->save();
+
+        return $player;
+    }
+
     public function hasActiveBooking(int $playerId): bool
     {
         return Booking::query()

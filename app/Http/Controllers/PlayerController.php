@@ -162,6 +162,31 @@ class PlayerController extends Controller
         }
     }
 
+    public function regenerateToken(string $uid)
+    {
+        try {
+            $player = DB::transaction(function () use ($uid) {
+                return $this->playerRepository->regenerateTokenByUid($uid);
+            });
+
+            if (!$player) {
+                return response()->json([
+                    'status' => false,
+                    'message' => trans('common.error.404'),
+                ], 404);
+            }
+
+            return response()->json([
+                'status' => true,
+                'message' => trans('common.success.update'),
+                'token' => $player->token,
+                'token_expires_at' => optional($player->token_expires_at)->format('d M Y H:i'),
+            ]);
+        } catch (\Exception $e) {
+            return $this->debugErrorResJson($e);
+        }
+    }
+
     private function validateRequest(Request $request, ?string $uid = null): array
     {
         $playerId = null;

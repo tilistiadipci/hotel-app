@@ -25,9 +25,17 @@ class SettingSeeder extends Seeder
             ],
             [
                 'uuid'       => (string) Str::uuid(),
-                'name'       => 'API Key',
-                'key'        => 'api_key_value',
-                'value'      => secureEncrypt("y0zr3hl33boako2pm90fyajmzmqubcec"),
+                'name'       => 'General App Name',
+                'key'        => 'general_app_name',
+                'value'      => 'My Hotel',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'uuid'       => (string) Str::uuid(),
+                'name'       => 'General App Logo',
+                'key'        => 'general_app_logo',
+                'value'      => 1, // media_id
                 'created_at' => $now,
                 'updated_at' => $now,
             ],

@@ -132,6 +132,7 @@ Route::middleware(['auth'])->group(function () {
             ->name('players.')
             ->group(function () {
                 Route::post('/bulkDelete', [PlayerController::class, 'bulkDelete'])->name('bulkDelete');
+                Route::post('/{player}/token', [PlayerController::class, 'regenerateToken'])->name('token');
             });
 
         // Movies (custom routes first to avoid conflict with resource show)
