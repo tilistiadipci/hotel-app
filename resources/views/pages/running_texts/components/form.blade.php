@@ -1,11 +1,12 @@
 @php
-    $runningText = $runningText ?? null;
-    $isEdit = !empty($runningText);
+    $group = $group ?? null;
+    $isEdit = !empty($group);
+    $existingItems = $group ? $group->runningTexts ?? collect() : collect();
 @endphp
 
-<form action="{{ $runningText ? route('running-texts.update', $runningText->uuid ?? $runningText->id) : route('running-texts.store') }}" method="POST" enctype="multipart/form-data">
+<form action="{{ $group ? route('running-texts.update', $group->uuid ?? $group->id) : route('running-texts.store') }}" method="POST" enctype="multipart/form-data">
     @csrf
-    @if ($runningText)
+    @if ($group)
         @method('PUT')
     @endif
 
@@ -13,19 +14,30 @@
         <div class="row">
             <div class="col-lg-6">
                 <div class="border rounded p-3 mb-3">
+                    <div class="form-group mb-0">
+                        <label for="name">{{ trans('common.name') }}</label>
+                        <input type="text" id="name" name="name" class="form-control" required
+                            value="{{ old('name', $group->name ?? '') }}">
+                        @error('name')
+                            <div class="text-danger small mt-2">{{ $message }}</div>
+                        @enderror
+                    </div>
+                </div>
+
+                <div class="border rounded p-3 mb-3">
                     <h6 class="mb-2">{{ trans('common.running_text.load_rss') }}</h6>
                     <div class="form-group">
                         <label for="rss_url">{{ trans('common.running_text.rss_url') }}</label>
                         <input type="url" id="rss_url" name="rss_url" class="form-control" placeholder="https://example.com/rss.xml"
-                            value="{{ old('rss_url', ($runningText && $runningText->link_rss_type === 'link') ? $runningText->link_rss : '') }}">
+                            value="{{ old('rss_url', ($group && $group->link_rss_type === 'link') ? $group->link_rss : '') }}">
                     </div>
                     <div class="form-group">
                         <label for="rss_file">{{ trans('common.running_text.rss_file') }}</label>
                         <input type="file" id="rss_file" name="rss_file" class="form-control-file"
                             accept=".xml,.rss,.txt,application/xml,text/xml">
-                        @if (($runningText->link_rss_type ?? '') === 'uploaded' && !empty($runningText->link_rss))
+                        @if (($group->link_rss_type ?? '') === 'uploaded' && !empty($group->link_rss))
                             <small class="text-muted d-block mt-1">
-                                Saved file: {{ $runningText->link_rss }}
+                                Saved file: {{ $group->link_rss }}
                             </small>
                         @endif
                     </div>
@@ -55,73 +67,55 @@
             </div>
 
             <div class="col-lg-6">
-                @if ($isEdit)
-                    <div class="position-relative row form-group">
-                        <label class="col-sm-3 col-form-label text-sm-right">{{ trans('common.title') }}</label>
-                        <div class="col-sm-9">
-                            @include('partials.forms.input', [
-                                'elementId' => 'title',
-                                'required' => true,
-                                'value' => $runningText->title ?? old('title'),
-                                'type' => 'text',
-                                'maxlength' => 200,
-                            ])
-                        </div>
-                    </div>
-
-                    <div class="position-relative row form-group">
-                        <label class="col-sm-3 col-form-label text-sm-right">{{ trans('common.description') }}</label>
-                        <div class="col-sm-9">
-                            <textarea name="description" id="description" class="form-control" rows="5">{{ $runningText->description ?? old('description') }}</textarea>
-                        </div>
-                    </div>
-
-                    <div class="position-relative row form-group">
-                        <label class="col-sm-3 col-form-label text-sm-right">{{ trans('common.sort_order') }}</label>
-                        <div class="col-sm-9">
-                            @include('partials.forms.input', [
-                                'elementId' => 'sort_order',
-                                'value' => $runningText->sort_order ?? old('sort_order', 0),
-                                'type' => 'number',
-                                'min' => 0,
-                            ])
-                        </div>
-                    </div>
-
-                    <div class="position-relative row form-group">
-                        <label class="col-sm-3 col-form-label text-sm-right">{{ trans('common.status') }}</label>
-                        <div class="col-sm-9">
-                            @php
-                                $isActive = $runningText->is_active ?? old('is_active', 1);
-                            @endphp
-                            <select name="is_active" id="is_active" class="form-control select2" style="width: 100%;">
-                                <option value="1" {{ $isActive == 1 ? 'selected' : '' }}>{{ trans('common.active') }}</option>
-                                <option value="0" {{ $isActive == 0 ? 'selected' : '' }}>{{ trans('common.inactive') }}</option>
-                            </select>
-                        </div>
-                    </div>
-                @else
-                    <div class="border rounded p-3">
-                        <h6 class="mb-2">{{ trans('common.running_text.selected_items') }}</h6>
-                        <div class="table-responsive">
-                            <table class="table table-sm table-bordered mb-0" id="selectedRssTable">
-                                <thead>
-                                    <tr>
-                                        <th style="width: 45%">{{ trans('common.title') }}</th>
-                                        <th style="width: 20%">{{ trans('common.sort_order') }}</th>
-                                        <th style="width: 20%">{{ trans('common.status') }}</th>
-                                        <th style="width: 15%">{{ trans('common.action2') }}</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
+                <div class="border rounded p-3">
+                    <h6 class="mb-2">{{ trans('common.running_text.selected_items') }}</h6>
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered mb-0" id="selectedRssTable">
+                            <thead>
+                                <tr>
+                                    <th style="width: 45%">{{ trans('common.title') }}</th>
+                                    <th style="width: 20%">{{ trans('common.sort_order') }}</th>
+                                    <th style="width: 20%">{{ trans('common.status') }}</th>
+                                    <th style="width: 15%">{{ trans('common.action2') }}</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @if ($isEdit && $existingItems->count())
+                                    @foreach ($existingItems as $item)
+                                        @php
+                                            $itemActive = $item->is_active ? 1 : 0;
+                                        @endphp
+                                        <tr data-key="{{ $item->title ?? '' }}::{{ $item->description ?? '' }}">
+                                            <td>
+                                                {{ $item->title ?? '' }}
+                                                <input type="hidden" name="titles[]" value="{{ $item->title ?? '' }}">
+                                                <input type="hidden" name="descriptions[]" value="{{ $item->description ?? '' }}">
+                                            </td>
+                                            <td>
+                                                <input type="number" name="sort_orders[]" class="form-control form-control-sm" value="{{ $item->sort_order ?? 0 }}" min="0">
+                                            </td>
+                                            <td>
+                                                <select name="is_actives[]" class="form-control form-control-sm">
+                                                    <option value="1" {{ $itemActive == 1 ? 'selected' : '' }}>{{ trans('common.active') }}</option>
+                                                    <option value="0" {{ $itemActive == 0 ? 'selected' : '' }}>{{ trans('common.inactive') }}</option>
+                                                </select>
+                                            </td>
+                                            <td class="text-center">
+                                                <button type="button" class="btn btn-sm btn-outline-danger btn-remove-selected" data-key="{{ $item->title ?? '' }}::{{ $item->description ?? '' }}">
+                                                    <i class="fa fa-times"></i>
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    @endforeach
+                                @else
                                     <tr id="selectedEmptyRow">
                                         <td colspan="4" class="text-center text-muted">{{ trans('common.running_text.no_selected') }}</td>
                                     </tr>
-                                </tbody>
-                            </table>
-                        </div>
+                                @endif
+                            </tbody>
+                        </table>
                     </div>
-                @endif
+                </div>
             </div>
         </div>
     </div>
@@ -150,6 +144,16 @@
             const $checkAll = $('#rssCheckAll');
             const $selectedTable = $('#selectedRssTable tbody');
             const selectedMap = new Map();
+            const isEdit = {{ $isEdit ? 'true' : 'false' }};
+
+            $selectedTable.find('tr').each(function() {
+                const key = $(this).data('key');
+                if (!key) return;
+                const parts = key.split('::');
+                const title = parts[0] || '';
+                const description = parts.slice(1).join('::') || '';
+                selectedMap.set(key, { title, description });
+            });
 
             function renderItems(items) {
                 $list.empty();
@@ -166,11 +170,13 @@
                     const safeDesc = $('<div>').text(desc).html();
                     const rawTitle = encodeURIComponent(title);
                     const rawDesc = encodeURIComponent(desc);
+                    const key = `${title}::${desc}`;
+                    const checkedAttr = selectedMap.has(key) ? 'checked' : '';
                     const html = `
                         <div class="list-group-item">
                             <div class="d-flex align-items-start">
                                 <label class="custom-checkbox mt-1 mb-0 mr-2">
-                                    <input type="checkbox" class="rss-item-check" data-raw-title="${rawTitle}" data-raw-description="${rawDesc}">
+                                    <input type="checkbox" class="rss-item-check" data-raw-title="${rawTitle}" data-raw-description="${rawDesc}" ${checkedAttr}>
                                     <span class="checkmark"></span>
                                 </label>
                                 <div>
@@ -305,19 +311,17 @@
                 $checkAll.prop('checked', total > 0 && total === checkedCount);
             });
 
+            if (isEdit) {
+                const presetUrl = ($rssUrl.val() || '').trim();
+                if (presetUrl !== '') {
+                    $btnLoad.trigger('click');
+                }
+            }
+
             (function waitForjQuery() {
-                if (window.jQuery && {{ $isEdit ? 'true' : 'false' }}) {
-                    const el = $('#is_active');
-                    if (el.hasClass('select2-hidden-accessible')) {
-                        el.select2('destroy');
-                    }
-                    el.select2({
-                        theme: 'bootstrap4',
-                        width: '100%',
-                        placeholder: "{{ trans('common.select_an_option') ?? 'Select an option' }}"
-                    });
-                } else {
+                if (!window.jQuery) {
                     setTimeout(waitForjQuery, 50);
+                    return;
                 }
             })();
         })();

@@ -423,5 +423,9 @@ return [
         'selected_items' => 'Item Terpilih',
         'check_all' => 'Pilih semua',
         'no_selected' => 'Belum ada item dipilih.',
+        'source' => 'Sumber',
+        'items_count' => 'Item',
+        'source_link' => 'Link',
+        'source_uploaded' => 'Upload',
     ],
 ];

@@ -2,27 +2,31 @@
 
 namespace App\Http\Controllers;
 
+use App\Repositories\RunningTextGroupRepository;
 use App\Repositories\RunningTextRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Http;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class RunningTextController extends Controller
 {
+    protected RunningTextGroupRepository $groupRepository;
     protected RunningTextRepository $runningTextRepository;
     private string $page = 'running-texts';
     private string $icon = 'fa fa-align-left';
 
-    public function __construct(RunningTextRepository $runningTextRepository)
+    public function __construct(RunningTextGroupRepository $groupRepository, RunningTextRepository $runningTextRepository)
     {
+        $this->groupRepository = $groupRepository;
         $this->runningTextRepository = $runningTextRepository;
     }
 
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            return $this->runningTextRepository->getDatatable();
+            return $this->groupRepository->getDatatable();
         }
 
         return view('pages.running_texts.index', [
@@ -42,17 +46,14 @@ class RunningTextController extends Controller
     public function store(Request $request)
     {
         try {
-            if ($request->filled('titles')) {
-                $payload = $this->validateBatch($request);
-                $this->applyRssSource($request, $payload);
-                $this->storeBatch($payload);
-            } else {
-                $data = $this->validateForm($request);
-                $data['is_active'] = $data['is_active'] ?? true;
-                $data['sort_order'] = $data['sort_order'] ?? 0;
-                $this->applyRssSource($request, $data);
-                $this->runningTextRepository->create($data);
-            }
+            $payload = $this->validateBatch($request);
+            $groupData = $this->validateGroup($request);
+            $this->applyRssSource($request, $groupData);
+
+            DB::transaction(function () use ($groupData, $payload) {
+                $group = $this->groupRepository->create($groupData);
+                $this->storeBatch($payload, $group->id, $groupData);
+            });
             return redirect()->route('running-texts.index')->with('success', trans('common.success.create'));
         } catch (\Exception $e) {
             return redirect()->back()->with('error', $e->getMessage())->withInput();
@@ -61,41 +62,52 @@ class RunningTextController extends Controller
 
     public function edit(string $uid)
     {
-        $runningText = $this->runningTextRepository->findUid($uid);
-        if (!$runningText) {
+        $group = $this->groupRepository->findUid($uid);
+        if (!$group) {
             return redirect()->route('error.404');
         }
 
         return view('pages.running_texts.edit', [
             'page' => $this->page,
             'icon' => $this->icon,
-            'runningText' => $runningText,
+            'group' => $group->load('runningTexts'),
         ]);
     }
 
     public function update(Request $request, string $uid)
     {
-        $runningText = $this->runningTextRepository->findUid($uid);
-        if (!$runningText) {
+        $group = $this->groupRepository->findUid($uid);
+        if (!$group) {
             return redirect()->route('error.404');
         }
 
-        $data = $this->validateForm($request);
-        $data['is_active'] = $data['is_active'] ?? true;
-        $data['sort_order'] = $data['sort_order'] ?? 0;
-        $this->applyRssSource($request, $data, $runningText);
+        $payload = $this->validateBatch($request);
+        $groupData = $this->validateGroup($request);
+        $this->applyRssSource($request, $groupData, $group);
 
-        $this->runningTextRepository->updateByUid($uid, $data);
+        DB::transaction(function () use ($group, $groupData, $payload) {
+            $this->groupRepository->updateByUid($group->uuid, $groupData);
+            $this->runningTextRepository->query()
+                ->where('running_text_group_id', $group->id)
+                ->update([
+                    'deleted_by' => auth()->id(),
+                    'deleted_at' => now(),
+                ]);
+            $this->storeBatch($payload, $group->id, $groupData);
+        });
 
         return redirect()->route('running-texts.index')->with('success', trans('common.success.update'));
     }
 
     public function show(Request $request, string $uid)
     {
-        $runningText = $this->runningTextRepository->findUid($uid);
+        $group = $this->groupRepository->query()
+            ->withCount('runningTexts')
+            ->where('uuid', $uid)
+            ->first();
 
         if ($request->ajax()) {
-            if (!$runningText) {
+            if (!$group) {
                 return response()->json([
                     'status' => false,
                     'message' => trans('common.error.404'),
@@ -105,13 +117,13 @@ class RunningTextController extends Controller
             return response()->json([
                 'status' => true,
                 'data' => view('pages.running_texts.info', [
-                    'runningText' => $runningText,
+                    'group' => $group,
                 ])->render(),
                 'return_type' => 'json',
             ]);
         }
 
-        if (!$runningText) {
+        if (!$group) {
             return redirect()->route('error.404');
         }
 
@@ -120,8 +132,8 @@ class RunningTextController extends Controller
 
     public function destroy(string $uid)
     {
-        $runningText = $this->runningTextRepository->findUid($uid);
-        if (!$runningText) {
+        $group = $this->groupRepository->findUid($uid);
+        if (!$group) {
             return response()->json([
                 'status' => false,
                 'message' => trans('common.error.404'),
@@ -129,7 +141,15 @@ class RunningTextController extends Controller
         }
 
         try {
-            $this->runningTextRepository->delete($uid, null, false);
+            DB::transaction(function () use ($group) {
+                $this->runningTextRepository->query()
+                    ->where('running_text_group_id', $group->id)
+                    ->update([
+                        'deleted_by' => auth()->id(),
+                        'deleted_at' => now(),
+                    ]);
+                $this->groupRepository->delete($group->uuid, null, false);
+            });
             return response()->json([
                 'status' => true,
                 'message' => trans('common.success.delete'),
@@ -145,7 +165,21 @@ class RunningTextController extends Controller
     public function bulkDelete(Request $request)
     {
         try {
-            $this->runningTextRepository->bulkDeleteByUid($request->uids ?? [], null, false);
+            $uids = $request->uids ?? [];
+            if (!empty($uids)) {
+                $groups = $this->groupRepository->query()->whereIn('uuid', $uids)->get();
+                $ids = $groups->pluck('id')->all();
+                if (!empty($ids)) {
+                    $this->runningTextRepository->query()
+                        ->whereIn('running_text_group_id', $ids)
+                        ->update([
+                            'deleted_by' => auth()->id(),
+                            'deleted_at' => now(),
+                        ]);
+                }
+            }
+
+            $this->groupRepository->bulkDeleteByUid($request->uids ?? [], null, false);
             return response()->json([
                 'status' => true,
                 'message' => trans('common.success.delete'),
@@ -254,13 +288,10 @@ class RunningTextController extends Controller
         ];
     }
 
-    private function validateForm(Request $request): array
+    private function validateGroup(Request $request): array
     {
         return $request->validate([
-            'title' => ['required', 'string', 'max:200'],
-            'description' => ['nullable', 'string'],
-            'sort_order' => ['nullable', 'integer', 'min:0'],
-            'is_active' => ['nullable', 'boolean'],
+            'name' => ['required', 'string', 'max:150'],
             'rss_url' => ['nullable', 'url'],
             'rss_file' => ['nullable', 'file', 'mimes:xml,txt,rss'],
         ]);
@@ -277,45 +308,41 @@ class RunningTextController extends Controller
             'sort_orders.*' => ['nullable', 'integer', 'min:0'],
             'is_actives' => ['required', 'array', 'min:1'],
             'is_actives.*' => ['in:0,1'],
-            'rss_url' => ['nullable', 'url'],
-            'rss_file' => ['nullable', 'file', 'mimes:xml,txt,rss'],
         ]);
     }
 
-    private function storeBatch(array $payload): void
+    private function storeBatch(array $payload, int $groupId, array $groupData): void
     {
         $titles = $payload['titles'];
         $descriptions = $payload['descriptions'];
         $sortOrders = $payload['sort_orders'];
         $isActives = $payload['is_actives'];
 
-        DB::transaction(function () use ($titles, $descriptions, $sortOrders, $isActives, $payload) {
-            foreach ($titles as $i => $title) {
-                $data = [
-                    'title' => $title,
-                    'description' => $descriptions[$i] ?? '',
-                    'sort_order' => $sortOrders[$i] ?? 0,
-                    'is_active' => (int) ($isActives[$i] ?? 1) === 1,
-                ];
+        foreach ($titles as $i => $title) {
+            $data = [
+                'running_text_group_id' => $groupId,
+                'title' => $title,
+                'description' => $descriptions[$i] ?? '',
+                'sort_order' => $sortOrders[$i] ?? 0,
+                'is_active' => (int) ($isActives[$i] ?? 1) === 1,
+            ];
 
-                if (!empty($payload['link_rss_type'])) {
-                    $data['link_rss_type'] = $payload['link_rss_type'];
-                }
-                if (!empty($payload['link_rss'])) {
-                    $data['link_rss'] = $payload['link_rss'];
-                }
-
-                $this->runningTextRepository->create($data);
-            }
-        });
+            $this->runningTextRepository->create($data);
+        }
     }
 
-    private function applyRssSource(Request $request, array &$data, $runningText = null): void
+    private function applyRssSource(Request $request, array &$data, $group = null): void
     {
         if ($request->hasFile('rss_file')) {
             $file = $request->file('rss_file');
             if ($file && $file->isValid()) {
-                $path = $file->store('rss');
+                $dir = storage_path('app/rss');
+                File::ensureDirectoryExists($dir);
+                $ext = $file->getClientOriginalExtension();
+                $ext = $ext ? ('.' . $ext) : '';
+                $filename = Str::uuid()->toString() . $ext;
+                $file->move($dir, $filename);
+                $path = 'rss/' . $filename;
                 $data['link_rss_type'] = 'uploaded';
                 $data['link_rss'] = $path;
                 return;
@@ -328,9 +355,9 @@ class RunningTextController extends Controller
             return;
         }
 
-        if ($runningText) {
-            $data['link_rss_type'] = $runningText->link_rss_type;
-            $data['link_rss'] = $runningText->link_rss;
+        if ($group) {
+            $data['link_rss_type'] = $group->link_rss_type;
+            $data['link_rss'] = $group->link_rss;
         }
     }
 }

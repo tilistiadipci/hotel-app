@@ -435,5 +435,9 @@ return [
         'selected_items' => 'Selected Items',
         'check_all' => 'Check all',
         'no_selected' => 'No item selected.',
+        'source' => 'Source',
+        'items_count' => 'Items',
+        'source_link' => 'Link',
+        'source_uploaded' => 'Uploaded',
     ],
 ];

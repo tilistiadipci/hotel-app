@@ -1,32 +1,31 @@
 @php
-    $runningText = $runningText ?? null;
+    $group = $group ?? null;
 @endphp
 
 <table class="table table-sm table-borderless">
     <tr>
-        <th style="width: 160px;">{{ trans('common.title') }}</th>
-        <td>{{ $runningText->title ?? '-' }}</td>
+        <th style="width: 160px;">{{ trans('common.name') }}</th>
+        <td>{{ $group->name ?? '-' }}</td>
     </tr>
     <tr>
-        <th>{{ trans('common.description') }}</th>
-        <td>{{ $runningText->description ?? '-' }}</td>
-    </tr>
-    <tr>
-        <th>{{ trans('common.sort_order') }}</th>
-        <td>{{ $runningText->sort_order ?? 0 }}</td>
-    </tr>
-    <tr>
-        <th>{{ trans('common.status') }}</th>
+        <th>{{ trans('common.running_text.source') }}</th>
         <td>
-            @if (($runningText->is_active ?? false) == 1)
-                <span class="badge badge-success">{{ trans('common.active') }}</span>
+            @if (!empty($group->link_rss))
+                <span class="badge badge-light">
+                    {{ $group->link_rss_type === 'uploaded' ? trans('common.running_text.source_uploaded') : trans('common.running_text.source_link') }}
+                </span>
+                <div class="text-muted small mt-1">{{ $group->link_rss }}</div>
             @else
-                <span class="badge badge-secondary">{{ trans('common.inactive') }}</span>
+                -
             @endif
         </td>
     </tr>
     <tr>
+        <th>{{ trans('common.running_text.items_count') }}</th>
+        <td>{{ $group->running_texts_count ?? ($group->runningTexts->count() ?? 0) }}</td>
+    </tr>
+    <tr>
         <th>{{ trans('common.created_at') }}</th>
-        <td>{{ optional($runningText->created_at)->format('d M Y H:i') ?? '-' }}</td>
+        <td>{{ optional($group->created_at)->format('d M Y H:i') ?? '-' }}</td>
     </tr>
 </table>

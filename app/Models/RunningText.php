@@ -26,6 +26,11 @@ class RunningText extends Model
         });
     }
 
+    public function group()
+    {
+        return $this->belongsTo(RunningTextGroup::class, 'running_text_group_id');
+    }
+
     public function scopeFilter($query, array $filters)
     {
         $query->when($filters['search']['value'] ?? false, function ($q, $search) {

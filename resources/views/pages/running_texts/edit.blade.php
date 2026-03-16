@@ -22,7 +22,7 @@
                         {{ trans('common.edit') }}
                     </div>
                     @include('pages.running_texts.components.form', [
-                        'runningText' => $runningText,
+                        'group' => $group,
                     ])
                 </div>
             </div>

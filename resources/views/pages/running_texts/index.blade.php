@@ -46,9 +46,9 @@
                                         </label>
                                     </th>
                                     <th style="width:60px">No</th>
-                                    <th>{{ trans('common.title') }}</th>
-                                    <th>{{ trans('common.sort_order') }}</th>
-                                    <th>{{ trans('common.status') }}</th>
+                                    <th>{{ trans('common.name') }}</th>
+                                    <th>{{ trans('common.running_text.source') }}</th>
+                                    <th>{{ trans('common.running_text.items_count') }}</th>
                                     <th style="text-align:center">{!! trans('common.action') !!}</th>
                                 </tr>
                             </thead>
@@ -86,22 +86,23 @@
                 }
             },
             {
-                data: 'title',
-                name: 'title',
+                data: 'name',
+                name: 'name',
                 render: function(data, type, row) {
                     let url = `{{ url('running-texts') }}/${row.uuid ?? row.id}/edit`;
-                    return `<a href="${url}">${row.title || ''}</a>`;
+                    return `<a href="${url}">${row.name || ''}</a>`;
                 }
             },
-            { data: 'sort_order', name: 'sort_order', defaultContent: '' },
             {
-                name: 'is_active',
+                data: 'link_rss_type',
+                name: 'link_rss_type',
                 render: function(data, type, row) {
-                    let badgeClass = row.is_active == 1 ? 'success' : 'secondary';
-                    let text = row.is_active == 1 ? '{{ trans('common.active') }}' : '{{ trans('common.inactive') }}';
-                    return `<span class="badge badge-${badgeClass}">${text}</span>`;
+                    const typeLabel = row.link_rss_type === 'uploaded' ? '{{ trans('common.running_text.source_uploaded') }}' : '{{ trans('common.running_text.source_link') }}';
+                    const value = row.link_rss ? row.link_rss : '-';
+                    return `<div><span class="badge badge-light">${typeLabel}</span></div><small class="text-muted">${value}</small>`;
                 }
             },
+            { data: 'running_texts_count', name: 'running_texts_count', defaultContent: 0 },
             {
                 data: 'action',
                 name: 'action',
