@@ -187,18 +187,18 @@ class MovieController extends Controller
 
         $rules = [
             'title' => 'required|max:200|unique:movies,title' . ($movieId ? ',' . $movieId : ''),
-            'description' => 'nullable|string',
+            'description' => 'required|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'image_media_id' => 'nullable|integer|exists:medias,id',
             'video' => 'nullable|file|mimes:mp4,mov,mkv,webm,avi|max:1024000', // ~1GB
             'uploaded_video_filename' => 'nullable|string',
             'video_media_id' => 'nullable|integer|exists:medias,id',
             'duration' => 'nullable|integer|min:0',
-            'release_date' => 'nullable|date',
-            'rating' => 'nullable|max:10',
+            'release_date' => 'required|date',
+            'rating' => 'required|max:10',
             'is_active' => 'required|boolean',
             'is_favorit' => 'required|boolean',
-            'category_ids' => 'nullable|array',
+            'category_ids' => 'required|array|min:1',
             'category_ids.*' => 'integer|exists:movies_categories,id',
         ];
 

@@ -28,7 +28,8 @@
                 <div class="position-relative row form-group">
                     <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.description') }}</label>
                     <div class="col-sm-8">
-                        <textarea name="description" id="description" class="form-control" rows="3">{{ $movie->description ?? old('description') }}</textarea>
+                        <textarea name="description" id="description" class="form-control" rows="3" required>{{ $movie->description ?? old('description') }}</textarea>
+                        <small class="text-primary" style="font-style: italic">* {{ trans('common.required') }}</small>
                     </div>
                 </div>
 
@@ -37,7 +38,7 @@
                     <div class="col-sm-8">
                         <div class="d-flex">
                             <select name="category_ids[]" id="category_ids" class="form-control select2" multiple
-                                style="width: 100%;">
+                                style="width: 100%;" required>
                                 @foreach ($categories as $category)
                                     <option value="{{ $category->id }}"
                                         {{ in_array($category->id, $selectedCategories) ? 'selected' : '' }}>
@@ -50,7 +51,8 @@
                                 <i class="fa fa-plus"></i>
                             </button>
                         </div>
-                        <small class="text-muted d-block mt-1">{{ trans('common.can_select_multiple') }}</small>
+                        <small class="text-primary d-block mt-1" style="font-style: italic">* {{ trans('common.required') }}</small>
+                        <small class="text-muted d-block">{{ trans('common.can_select_multiple') }}</small>
                     </div>
                 </div>
 
@@ -61,7 +63,9 @@
                             'elementId' => 'release_date',
                             'value' => optional($movie->release_date ?? null)->format('Y-m-d') ?? old('release_date'),
                             'type' => 'date',
+                            'required' => true,
                         ])
+                        <small class="text-primary" style="font-style: italic">* {{ trans('common.required') }}</small>
                     </div>
                 </div>
 
@@ -76,7 +80,7 @@
                         @php
                             $ratingVal = $movie->rating ?? old('rating');
                         @endphp
-                        <select name="rating" id="rating" class="form-control select2" style="width: 100%;">
+                        <select name="rating" id="rating" class="form-control select2" style="width: 100%;" required>
                             <option value="" {{ $ratingVal === null || $ratingVal === '' ? 'selected' : '' }}>Pilih rating</option>
                             <option value="G" {{ $ratingVal === 'G' ? 'selected' : '' }}>G / SU (Semua Umur)</option>
                             <option value="PG" {{ $ratingVal === 'PG' ? 'selected' : '' }}>PG (Parental Guidance)</option>
@@ -84,6 +88,7 @@
                             <option value="R" {{ $ratingVal === 'R' ? 'selected' : '' }}>R / 17+</option>
                             <option value="NC-17" {{ $ratingVal === 'NC-17' ? 'selected' : '' }}>NC-17 / 21+</option>
                         </select>
+                        <small class="text-primary" style="font-style: italic">* {{ trans('common.required') }}</small>
                     </div>
                 </div>
 
