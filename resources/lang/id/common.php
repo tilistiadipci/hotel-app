@@ -405,4 +405,23 @@ return [
         'copy' => 'Salin',
         'api_key_copied' => 'API key berhasil disalin',
     ],
+
+    'running_text' => [
+        'title' => 'Running Text',
+        'list' => 'Daftar Running Text',
+        'load_rss' => 'Muat RSS',
+        'rss_url' => 'URL RSS',
+        'rss_file' => 'Unggah RSS XML',
+        'rss_help' => 'Masukkan URL atau unggah XML, lalu pilih item.',
+        'rss_items' => 'Item RSS',
+        'loading_rss' => 'Memuat RSS...',
+        'rss_empty' => 'Belum ada item RSS.',
+        'rss_required' => 'Masukkan URL atau unggah file RSS.',
+        'rss_invalid' => 'RSS tidak valid.',
+        'rss_failed' => 'Gagal memuat RSS.',
+        'rss_applied' => 'Running text terisi dari RSS.',
+        'selected_items' => 'Item Terpilih',
+        'check_all' => 'Pilih semua',
+        'no_selected' => 'Belum ada item dipilih.',
+    ],
 ];

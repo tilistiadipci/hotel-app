@@ -83,6 +83,13 @@
                         </a>
                     </li>
 
+                    <li class="{{ $page == 'running-texts' ? 'mm-active' : '' }}">
+                        <a href="{{ url('/running-texts') }}" class="{{ $page == 'running-texts' ? 'mm-active' : '' }}">
+                            <i class="metismenu-icon fa fa-bullhorn"></i>
+                            {{ trans('common.running_text.title') }}
+                        </a>
+                    </li>
+
                     <li
                         class="{{ in_array($page, ['guide-categories', 'place-categories', 'movie-categories']) ? 'mm-active' : '' }}">
                         <a href="#">

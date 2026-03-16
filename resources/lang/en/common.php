@@ -417,4 +417,23 @@ return [
         'copy' => 'Copy',
         'api_key_copied' => 'API key copied',
     ],
+
+    'running_text' => [
+        'title' => 'Running Text',
+        'list' => 'Running Text List',
+        'load_rss' => 'Load RSS',
+        'rss_url' => 'RSS URL',
+        'rss_file' => 'Upload RSS XML',
+        'rss_help' => 'Enter a URL or upload XML, then pick an item.',
+        'rss_items' => 'RSS Items',
+        'loading_rss' => 'Loading RSS...',
+        'rss_empty' => 'No RSS items.',
+        'rss_required' => 'Enter a URL or upload an RSS file.',
+        'rss_invalid' => 'RSS is not valid.',
+        'rss_failed' => 'Failed to load RSS.',
+        'rss_applied' => 'Running text filled from RSS.',
+        'selected_items' => 'Selected Items',
+        'check_all' => 'Check all',
+        'no_selected' => 'No item selected.',
+    ],
 ];

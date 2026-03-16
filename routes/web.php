@@ -20,6 +20,7 @@ use App\Http\Controllers\GuideCategoryController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\MenuTransactionController;
 use App\Http\Controllers\PlayerController;
+use App\Http\Controllers\RunningTextController;
 use App\Http\Controllers\BookingController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
@@ -181,6 +182,15 @@ Route::middleware(['auth'])->group(function () {
             ->name('guide-categories.')
             ->group(function () {
                 Route::post('/bulkDelete', [GuideCategoryController::class, 'bulkDelete'])->name('bulkDelete');
+            });
+
+        // Running Texts
+        Route::resource('running-texts', RunningTextController::class);
+        Route::prefix('running-texts')
+            ->name('running-texts.')
+            ->group(function () {
+                Route::post('/bulkDelete', [RunningTextController::class, 'bulkDelete'])->name('bulkDelete');
+                Route::post('/preview-rss', [RunningTextController::class, 'previewRss'])->name('preview-rss');
             });
 
         // Menu
