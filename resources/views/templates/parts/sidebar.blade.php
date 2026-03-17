@@ -119,6 +119,22 @@
                         </ul>
                     </li>
 
+                    {{-- Reports --}}
+                    <li class="{{ in_array($page, ['report-booking-players']) ? 'mm-active' : '' }}">
+                        <a href="#">
+                            <i class="metismenu-icon fa fa-file-alt"></i> {{ trans('common.reports') }}
+                            <i class="metismenu-state-icon pe-7s-angle-down caret-left"></i>
+                        </a>
+                        <ul>
+                            <li class="{{ $page == 'report-booking-players' ? 'mm-active' : '' }}">
+                                <a href="{{ url('/reports/booking-players') }}"
+                                    class="{{ $page == 'report-booking-players' ? 'mm-active' : '' }}">
+                                    <i class="metismenu-icon"></i> {{ trans('common.report_booking_players.title') }}
+                                </a>
+                            </li>
+                        </ul>
+                    </li>
+
 
                     {{-- pantry --}}
                     <li class="app-sidebar__heading">Pantry</li>

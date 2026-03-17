@@ -128,6 +128,8 @@ return [
         'excel_text' => 'Export XLS',
         'pdf_text' => 'Export PDF',
     ],
+    'export_failed_title' => 'Export Gagal',
+    'export_failed_desc' => 'Terjadi kesalahan saat mengambil data export.',
 
     'error' => [
         '500' => 'Internal server error',
@@ -212,6 +214,24 @@ return [
         'filter_room_name' => 'Nama Ruangan',
         'alias' => 'Alias',
         'filter_room_name_placeholder' => 'Cari nama ruangan',
+    ],
+
+    'report_booking_players' => [
+        'title' => 'Laporan Booking Player',
+        'table_title' => 'Data Booking Players',
+        'export_excel' => 'Export Excel',
+        'filter_players' => 'Filter Player',
+        'filter_date_range' => 'Pilih rentang Checkin',
+        'player_name' => 'Nama Player',
+        'player_alias' => 'Alias Player',
+        'guest_name' => 'Guest',
+        'checkin_time' => 'Waktu Checkin',
+        'checkout_time' => 'Waktu Checkout',
+        'file_name' => 'booking-players.xlsx',
+        'sheet_name' => 'Booking Players',
+        'generated_range' => 'Rentang Tanggal',
+        'generated_at' => 'Digenerate pada',
+        'generated_by' => 'Digenerate oleh',
     ],
 
     'song' => [

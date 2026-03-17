@@ -22,6 +22,7 @@ use App\Http\Controllers\MenuTransactionController;
 use App\Http\Controllers\PlayerController;
 use App\Http\Controllers\RunningTextController;
 use App\Http\Controllers\BookingController;
+use App\Http\Controllers\BookingPlayerReportController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -233,6 +234,17 @@ Route::middleware(['auth'])->group(function () {
             ->group(function () {
                 Route::get('/', [SettingWebsiteController::class, 'index'])->name('.index');
                 Route::post('/update', [SettingWebsiteController::class, 'update'])->name('.update');
+            });
+
+        Route::prefix('reports')
+            ->name('reports.')
+            ->group(function () {
+                Route::get('/booking-players', [BookingPlayerReportController::class, 'index'])
+                    ->name('booking-players.index');
+                Route::get('/booking-players/data', [BookingPlayerReportController::class, 'data'])
+                    ->name('booking-players.data');
+                Route::get('/booking-players/export', [BookingPlayerReportController::class, 'export'])
+                    ->name('booking-players.export');
             });
     });
 
