@@ -2,6 +2,45 @@
 
 @section('css')
     @include('pages.media.style')
+    <style>
+        #mediaSyncModal .custom-modal__dialog,
+        #mediaSyncFailedModal .custom-modal__dialog {
+            max-width: 980px;
+            width: 92%;
+        }
+
+        #mediaSyncModal .custom-modal__body {
+            padding-top: 0.75rem;
+        }
+
+        .sync-table-wrap {
+            border: 1px solid #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+            max-height: 320px;
+            overflow-y: auto;
+            background: #fff;
+        }
+
+        .sync-table-wrap table {
+            margin-bottom: 0;
+        }
+
+        .sync-table-wrap thead th {
+            position: sticky;
+            top: 0;
+            background: #f8fafc;
+            z-index: 2;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .sync-table-wrap tbody td {
+            vertical-align: middle;
+            font-size: 13px;
+        }
+    </style>
 @endsection
 
 @section('content')
@@ -13,6 +52,11 @@
                     'icon' => $icon ?? 'fa fa-photo-film',
                     'breadcrumbs' => [['href' => '#', 'label' => 'Media Library']],
                 ])
+                <div class="page-title-actions">
+                    <button type="button" class="btn btn-sm btn-outline-primary" id="btnSyncMedia">
+                        <i class="fa fa-sync mr-1"></i> {{ trans('common.sync') }}
+                    </button>
+                </div>
             </div>
         </div>
 
@@ -101,6 +145,63 @@
                     <button type="submit" class="btn btn-primary">{{ trans('common.save') }}</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+    <div id="mediaSyncModal" class="custom-modal" aria-hidden="true">
+        <div class="custom-modal__backdrop" data-sync-close></div>
+        <div class="custom-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="mediaSyncModalTitle">
+            <div class="custom-modal__header">
+                <h5 class="custom-modal__title" id="mediaSyncModalTitle">{{ trans('common.sync_media_title') }}</h5>
+                <button type="button" class="custom-modal__close" data-sync-close aria-label="Close">&times;</button>
+            </div>
+            <div class="custom-modal__body">
+                <ul class="nav nav-tabs mb-2" id="syncTabs">
+                    <li class="nav-item">
+                        <a class="nav-link active" href="#" data-sync-tab="preview">{{ trans('common.sync_tab_preview') }}</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link" href="#" data-sync-tab="issues">{{ trans('common.sync_tab_issues') }}</a>
+                    </li>
+                </ul>
+                <div class="d-flex align-items-center justify-content-between mb-2">
+                    <div class="text-muted small" id="syncPreviewCount"></div>
+                    <div class="btn-group btn-group-sm" role="group" aria-label="sync mode">
+                        <button type="button" class="btn btn-outline-secondary sync-mode active" data-mode="skip">
+                            {{ trans('common.sync_mode_skip') }}
+                        </button>
+                        <button type="button" class="btn btn-outline-secondary sync-mode" data-mode="overwrite">
+                            {{ trans('common.sync_mode_overwrite') }}
+                        </button>
+                    </div>
+                </div>
+                <div id="syncPreviewList" class="sync-table-wrap"></div>
+                <div id="syncIssuesList" class="sync-table-wrap d-none"></div>
+                <div class="progress mt-3 d-none" id="syncProgressWrap" style="height: 12px;">
+                    <div class="progress-bar bg-success" role="progressbar" style="width: 0%;" id="syncProgressBar">0%</div>
+                </div>
+                <div class="small text-muted d-none" id="syncProgressText">0%</div>
+            </div>
+            <div class="custom-modal__footer d-flex justify-content-end mt-3">
+                <button type="button" class="btn btn-secondary mr-2" data-sync-close>{{ trans('common.close') }}</button>
+                <button type="button" class="btn btn-primary" id="startSyncBtn">{{ trans('common.sync') }}</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="mediaSyncFailedModal" class="custom-modal" aria-hidden="true">
+        <div class="custom-modal__backdrop" data-sync-failed-close></div>
+        <div class="custom-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="mediaSyncFailedTitle">
+            <div class="custom-modal__header">
+                <h5 class="custom-modal__title" id="mediaSyncFailedTitle">{{ trans('common.sync_failed_list') }}</h5>
+                <button type="button" class="custom-modal__close" data-sync-failed-close aria-label="Close">&times;</button>
+            </div>
+            <div class="custom-modal__body">
+                <div id="syncFailedList" class="small text-muted" style="max-height:240px; overflow:auto;"></div>
+            </div>
+            <div class="custom-modal__footer d-flex justify-content-end mt-3">
+                <button type="button" class="btn btn-secondary" data-sync-failed-close>{{ trans('common.close') }}</button>
+            </div>
         </div>
     </div>
 @endsection
@@ -903,6 +1004,201 @@
                             });
                         }
                     });
+            });
+
+            $('#btnSyncMedia').on('click', function() {
+                loadingSwal();
+                $.get("{{ route('media.syncPreview') }}")
+                    .done(function(res) {
+                        closeSwal();
+                        const data = res.data || { items: [], total: 0 };
+                        window.__syncPreviewItems = data.items || [];
+                        $('#syncPreviewCount').text(`${window.__syncPreviewItems.length} {{ trans('common.sync_media_found') }}`);
+                        renderSyncPreview(window.__syncPreviewItems);
+                        openSyncModal();
+                    })
+                    .fail(function(xhr) {
+                        closeSwal();
+                        const msg = extractAjaxErrorMessage(xhr, "{{ trans('common.error.500') }}");
+                        toastr["error"](msg, "Error");
+                    });
+            });
+
+            function openSyncModal() {
+                $('#mediaSyncModal').addClass('is-open');
+                $('body').addClass('custom-modal-open');
+            }
+
+            function closeSyncModal() {
+                $('#mediaSyncModal').removeClass('is-open');
+                $('body').removeClass('custom-modal-open');
+            }
+
+            function openFailedModal() {
+                $('#mediaSyncFailedModal').addClass('is-open');
+                $('body').addClass('custom-modal-open');
+            }
+
+            function closeFailedModal() {
+                $('#mediaSyncFailedModal').removeClass('is-open');
+                $('body').removeClass('custom-modal-open');
+            }
+
+            $('[data-sync-close]').on('click', closeSyncModal);
+            $('#mediaSyncModal').on('click', '.custom-modal__backdrop', closeSyncModal);
+            $('[data-sync-failed-close]').on('click', closeFailedModal);
+            $('#mediaSyncFailedModal').on('click', '.custom-modal__backdrop', closeFailedModal);
+
+            function renderSyncPreview(items) {
+                const rows = items.map(function(it) {
+                    const badge = it.status === 'ready' ? 'success' : 'secondary';
+                    const db = it.exists_in_db ? `<span class="badge badge-warning">DB</span>` : '';
+                    const size = it.size ? humanSize(it.size) : '-';
+                    const issue = it.issue ? `<span class="badge badge-danger">${it.issue}</span>` : '-';
+                    return `<tr>
+                        <td><span class="badge badge-${badge}">${it.type.toUpperCase()}</span></td>
+                        <td>${it.name}</td>
+                        <td class="text-muted">${size}</td>
+                        <td>${db || '-'}</td>
+                        <td>${issue}</td>
+                    </tr>`;
+                }).join('');
+
+                const table = `
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <th>Type</th>
+                                <th>Name</th>
+                                <th>Size</th>
+                                <th>DB</th>
+                                <th>Issue</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${rows || '<tr><td colspan="5" class="text-center text-muted">-</td></tr>'}
+                        </tbody>
+                    </table>
+                `;
+                $('#syncPreviewList').html(table);
+
+                const issues = items.filter(it => it.issue);
+                const issueRows = issues.map(it => `
+                    <tr>
+                        <td>${it.name}</td>
+                        <td>${it.issue}</td>
+                    </tr>
+                `).join('');
+                const issueTable = `
+                    <table class="table table-sm table-striped">
+                        <thead>
+                            <tr>
+                                <th>Name</th>
+                                <th>Issue</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${issueRows || '<tr><td colspan="2" class="text-center text-muted">-</td></tr>'}
+                        </tbody>
+                    </table>
+                `;
+                $('#syncIssuesList').html(issueTable);
+            }
+
+            $('#syncTabs').on('click', '[data-sync-tab]', function(e) {
+                e.preventDefault();
+                const tab = $(this).data('sync-tab');
+                $('#syncTabs .nav-link').removeClass('active');
+                $(this).addClass('active');
+                if (tab === 'issues') {
+                    $('#syncPreviewList').addClass('d-none');
+                    $('#syncIssuesList').removeClass('d-none');
+                } else {
+                    $('#syncIssuesList').addClass('d-none');
+                    $('#syncPreviewList').removeClass('d-none');
+                }
+            });
+
+            $('.sync-mode').on('click', function() {
+                $('.sync-mode').removeClass('active');
+                $(this).addClass('active');
+            });
+
+            function setSyncProgress(current, total) {
+                const pct = total > 0 ? Math.min(100, (current / total) * 100) : 0;
+                $('#syncProgressWrap').removeClass('d-none');
+                $('#syncProgressText').removeClass('d-none');
+                $('#syncProgressBar').css('width', pct + '%').text(pct.toFixed(0) + '%');
+                $('#syncProgressText').text(`${current}/${total}`);
+            }
+
+            async function syncNextItem(item, overwrite) {
+                return $.post("{{ route('media.syncItem') }}", {
+                    _token: "{{ csrf_token() }}",
+                    source_relative: item.source_relative,
+                    type: item.type,
+                    overwrite: overwrite ? 1 : 0
+                });
+            }
+
+            $('#startSyncBtn').on('click', async function() {
+                const items = (window.__syncPreviewItems || []).filter(it => it.status === 'ready');
+                const overwrite = $('.sync-mode.active').data('mode') === 'overwrite';
+                const failures = [];
+                let synced = 0;
+                let skipped = 0;
+
+                if (!items.length) {
+                    toastr["info"]("{{ trans('common.no_data') }}", "Info");
+                    return;
+                }
+
+                $(this).prop('disabled', true);
+
+                for (let i = 0; i < items.length; i++) {
+                    const item = items[i];
+                    setSyncProgress(i + 1, items.length);
+                    try {
+                        if (!overwrite && item.exists_in_db) {
+                            skipped++;
+                            continue;
+                        }
+                        const res = await syncNextItem(item, overwrite);
+                        if (res?.data?.status === 'failed') {
+                            failures.push(`${item.name}: ${res.data.message || 'Failed'}`);
+                        } else if (res?.data?.status === 'skipped') {
+                            skipped++;
+                        } else {
+                            synced++;
+                        }
+                    } catch (e) {
+                        failures.push(`${item.name}: ${e?.message || 'Failed'}`);
+                    }
+                }
+
+                $('#startSyncBtn').prop('disabled', false);
+                closeSyncModal();
+
+                if (failures.length) {
+                    $('#syncFailedList').html('<ul style="padding-left:18px;">' + failures.map(f => `<li>${f}</li>`).join('') + '</ul>');
+                    openFailedModal();
+                }
+
+                swal({
+                    title: "{{ trans('common.media_sync_done') }}",
+                    content: $(
+                        `<div class="text-left">
+                            <div>{{ trans('common.sync_result_success') }}: <strong>${synced}</strong></div>
+                            <div>{{ trans('common.sync_result_skipped') }}: <strong>${skipped}</strong></div>
+                            <div>{{ trans('common.sync_result_failed') }}: <strong>${failures.length}</strong></div>
+                        </div>`
+                    )[0],
+                    icon: failures.length ? "warning" : "success"
+                });
+
+                setTimeout(() => {
+                    location.reload();
+                }, 800);
             });
 
             $('#pendingFilesList').on('click', '.remove-pending', function() {

@@ -219,6 +219,9 @@ Route::middleware(['auth'])->group(function () {
                 Route::post('/bulkDelete', [MediaController::class, 'bulkDelete'])->name('bulkDelete');
                 Route::post('/bulkUpdate', [MediaController::class, 'bulkUpdate'])->name('bulkUpdate');
                 Route::match(['get', 'post'], '/upload-chunk', [MediaController::class, 'uploadChunk'])->name('uploadChunk');
+                Route::get('/sync-preview', [MediaController::class, 'syncPreview'])->name('syncPreview');
+                Route::post('/sync-item', [MediaController::class, 'syncItem'])->name('syncItem');
+                Route::post('/sync', [MediaController::class, 'sync'])->name('sync');
             });
         Route::resource('media', MediaController::class)
             ->parameters(['media' => 'uuid'])

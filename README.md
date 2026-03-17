@@ -50,3 +50,4 @@
    ```
 10. Access the application in your browser at: `http://127.0.0.1:8000`
 11. Copy lang.json.example to lang.json on folder settings
+12. To using sync fitur on media library, please install ffmpeg first. Copy path like this on .env file FFPROBE_PATH=C:/ffmpeg/bin/ffprobe.exe

@@ -369,6 +369,195 @@ class MediaController extends Controller
         return response()->json(['status' => true, 'message' => trans('common.success.delete')]);
     }
 
+    public function sync(Request $request)
+    {
+        $sourceRoot = storage_path('app/public/media');
+        $destRoot = rtrim(config('filesystems.disks.media.root'), "/\\");
+        $overwrite = $request->boolean('overwrite', false);
+
+        $result = [
+            'synced' => 0,
+            'skipped' => 0,
+            'errors' => 0,
+            'details' => [],
+            'messages' => [],
+        ];
+
+        if (!is_dir($sourceRoot)) {
+            return response()->json([
+                'status' => true,
+                'message' => trans('common.media_sync_done'),
+                'data' => $result,
+            ]);
+        }
+
+        $files = File::files($sourceRoot);
+        foreach ($files as $file) {
+            if (!$file->isFile()) {
+                continue;
+            }
+
+            $originalName = $file->getFilename();
+            $extension = strtolower($file->getExtension());
+            $type = $this->resolveMediaTypeByExtension($extension);
+            if (!$type) {
+                $result['skipped']++;
+                $result['details'][] = [
+                    'file' => $originalName,
+                    'status' => 'skipped',
+                    'message' => 'Extension not allowed.',
+                ];
+                continue;
+            }
+
+            try {
+                $syncResult = $this->syncSingleFile($file->getPathname(), $originalName, $type, $extension, $overwrite);
+                if ($syncResult['status'] === 'skipped') {
+                    $result['skipped']++;
+                } elseif ($syncResult['status'] === 'failed') {
+                    $result['errors']++;
+                } else {
+                    $result['synced']++;
+                }
+
+                $result['details'][] = [
+                    'file' => $originalName,
+                    'status' => $syncResult['status'],
+                    'message' => $syncResult['message'],
+                ];
+
+                if (!empty($syncResult['message']) && str_contains($syncResult['message'], 'Duration not detected')) {
+                    $result['messages'][] = $syncResult['message'];
+                }
+            } catch (\Throwable $e) {
+                $result['errors']++;
+                $result['messages'][] = $e->getMessage();
+                $result['details'][] = [
+                    'file' => $originalName,
+                    'status' => 'failed',
+                    'message' => $e->getMessage(),
+                ];
+            }
+        }
+
+        // Always clean up source folder after sync attempt
+        try {
+            File::cleanDirectory($sourceRoot);
+        } catch (\Throwable $e) {
+            $result['messages'][] = 'Failed to clean source directory: ' . $e->getMessage();
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => trans('common.media_sync_done'),
+            'data' => $result,
+        ]);
+    }
+
+    public function syncPreview(Request $request)
+    {
+        $sourceRoot = storage_path('app/public/media');
+        $limitsBytes = config('media_upload.limits_bytes', []);
+        $limitsMb = config('media_upload.limits_mb', []);
+
+        $preview = [
+            'total' => 0,
+            'items' => [],
+        ];
+
+        if (!is_dir($sourceRoot)) {
+            return response()->json([
+                'status' => true,
+                'data' => $preview,
+            ]);
+        }
+
+        $files = File::files($sourceRoot);
+        foreach ($files as $file) {
+            if (!$file->isFile()) {
+                continue;
+            }
+
+            $originalName = $file->getFilename();
+            $extension = strtolower($file->getExtension());
+            $type = $this->resolveMediaTypeByExtension($extension);
+            $status = $type ? 'ready' : 'skipped';
+            $sizeBytes = $file->getSize();
+            $maxBytes = $type ? (int) ($limitsBytes[$type] ?? 0) : 0;
+            $sizeExceeded = $type && $maxBytes > 0 && $sizeBytes > $maxBytes;
+
+            $baseName = pathinfo($originalName, PATHINFO_FILENAME);
+            $safeBase = Str::slug($baseName);
+            $destDir = $type === 'audio' ? 'audios' : 'videos';
+            $relativePath = $destDir . '/' . $safeBase . '.' . $extension;
+            $existsInDb = $type
+                ? $this->mediaRepository->query()->where('storage_path', $relativePath)->exists()
+                : false;
+
+            if ($sizeExceeded) {
+                $status = 'skipped';
+            }
+
+            $issue = null;
+            if (!$type) {
+                $issue = 'Extension not allowed.';
+            } elseif ($sizeExceeded) {
+                $limitMb = (int) ($limitsMb[$type] ?? 0);
+                $issue = "Size exceeds limit ({$limitMb} MB).";
+            }
+
+            $preview['items'][] = [
+                'name' => $originalName,
+                'type' => $type ?? 'unknown',
+                'size' => $sizeBytes,
+                'status' => $status,
+                'exists_in_db' => $existsInDb,
+                'source_relative' => 'media/' . $originalName,
+                'size_exceeded' => $sizeExceeded,
+                'size_limit_mb' => (int) ($limitsMb[$type] ?? 0),
+                'issue' => $issue,
+            ];
+        }
+
+        $preview['total'] = count($preview['items']);
+
+        return response()->json([
+            'status' => true,
+            'data' => $preview,
+        ]);
+    }
+
+    public function syncItem(Request $request)
+    {
+        $request->validate([
+            'source_relative' => 'required|string',
+            'type' => 'required|in:audio,video,image',
+            'overwrite' => 'nullable|boolean',
+        ]);
+
+        $sourceRelative = trim($request->input('source_relative'));
+        $type = $request->input('type');
+        $overwrite = $request->boolean('overwrite', false);
+
+        $sourcePath = storage_path('app/public/' . ltrim($sourceRelative, '/\\'));
+        if (!is_file($sourcePath)) {
+            return response()->json([
+                'status' => false,
+                'message' => 'Source file not found.',
+            ], 404);
+        }
+
+        $originalName = basename($sourcePath);
+        $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
+
+        $result = $this->syncSingleFile($sourcePath, $originalName, $type, $extension, $overwrite);
+
+        return response()->json([
+            'status' => $result['status'] === 'synced',
+            'data' => $result,
+        ]);
+    }
+
     private function resolveType(UploadedFile $file, ?string $type): string
     {
         if ($type && in_array($type, ['image', 'video', 'audio'])) {
@@ -491,6 +680,172 @@ class MediaController extends Controller
             'ogg' => 'audio/ogg',
             default => null,
         };
+    }
+
+    private function allowedExtensionsByType(string $type): array
+    {
+        return match ($type) {
+            'audio' => ['mp3', 'wav', 'flac', 'aac', 'm4a', 'ogg'],
+            'video' => ['mp4', 'mkv', 'webm', 'avi'],
+            'image' => ['jpg', 'jpeg', 'png', 'webp', 'gif'],
+            default => [],
+        };
+    }
+
+    private function resolveMediaTypeByExtension(string $extension): ?string
+    {
+        $extension = strtolower($extension);
+        if (in_array($extension, $this->allowedExtensionsByType('audio'), true)) {
+            return 'audio';
+        }
+        if (in_array($extension, $this->allowedExtensionsByType('video'), true)) {
+            return 'video';
+        }
+        if (in_array($extension, $this->allowedExtensionsByType('image'), true)) {
+            return 'image';
+        }
+        return null;
+    }
+
+    private function detectMimeType(string $path, string $extension): ?string
+    {
+        if (is_file($path)) {
+            $finfo = new \finfo(FILEINFO_MIME_TYPE);
+            $mime = $finfo->file($path);
+            if ($mime) {
+                return $mime;
+            }
+        }
+
+        return $this->guessMimeFromExtension($extension);
+    }
+
+    private function probeDuration(string $path): ?int
+    {
+        if (!is_file($path)) {
+            return null;
+        }
+
+        $ffprobe = trim((string) env('FFPROBE_PATH', 'ffprobe'));
+        $ffprobe = $ffprobe !== '' ? $ffprobe : 'ffprobe';
+        $cmd = '"' . $ffprobe . '" -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 ' .
+            escapeshellarg($path);
+
+        $output = @shell_exec($cmd);
+        if (!$output) {
+            return null;
+        }
+
+        $seconds = (float) trim($output);
+        if (!is_finite($seconds) || $seconds <= 0) {
+            return null;
+        }
+
+        return (int) round($seconds);
+    }
+
+    private function syncSingleFile(string $sourcePath, string $originalName, string $type, string $extension, bool $overwrite): array
+    {
+        $allowedExt = $this->allowedExtensionsByType($type);
+        if (!in_array($extension, $allowedExt, true)) {
+            return [
+                'status' => 'skipped',
+                'message' => 'Extension not allowed.',
+            ];
+        }
+
+        $maxBytes = (int) config('media_upload.limits_bytes.' . $type, 0);
+        if ($maxBytes > 0 && is_file($sourcePath) && filesize($sourcePath) > $maxBytes) {
+            $limitMb = (int) config('media_upload.limits_mb.' . $type, 0);
+            return [
+                'status' => 'skipped',
+                'message' => "Size exceeds limit ({$limitMb} MB).",
+            ];
+        }
+
+        $destRoot = rtrim(config('filesystems.disks.media.root'), "/\\");
+        $baseName = pathinfo($originalName, PATHINFO_FILENAME);
+        $safeBase = Str::slug($baseName);
+        $destDir = match ($type) {
+            'audio' => 'audios',
+            'video' => 'videos',
+            'image' => 'images',
+            default => 'others',
+        };
+
+        $relativePath = $destDir . '/' . $safeBase . '.' . $extension;
+        $destPath = $destRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
+        $this->ensureDirectoryExistsSafely(dirname($destPath));
+
+        if (!$overwrite) {
+            $counter = 1;
+            while (is_file($destPath)) {
+                $relativePath = $destDir . '/' . $safeBase . '-' . $counter . '.' . $extension;
+                $destPath = $destRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
+                $counter++;
+            }
+
+            if ($this->mediaRepository->query()->where('storage_path', $relativePath)->exists()) {
+                return [
+                    'status' => 'skipped',
+                    'message' => 'Already exists in database.',
+                ];
+            }
+        }
+
+        try {
+            File::move($sourcePath, $destPath);
+
+            $mime = $this->detectMimeType($destPath, $extension);
+            $duration = $this->probeDuration($destPath);
+            $dimensions = $type === 'image' ? $this->getImageDimensions($relativePath, new \Illuminate\Http\UploadedFile($destPath, $originalName, $mime, null, true)) : [];
+            $durationMessage = ($duration === null && $type !== 'image')
+                ? "Duration not detected for {$originalName}."
+                : 'Synced successfully.';
+
+            $meta = [
+                'extension' => $extension,
+                'mime' => $mime,
+                'size' => filesize($destPath) ?: null,
+                'name' => $baseName,
+                'original' => $originalName,
+                'duration' => $duration,
+                'width' => $dimensions['width'] ?? null,
+                'height' => $dimensions['height'] ?? null,
+            ];
+
+            if ($overwrite) {
+                $existing = $this->mediaRepository->query()->where('storage_path', $relativePath)->first();
+                if ($existing) {
+                    $existing->fill([
+                        'name' => $meta['name'],
+                        'original_filename' => $meta['original'],
+                        'type' => $type,
+                        'extension' => $meta['extension'],
+                        'mime_type' => $meta['mime'],
+                        'size' => $meta['size'],
+                        'duration' => $meta['duration'],
+                        'updated_by' => auth()->id(),
+                    ]);
+                    $existing->save();
+                } else {
+                    $this->mediaRepository->createFromUpload($type, $relativePath, $meta);
+                }
+            } else {
+                $this->mediaRepository->createFromUpload($type, $relativePath, $meta);
+            }
+
+            return [
+                'status' => 'synced',
+                'message' => $durationMessage,
+                'relative_path' => $relativePath,
+            ];
+        } catch (\Throwable $e) {
+            return [
+                'status' => 'failed',
+                'message' => $e->getMessage(),
+            ];
+        }
     }
 
     private function formatLimitLabel(int $sizeMb): string
