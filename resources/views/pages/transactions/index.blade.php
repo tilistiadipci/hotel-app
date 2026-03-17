@@ -76,7 +76,7 @@
                                 <i class="fa fa-spinner fa-pulse fa-2x"></i>
                             </div>
                         </div>
-                        <div id="transaction-list-container">
+                        <div id="transaction-list-container" tabindex="0">
                             @include('pages.transactions.components.list', [
                                 'transactions' => $transactions,
                                 'selectedTransaction' => $selectedTransaction,
@@ -114,6 +114,12 @@
             max-height: 72vh;
             overflow-y: auto;
             padding-right: 4px;
+            outline: none;
+        }
+
+        #transaction-list-container:focus {
+            outline: none;
+            box-shadow: none;
         }
 
         .transaction-status-tabs {
@@ -347,8 +353,49 @@
                         this.classList.add('transaction-list-item--active');
                         selectedTransactionId = transactionId;
                         loadTransactionDetail(transactionId, true);
+                        listContainer.focus();
                     });
                 });
+            }
+
+            function getTransactionItems() {
+                return Array.from(listContainer.querySelectorAll('.transaction-trigger'));
+            }
+
+            function selectTransactionByIndex(index) {
+                const items = getTransactionItems();
+                if (!items.length || index < 0 || index >= items.length) {
+                    return;
+                }
+
+                const target = items[index];
+                const transactionId = target.dataset.transactionId;
+
+                items.forEach(function(item) {
+                    item.classList.remove('transaction-list-item--active');
+                });
+
+                target.classList.add('transaction-list-item--active');
+                selectedTransactionId = transactionId;
+                loadTransactionDetail(transactionId, true);
+                target.scrollIntoView({ block: 'nearest' });
+            }
+
+            function getActiveIndex() {
+                const items = getTransactionItems();
+                const activeIndex = items.findIndex(function(item) {
+                    return item.classList.contains('transaction-list-item--active');
+                });
+                return activeIndex === -1 ? 0 : activeIndex;
+            }
+
+            function shouldIgnoreKeyboard(event) {
+                const target = event.target;
+                if (!target) {
+                    return false;
+                }
+                const tag = target.tagName ? target.tagName.toLowerCase() : '';
+                return ['input', 'textarea', 'select', 'button'].includes(tag) || target.isContentEditable;
             }
 
             function bindStatusButtons() {
@@ -408,6 +455,77 @@
                             });
 
                         toggleDetailOverlay(true);
+                    });
+                });
+
+                detailContent.querySelectorAll('.transaction-cancel-btn').forEach(function(button) {
+                    if (button.dataset.bound === 'true') {
+                        return;
+                    }
+
+                    button.dataset.bound = 'true';
+                    button.addEventListener('click', function() {
+                        const transactionId = this.dataset.id;
+
+                        swal({
+                                title: "{{ trans('common.are_you_sure') }}",
+                                text: "{{ trans('common.transaction.cancel_order_confirm') }}",
+                                icon: "warning",
+                                buttons: true,
+                                dangerMode: true,
+                            })
+                            .then((willCancel) => {
+                                if (!willCancel) {
+                                    return;
+                                }
+
+                                toggleDetailOverlay(true);
+
+                                fetch(`{{ route('transactions.cancel', ':id') }}`.replace(':id', transactionId), {
+                                        method: 'POST',
+                                        headers: {
+                                            'X-Requested-With': 'XMLHttpRequest',
+                                            'Accept': 'application/json',
+                                            'Content-Type': 'application/json'
+                                        },
+                                        body: JSON.stringify({
+                                            _token: "{{ csrf_token() }}"
+                                        })
+                                    })
+                                    .then(function(response) {
+                                        return response.json().then(function(data) {
+                                            return {
+                                                ok: response.ok,
+                                                data: data
+                                            };
+                                        });
+                                    })
+                                    .then(function(result) {
+                                        if (!result.ok) {
+                                            throw new Error(result.data.message ||
+                                                'Failed to cancel transaction.');
+                                        }
+
+                                        detailContent.innerHTML = result.data.detail_html;
+                                        bindStatusButtons();
+                                        updateCount(result.data.detail_count);
+                                        updatePaymentMethodCount(result.data.payment_method_counts);
+                                        toastr["success"](result.data.message, "Success");
+                                        return reloadTransactionList(transactionId, true);
+                                    })
+                                    .then(function(currentSelectedId) {
+                                        if (currentSelectedId && String(currentSelectedId) !== String(transactionId)) {
+                                            selectedTransactionId = currentSelectedId;
+                                            return loadTransactionDetail(currentSelectedId, false);
+                                        }
+                                    })
+                                    .catch(function(error) {
+                                        toastr["error"](error.message, "Error");
+                                    })
+                                    .finally(function() {
+                                        toggleDetailOverlay(false);
+                                    });
+                            });
                     });
                 });
             }
@@ -589,6 +707,32 @@
                     .scrollHeight - 80;
                 if (nearBottom) {
                     loadMoreTransactions();
+                }
+            });
+
+            listContainer.addEventListener('keydown', function(event) {
+                if (shouldIgnoreKeyboard(event)) {
+                    return;
+                }
+
+                if (event.key === 'ArrowDown') {
+                    event.preventDefault();
+                    const items = getTransactionItems();
+                    if (!items.length) {
+                        return;
+                    }
+                    const nextIndex = Math.min(getActiveIndex() + 1, items.length - 1);
+                    selectTransactionByIndex(nextIndex);
+                }
+
+                if (event.key === 'ArrowUp') {
+                    event.preventDefault();
+                    const items = getTransactionItems();
+                    if (!items.length) {
+                        return;
+                    }
+                    const prevIndex = Math.max(getActiveIndex() - 1, 0);
+                    selectTransactionByIndex(prevIndex);
                 }
             });
 

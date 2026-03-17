@@ -390,6 +390,8 @@ return [
         'print_receipt' => 'Cetak Struk',
         'process_order' => 'Proses Pesanan',
         'complete_order' => 'Pesanan Selesai',
+        'cancel_order' => 'Batalkan Pesanan',
+        'cancel_order_confirm' => 'Pesanan ini akan dibatalkan. Lanjutkan?',
         'processed_by' => 'Diproses Oleh',
         'completed_by' => 'Diselesaikan Oleh',
         'cancelled_by' => 'Dibatalkan Oleh',

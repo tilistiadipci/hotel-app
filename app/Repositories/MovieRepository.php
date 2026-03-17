@@ -71,7 +71,7 @@ class MovieRepository extends BaseRepository
 
     public function getDatatable()
     {
-        $query = $this->query()->with(['categories', 'imageMedia', 'videoMedia'])->filter(request(['search', 'filters']));
+        $query = $this->query()->with(['categories', 'videoMedia'])->filter(request(['search', 'filters']));
 
         return DataTables::of($this->paginateDatatable($query))
             ->addIndexColumn()

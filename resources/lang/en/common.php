@@ -356,6 +356,8 @@ return [
         'print_receipt' => 'Print Receipt',
         'process_order' => 'Process Order',
         'complete_order' => 'Complete Order',
+        'cancel_order' => 'Cancel Order',
+        'cancel_order_confirm' => 'This order will be cancelled. Continue?',
         'processed_by' => 'Processed By',
         'completed_by' => 'Completed By',
         'cancelled_by' => 'Cancelled By',

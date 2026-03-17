@@ -15,7 +15,7 @@
         <div class="d-flex justify-content-between align-items-start mb-2">
             <strong>{{ optional($transaction->invoice)->invoice_number ?? 'TRX-' . $transaction->id }}</strong>
             <div class="text-right d-flex">
-                <span class="badge text-muted">{{ $transaction->details->count() }} items</span>
+                <span class="badge text-muted">{{ $transaction->details_count ?? $transaction->details->count() }} items</span>
                 <span class="badge mx-1 badge-{{ $statusClass }}">{{ strtoupper($transaction->status) }}</span>
                 <span class="badge badge-dark">{{ strtoupper($transaction->payment_method) }}</span>
             </div>

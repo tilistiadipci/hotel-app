@@ -43,6 +43,13 @@
                         <i class="fa fa-check mr-1"></i> {{ trans('common.transaction.complete_order') }}
                     </button>
                 @endif
+
+                @if (in_array($selectedTransaction->status, ['ordered', 'processing'], true))
+                    <button type="button" class="btn btn-outline-danger transaction-cancel-btn"
+                        data-id="{{ $selectedTransaction->id }}">
+                        <i class="fa fa-times mr-1"></i> {{ trans('common.transaction.cancel_order') }}
+                    </button>
+                @endif
             </div>
 
             @php

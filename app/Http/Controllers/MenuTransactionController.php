@@ -71,7 +71,7 @@ class MenuTransactionController extends Controller
     public function updateStatus(Request $request, string $id): JsonResponse
     {
         $validated = $request->validate([
-            'status' => ['required', Rule::in(['processing', 'completed'])],
+            'status' => ['required', Rule::in(['processing', 'completed', 'cancelled'])],
         ]);
 
         $transaction = $this->menuTransactionRepository->findWithRelations((int) $id);
@@ -103,8 +103,18 @@ class MenuTransactionController extends Controller
             ], 422);
         }
 
-        $transaction->status = $validated['status'];
-        $transaction->updated_by = auth()->id();
+        if ($validated['status'] === 'cancelled' && !in_array($transaction->status, ['ordered', 'processing'], true)) {
+            return response()->json([
+                'message' => 'Transaction cannot be cancelled from the current status.',
+            ], 422);
+        }
+
+        if ($validated['status'] === 'cancelled') {
+            $this->menuTransactionRepository->cancel($transaction);
+        } else {
+            $transaction->status = $validated['status'];
+            $transaction->updated_by = auth()->id();
+        }
 
         if ($validated['status'] === 'processing') {
             $transaction->processed_by = auth()->id();
@@ -127,7 +137,9 @@ class MenuTransactionController extends Controller
             $transaction->completed_by = auth()->id();
         }
 
-        $transaction->save();
+        if ($validated['status'] !== 'cancelled') {
+            $transaction->save();
+        }
         $transaction->refresh()->load([
             'invoice',
             'player',
@@ -143,6 +155,53 @@ class MenuTransactionController extends Controller
 
         return response()->json([
             'message' => 'Transaction updated successfully.',
+            'detail_count' => [
+                'all' => $statusCounts['all'],
+                'completed' => $statusCounts['completed'],
+                'cancelled' => $statusCounts['cancelled'],
+                'processing' => $statusCounts['processing'],
+                'ordered' => $statusCounts['ordered'],
+            ],
+            'payment_method_counts' => $paymentMethodCounts,
+            'detail_html' => view('pages.transactions.components.detail', [
+                'selectedTransaction' => $transaction,
+            ])->render(),
+        ]);
+    }
+
+    public function cancel(Request $request, string $id): JsonResponse
+    {
+        $transaction = $this->menuTransactionRepository->findWithRelations((int) $id);
+
+        if (!$transaction) {
+            return response()->json([
+                'message' => trans('common.error.404'),
+            ], 404);
+        }
+
+        if (!in_array($transaction->status, ['ordered', 'processing'], true)) {
+            return response()->json([
+                'message' => 'Transaction cannot be cancelled from the current status.',
+            ], 422);
+        }
+
+        $this->menuTransactionRepository->cancel($transaction);
+
+        $transaction->refresh()->load([
+            'invoice',
+            'player',
+            'details.menu.imageMedia',
+            'createdBy',
+            'processedBy',
+            'completedBy',
+            'cancelledBy',
+        ]);
+
+        $statusCounts = $this->menuTransactionRepository->statusCounts();
+        $paymentMethodCounts = $this->menuTransactionRepository->paymentMethodCounts($transaction->status);
+
+        return response()->json([
+            'message' => 'Transaction cancelled successfully.',
             'detail_count' => [
                 'all' => $statusCounts['all'],
                 'completed' => $statusCounts['completed'],

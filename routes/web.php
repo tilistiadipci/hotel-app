@@ -274,6 +274,7 @@ Route::middleware(['auth'])->group(function () {
         ->group(function () {
             Route::get('/', [MenuTransactionController::class, 'index'])->name('.index');
             Route::post('/status/{id}', [MenuTransactionController::class, 'updateStatus'])->name('.status');
+            Route::post('/cancel/{id}', [MenuTransactionController::class, 'cancel'])->name('.cancel');
         });
 });
 

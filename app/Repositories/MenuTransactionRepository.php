@@ -13,12 +13,20 @@ class MenuTransactionRepository extends BaseRepository
 
     public function statusCounts(): array
     {
+        $result = $this->query()
+            ->selectRaw("COUNT(*) as total")
+            ->selectRaw("SUM(status = 'ordered') as ordered")
+            ->selectRaw("SUM(status = 'processing') as processing")
+            ->selectRaw("SUM(status = 'completed') as completed")
+            ->selectRaw("SUM(status = 'cancelled') as cancelled")
+            ->first();
+
         return [
-            'all' => $this->query()->count(),
-            'ordered' => $this->query()->where('status', 'ordered')->count(),
-            'processing' => $this->query()->where('status', 'processing')->count(),
-            'completed' => $this->query()->where('status', 'completed')->count(),
-            'cancelled' => $this->query()->where('status', 'cancelled')->count(),
+            'all' => (int) ($result->total ?? 0),
+            'ordered' => (int) ($result->ordered ?? 0),
+            'processing' => (int) ($result->processing ?? 0),
+            'completed' => (int) ($result->completed ?? 0),
+            'cancelled' => (int) ($result->cancelled ?? 0),
         ];
     }
 
@@ -27,18 +35,22 @@ class MenuTransactionRepository extends BaseRepository
         $query = $this->query()
             ->when(in_array($status, ['ordered', 'processing', 'completed', 'cancelled'], true), function ($builder) use ($status) {
                 $builder->where('status', $status);
-            });
+            })
+            ->selectRaw("COUNT(*) as total")
+            ->selectRaw("SUM(payment_method = 'qris') as qris")
+            ->selectRaw("SUM(payment_method = 'bill') as bill")
+            ->first();
 
         return [
-            'all' => (clone $query)->count(),
-            'qris' => (clone $query)->where('payment_method', 'qris')->count(),
-            'bill' => (clone $query)->where('payment_method', 'bill')->count(),
+            'all' => (int) ($query->total ?? 0),
+            'qris' => (int) ($query->qris ?? 0),
+            'bill' => (int) ($query->bill ?? 0),
         ];
     }
 
     public function paginateFiltered(string $status, string $paymentMethod, int $perPage = 10)
     {
-        return $this->baseQuery()
+        return $this->baseListQuery()
             ->when(in_array($status, ['ordered', 'processing', 'completed', 'cancelled'], true), function ($query) use ($status) {
                 $query->where('status', $status);
             })
@@ -55,6 +67,17 @@ class MenuTransactionRepository extends BaseRepository
         return $this->baseQuery()->find($id);
     }
 
+    public function cancel(MenuTransaction $transaction): MenuTransaction
+    {
+        $transaction->status = 'cancelled';
+        $transaction->payment_status = 'cancelled';
+        $transaction->cancelled_by = auth()->id();
+        $transaction->updated_by = auth()->id();
+        $transaction->save();
+
+        return $transaction;
+    }
+
     public function baseQuery()
     {
         return $this->query()->with([
@@ -66,5 +89,12 @@ class MenuTransactionRepository extends BaseRepository
             'completedBy',
             'cancelledBy',
         ]);
+    }
+
+    public function baseListQuery()
+    {
+        return $this->query()
+            ->with(['invoice', 'player'])
+            ->withCount('details');
     }
 }
