@@ -373,7 +373,6 @@ class MediaController extends Controller
     {
         $sourceRoot = storage_path('app/public/media');
         $destRoot = rtrim(config('filesystems.disks.media.root'), "/\\");
-        $overwrite = $request->boolean('overwrite', false);
 
         $result = [
             'synced' => 0,
@@ -411,7 +410,7 @@ class MediaController extends Controller
             }
 
             try {
-                $syncResult = $this->syncSingleFile($file->getPathname(), $originalName, $type, $extension, $overwrite);
+                $syncResult = $this->syncSingleFile($file->getPathname(), $originalName, $type, $extension);
                 if ($syncResult['status'] === 'skipped') {
                     $result['skipped']++;
                 } elseif ($syncResult['status'] === 'failed') {
@@ -491,8 +490,15 @@ class MediaController extends Controller
             $destDir = $type === 'audio' ? 'audios' : 'videos';
             $relativePath = $destDir . '/' . $safeBase . '.' . $extension;
             $existsInDb = $type
-                ? $this->mediaRepository->query()->where('storage_path', $relativePath)->exists()
+                ? $this->mediaRepository->query()
+                    ->where('storage_path', $relativePath)
+                    ->orWhere('original_filename', $originalName)
+                    ->orWhere('name', $baseName)
+                    ->exists()
                 : false;
+            $destRoot = rtrim(config('filesystems.disks.media.root'), "/\\");
+            $destPath = $destRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
+            $existsInStorage = $type ? is_file($destPath) : false;
 
             if ($sizeExceeded) {
                 $status = 'skipped';
@@ -501,6 +507,10 @@ class MediaController extends Controller
             $issue = null;
             if (!$type) {
                 $issue = 'Extension not allowed.';
+            } elseif ($existsInDb) {
+                $issue = 'Duplicate name exists in database.';
+            } elseif ($existsInStorage) {
+                $issue = 'File already exists in storage.';
             } elseif ($sizeExceeded) {
                 $limitMb = (int) ($limitsMb[$type] ?? 0);
                 $issue = "Size exceeds limit ({$limitMb} MB).";
@@ -532,12 +542,10 @@ class MediaController extends Controller
         $request->validate([
             'source_relative' => 'required|string',
             'type' => 'required|in:audio,video,image',
-            'overwrite' => 'nullable|boolean',
         ]);
 
         $sourceRelative = trim($request->input('source_relative'));
         $type = $request->input('type');
-        $overwrite = $request->boolean('overwrite', false);
 
         $sourcePath = storage_path('app/public/' . ltrim($sourceRelative, '/\\'));
         if (!is_file($sourcePath)) {
@@ -550,11 +558,75 @@ class MediaController extends Controller
         $originalName = basename($sourcePath);
         $extension = strtolower(pathinfo($originalName, PATHINFO_EXTENSION));
 
-        $result = $this->syncSingleFile($sourcePath, $originalName, $type, $extension, $overwrite);
+        $result = $this->syncSingleFile($sourcePath, $originalName, $type, $extension);
 
         return response()->json([
             'status' => $result['status'] === 'synced',
             'data' => $result,
+        ]);
+    }
+
+    public function syncClear(Request $request)
+    {
+        $sourceRoot = storage_path('app/public/media');
+        if (!is_dir($sourceRoot)) {
+            return response()->json([
+                'status' => true,
+                'message' => trans('common.media_sync_clear_done'),
+            ]);
+        }
+
+        try {
+            File::cleanDirectory($sourceRoot);
+        } catch (\Throwable $e) {
+            return response()->json([
+                'status' => false,
+                'message' => $e->getMessage(),
+            ], 500);
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => trans('common.media_sync_clear_done'),
+        ]);
+    }
+
+    public function syncClearIssues(Request $request)
+    {
+        $items = $request->input('items', []);
+        if (!is_array($items) || empty($items)) {
+            return response()->json([
+                'status' => false,
+                'message' => trans('common.no_data'),
+            ], 422);
+        }
+
+        $deleted = 0;
+        $errors = [];
+        foreach ($items as $relative) {
+            $relative = trim((string) $relative);
+            if ($relative === '') {
+                continue;
+            }
+            $path = storage_path('app/public/' . ltrim($relative, '/\\'));
+            if (!is_file($path)) {
+                continue;
+            }
+            try {
+                File::delete($path);
+                $deleted++;
+            } catch (\Throwable $e) {
+                $errors[] = $e->getMessage();
+            }
+        }
+
+        return response()->json([
+            'status' => true,
+            'message' => trans('common.media_sync_clear_issues_done'),
+            'data' => [
+                'deleted' => $deleted,
+                'errors' => $errors,
+            ],
         ]);
     }
 
@@ -744,7 +816,7 @@ class MediaController extends Controller
         return (int) round($seconds);
     }
 
-    private function syncSingleFile(string $sourcePath, string $originalName, string $type, string $extension, bool $overwrite): array
+    private function syncSingleFile(string $sourcePath, string $originalName, string $type, string $extension): array
     {
         $allowedExt = $this->allowedExtensionsByType($type);
         if (!in_array($extension, $allowedExt, true)) {
@@ -777,20 +849,24 @@ class MediaController extends Controller
         $destPath = $destRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
         $this->ensureDirectoryExistsSafely(dirname($destPath));
 
-        if (!$overwrite) {
-            $counter = 1;
-            while (is_file($destPath)) {
-                $relativePath = $destDir . '/' . $safeBase . '-' . $counter . '.' . $extension;
-                $destPath = $destRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
-                $counter++;
-            }
+        if (is_file($destPath)) {
+            return [
+                'status' => 'skipped',
+                'message' => 'File already exists in storage.',
+            ];
+        }
 
-            if ($this->mediaRepository->query()->where('storage_path', $relativePath)->exists()) {
-                return [
-                    'status' => 'skipped',
-                    'message' => 'Already exists in database.',
-                ];
-            }
+        $duplicateInDb = $this->mediaRepository->query()
+            ->where('storage_path', $relativePath)
+            ->orWhere('original_filename', $originalName)
+            ->orWhere('name', $baseName)
+            ->exists();
+
+        if ($duplicateInDb) {
+            return [
+                'status' => 'skipped',
+                'message' => 'Duplicate name exists in database.',
+            ];
         }
 
         try {
@@ -814,26 +890,7 @@ class MediaController extends Controller
                 'height' => $dimensions['height'] ?? null,
             ];
 
-            if ($overwrite) {
-                $existing = $this->mediaRepository->query()->where('storage_path', $relativePath)->first();
-                if ($existing) {
-                    $existing->fill([
-                        'name' => $meta['name'],
-                        'original_filename' => $meta['original'],
-                        'type' => $type,
-                        'extension' => $meta['extension'],
-                        'mime_type' => $meta['mime'],
-                        'size' => $meta['size'],
-                        'duration' => $meta['duration'],
-                        'updated_by' => auth()->id(),
-                    ]);
-                    $existing->save();
-                } else {
-                    $this->mediaRepository->createFromUpload($type, $relativePath, $meta);
-                }
-            } else {
-                $this->mediaRepository->createFromUpload($type, $relativePath, $meta);
-            }
+            $this->mediaRepository->createFromUpload($type, $relativePath, $meta);
 
             return [
                 'status' => 'synced',

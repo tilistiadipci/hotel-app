@@ -222,6 +222,8 @@ Route::middleware(['auth'])->group(function () {
                 Route::get('/sync-preview', [MediaController::class, 'syncPreview'])->name('syncPreview');
                 Route::post('/sync-item', [MediaController::class, 'syncItem'])->name('syncItem');
                 Route::post('/sync', [MediaController::class, 'sync'])->name('sync');
+                Route::post('/sync-clear', [MediaController::class, 'syncClear'])->name('syncClear');
+                Route::post('/sync-clear-issues', [MediaController::class, 'syncClearIssues'])->name('syncClearIssues');
             });
         Route::resource('media', MediaController::class)
             ->parameters(['media' => 'uuid'])

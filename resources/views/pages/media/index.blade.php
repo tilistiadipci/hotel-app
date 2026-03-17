@@ -53,9 +53,15 @@
                     'breadcrumbs' => [['href' => '#', 'label' => 'Media Library']],
                 ])
                 <div class="page-title-actions">
-                    <button type="button" class="btn btn-sm btn-outline-primary" id="btnSyncMedia">
-                        <i class="fa fa-sync mr-1"></i> {{ trans('common.sync') }}
-                    </button>
+                    <div class="d-flex align-items-center">
+                        <button type="button" class="btn btn-sm btn-outline-primary" id="btnSyncMedia">
+                            <i class="fa fa-sync mr-1"></i> {{ trans('common.sync') }}
+                        </button>
+                        <button type="button" class="btn btn-sm btn-outline-secondary ml-2" id="btnSyncInfo"
+                            title="{{ trans('common.sync_media_info_title') }}">
+                            <i class="fa fa-info-circle"></i>
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -166,14 +172,7 @@
                 </ul>
                 <div class="d-flex align-items-center justify-content-between mb-2">
                     <div class="text-muted small" id="syncPreviewCount"></div>
-                    <div class="btn-group btn-group-sm" role="group" aria-label="sync mode">
-                        <button type="button" class="btn btn-outline-secondary sync-mode active" data-mode="skip">
-                            {{ trans('common.sync_mode_skip') }}
-                        </button>
-                        <button type="button" class="btn btn-outline-secondary sync-mode" data-mode="overwrite">
-                            {{ trans('common.sync_mode_overwrite') }}
-                        </button>
-                    </div>
+                    <div class="text-muted small">{{ trans('common.sync_mode_info') }}</div>
                 </div>
                 <div id="syncPreviewList" class="sync-table-wrap"></div>
                 <div id="syncIssuesList" class="sync-table-wrap d-none"></div>
@@ -183,6 +182,12 @@
                 <div class="small text-muted d-none" id="syncProgressText">0%</div>
             </div>
             <div class="custom-modal__footer d-flex justify-content-end mt-3">
+                <button type="button" class="btn btn-outline-danger mr-2" id="clearSyncIssuesBtn">
+                    {{ trans('common.sync_clear_issues') }}
+                </button>
+                <button type="button" class="btn btn-outline-danger mr-2" id="clearSyncBtn">
+                    {{ trans('common.sync_clear') }}
+                </button>
                 <button type="button" class="btn btn-secondary mr-2" data-sync-close>{{ trans('common.close') }}</button>
                 <button type="button" class="btn btn-primary" id="startSyncBtn">{{ trans('common.sync') }}</button>
             </div>
@@ -201,6 +206,27 @@
             </div>
             <div class="custom-modal__footer d-flex justify-content-end mt-3">
                 <button type="button" class="btn btn-secondary" data-sync-failed-close>{{ trans('common.close') }}</button>
+            </div>
+        </div>
+    </div>
+
+    <div id="mediaSyncInfoModal" class="custom-modal" aria-hidden="true">
+        <div class="custom-modal__backdrop" data-sync-info-close></div>
+        <div class="custom-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="mediaSyncInfoTitle">
+            <div class="custom-modal__header">
+                <h5 class="custom-modal__title" id="mediaSyncInfoTitle">{{ trans('common.sync_media_info_title') }}</h5>
+                <button type="button" class="custom-modal__close" data-sync-info-close aria-label="Close">&times;</button>
+            </div>
+            <div class="custom-modal__body">
+                <ol class="mb-0 pl-3">
+                    <li>{{ trans('common.sync_media_info_step_1') }}</li>
+                    <li>{{ trans('common.sync_media_info_step_2') }}</li>
+                    <li>{{ trans('common.sync_media_info_step_3') }}</li>
+                    <li>{{ trans('common.sync_media_info_step_4') }}</li>
+                </ol>
+            </div>
+            <div class="custom-modal__footer d-flex justify-content-end mt-3">
+                <button type="button" class="btn btn-secondary" data-sync-info-close>{{ trans('common.close') }}</button>
             </div>
         </div>
     </div>
@@ -1044,22 +1070,37 @@
                 $('body').removeClass('custom-modal-open');
             }
 
+            function openInfoModal() {
+                $('#mediaSyncInfoModal').addClass('is-open');
+                $('body').addClass('custom-modal-open');
+            }
+
+            function closeInfoModal() {
+                $('#mediaSyncInfoModal').removeClass('is-open');
+                $('body').removeClass('custom-modal-open');
+            }
+
             $('[data-sync-close]').on('click', closeSyncModal);
             $('#mediaSyncModal').on('click', '.custom-modal__backdrop', closeSyncModal);
             $('[data-sync-failed-close]').on('click', closeFailedModal);
             $('#mediaSyncFailedModal').on('click', '.custom-modal__backdrop', closeFailedModal);
+            $('[data-sync-info-close]').on('click', closeInfoModal);
+            $('#mediaSyncInfoModal').on('click', '.custom-modal__backdrop', closeInfoModal);
+
+            $('#btnSyncInfo').on('click', function() {
+                openInfoModal();
+            });
 
             function renderSyncPreview(items) {
                 const rows = items.map(function(it) {
                     const badge = it.status === 'ready' ? 'success' : 'secondary';
-                    const db = it.exists_in_db ? `<span class="badge badge-warning">DB</span>` : '';
+                    const db = '';
                     const size = it.size ? humanSize(it.size) : '-';
                     const issue = it.issue ? `<span class="badge badge-danger">${it.issue}</span>` : '-';
                     return `<tr>
                         <td><span class="badge badge-${badge}">${it.type.toUpperCase()}</span></td>
                         <td>${it.name}</td>
                         <td class="text-muted">${size}</td>
-                        <td>${db || '-'}</td>
                         <td>${issue}</td>
                     </tr>`;
                 }).join('');
@@ -1071,12 +1112,11 @@
                                 <th>Type</th>
                                 <th>Name</th>
                                 <th>Size</th>
-                                <th>DB</th>
                                 <th>Issue</th>
                             </tr>
                         </thead>
                         <tbody>
-                            ${rows || '<tr><td colspan="5" class="text-center text-muted">-</td></tr>'}
+                            ${rows || '<tr><td colspan="4" class="text-center text-muted">-</td></tr>'}
                         </tbody>
                     </table>
                 `;
@@ -1119,11 +1159,6 @@
                 }
             });
 
-            $('.sync-mode').on('click', function() {
-                $('.sync-mode').removeClass('active');
-                $(this).addClass('active');
-            });
-
             function setSyncProgress(current, total) {
                 const pct = total > 0 ? Math.min(100, (current / total) * 100) : 0;
                 $('#syncProgressWrap').removeClass('d-none');
@@ -1132,18 +1167,16 @@
                 $('#syncProgressText').text(`${current}/${total}`);
             }
 
-            async function syncNextItem(item, overwrite) {
+            async function syncNextItem(item) {
                 return $.post("{{ route('media.syncItem') }}", {
                     _token: "{{ csrf_token() }}",
                     source_relative: item.source_relative,
-                    type: item.type,
-                    overwrite: overwrite ? 1 : 0
+                    type: item.type
                 });
             }
 
             $('#startSyncBtn').on('click', async function() {
                 const items = (window.__syncPreviewItems || []).filter(it => it.status === 'ready');
-                const overwrite = $('.sync-mode.active').data('mode') === 'overwrite';
                 const failures = [];
                 let synced = 0;
                 let skipped = 0;
@@ -1159,11 +1192,7 @@
                     const item = items[i];
                     setSyncProgress(i + 1, items.length);
                     try {
-                        if (!overwrite && item.exists_in_db) {
-                            skipped++;
-                            continue;
-                        }
-                        const res = await syncNextItem(item, overwrite);
+                        const res = await syncNextItem(item);
                         if (res?.data?.status === 'failed') {
                             failures.push(`${item.name}: ${res.data.message || 'Failed'}`);
                         } else if (res?.data?.status === 'skipped') {
@@ -1199,6 +1228,71 @@
                 setTimeout(() => {
                     location.reload();
                 }, 800);
+            });
+
+            $('#clearSyncBtn').on('click', function() {
+                swal({
+                        title: "{{ trans('common.sync_clear_title') }}",
+                        text: "{{ trans('common.sync_clear_confirm') }}",
+                        icon: "warning",
+                        buttons: ["{{ trans('common.cancel') }}", "{{ trans('common.sync_clear') }}"],
+                        dangerMode: true,
+                    })
+                    .then((willClear) => {
+                        if (!willClear) return;
+                        loadingSwal();
+                        $.post("{{ route('media.syncClear') }}", {
+                                _token: "{{ csrf_token() }}"
+                            })
+                            .done(function(res) {
+                                closeSwal();
+                                toastr["success"](res.message || "{{ trans('common.success.update') }}", "Success");
+                                setTimeout(() => {
+                                    location.reload();
+                                }, 800);
+                            })
+                            .fail(function(xhr) {
+                                closeSwal();
+                                const msg = extractAjaxErrorMessage(xhr, "{{ trans('common.error.500') }}");
+                                toastr["error"](msg, "Error");
+                            });
+                    });
+            });
+
+            $('#clearSyncIssuesBtn').on('click', function() {
+                const issueItems = (window.__syncPreviewItems || []).filter(it => it.issue);
+                if (!issueItems.length) {
+                    toastr["info"]("{{ trans('common.no_data') }}", "Info");
+                    return;
+                }
+
+                swal({
+                        title: "{{ trans('common.sync_clear_issues_title') }}",
+                        text: "{{ trans('common.sync_clear_issues_confirm') }}",
+                        icon: "warning",
+                        buttons: ["{{ trans('common.cancel') }}", "{{ trans('common.sync_clear_issues') }}"],
+                        dangerMode: true,
+                    })
+                    .then((willClear) => {
+                        if (!willClear) return;
+                        loadingSwal();
+                        $.post("{{ route('media.syncClearIssues') }}", {
+                                _token: "{{ csrf_token() }}",
+                                items: issueItems.map(it => it.source_relative)
+                            })
+                            .done(function(res) {
+                                closeSwal();
+                                toastr["success"](res.message || "{{ trans('common.success.update') }}", "Success");
+                                setTimeout(() => {
+                                    location.reload();
+                                }, 800);
+                            })
+                            .fail(function(xhr) {
+                                closeSwal();
+                                const msg = extractAjaxErrorMessage(xhr, "{{ trans('common.error.500') }}");
+                                toastr["error"](msg, "Error");
+                            });
+                    });
             });
 
             $('#pendingFilesList').on('click', '.remove-pending', function() {
