@@ -24,6 +24,7 @@ use App\Http\Controllers\RunningTextController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\BookingPlayerReportController;
 use App\Http\Controllers\BookingPlayerDurationReportController;
+use App\Http\Controllers\MenuTransactionReportController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -240,12 +241,15 @@ Route::middleware(['auth'])->group(function () {
         Route::prefix('reports')
             ->name('reports.')
             ->group(function () {
+                // laporan booking player
                 Route::get('/booking-players', [BookingPlayerReportController::class, 'index'])
                     ->name('booking-players.index');
                 Route::get('/booking-players/data', [BookingPlayerReportController::class, 'data'])
                     ->name('booking-players.data');
                 Route::get('/booking-players/export', [BookingPlayerReportController::class, 'export'])
                     ->name('booking-players.export');
+
+                // laporan durasi pemakaian player
                 Route::get('/player-durations', [BookingPlayerDurationReportController::class, 'index'])
                     ->name('player-durations.index');
                 Route::get('/player-durations/data', [BookingPlayerDurationReportController::class, 'data'])
@@ -254,6 +258,14 @@ Route::middleware(['auth'])->group(function () {
                     ->name('player-durations.export');
                 Route::get('/player-durations/chart', [BookingPlayerDurationReportController::class, 'chart'])
                     ->name('player-durations.chart');
+
+                // laporan menu transaksi
+                Route::get('/menu-transactions', [MenuTransactionReportController::class, 'index'])
+                    ->name('menu-transactions.index');
+                Route::get('/menu-transactions/data', [MenuTransactionReportController::class, 'data'])
+                    ->name('menu-transactions.data');
+                Route::get('/menu-transactions/export', [MenuTransactionReportController::class, 'export'])
+                    ->name('menu-transactions.export');
             });
     });
 
