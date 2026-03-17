@@ -220,7 +220,7 @@ return [
     ],
 
     'report_booking_players' => [
-        'title' => 'Booking Players',
+        'title' => 'Player Booking',
         'table_title' => 'Booking Players Data',
         'export_excel' => 'Export Excel',
         'filter_players' => 'Filter Players',
