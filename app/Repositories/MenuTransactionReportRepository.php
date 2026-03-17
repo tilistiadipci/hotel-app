@@ -21,7 +21,7 @@ class MenuTransactionReportRepository extends BaseRepository
         return DataTables::of($query)
             ->addIndexColumn()
             ->addColumn('created_at', function ($row) {
-                return optional($row->created_at)->format('d/m/Y H:i') ?? '-';
+                return Carbon::parse($row->created_at)->format('d/m/Y H:i');
             })
             ->addColumn('guest_name', function ($row) {
                 return $row->guest_name ?? '-';
@@ -40,6 +40,9 @@ class MenuTransactionReportRepository extends BaseRepository
             })
             ->addColumn('payment_method', function ($row) {
                 return $row->payment_method ? strtoupper($row->payment_method) : '-';
+            })
+            ->addColumn('invoice_number', function ($row) {
+                return $row->invoice_number ?? '-';
             })
             ->addColumn('processed_by', function ($row) {
                 return $row->processed_by_name ?? '-';
@@ -62,13 +65,14 @@ class MenuTransactionReportRepository extends BaseRepository
             ->get()
             ->map(function ($row) {
                 return [
-                    optional($row->created_at)->format('d/m/Y H:i') ?? '-',
+                    Carbon::parse($row->created_at)->format('d/m/Y H:i'),
                     $row->guest_name ?? '-',
                     $row->player_alias ?? '-',
                     (int) ($row->total_items ?? 0),
                     number_format((float) ($row->grand_total ?? 0), 0),
                     $row->payment_status ? strtoupper($row->payment_status) : '-',
                     $row->payment_method ? strtoupper($row->payment_method) : '-',
+                    $row->invoice_number ?? '-',
                     $row->processed_by_name ?? '-',
                     $row->completed_by_name ?? '-',
                 ];
@@ -93,11 +97,24 @@ class MenuTransactionReportRepository extends BaseRepository
 
     private function baseQuery(array $filters)
     {
-        $query = $this->query()
-            ->leftJoin('menu_transaction_details', 'menu_transaction_details.menu_transaction_id', '=', 'menu_transactions.id')
+        $itemsSubQuery = DB::table('menu_transaction_details')
+            ->select([
+                'menu_transaction_id',
+                DB::raw('COALESCE(SUM(quantity), 0) as total_items'),
+            ])
+            ->whereNull('deleted_at')
+            ->groupBy('menu_transaction_id');
+
+        $query = DB::table('menu_transaction_invoices')
+            ->join('menu_transactions', 'menu_transactions.id', '=', 'menu_transaction_invoices.menu_transaction_id')
             ->join('players', 'players.id', '=', 'menu_transactions.player_id')
+            ->leftJoinSub($itemsSubQuery, 'tx_items', function ($join) {
+                $join->on('tx_items.menu_transaction_id', '=', 'menu_transactions.id');
+            })
             ->leftJoin('users as processed_users', 'processed_users.id', '=', 'menu_transactions.processed_by')
             ->leftJoin('users as completed_users', 'completed_users.id', '=', 'menu_transactions.completed_by')
+            ->whereNull('menu_transaction_invoices.deleted_at')
+            ->whereNull('menu_transactions.deleted_at')
             ->select([
                 'menu_transactions.id',
                 'menu_transactions.created_at',
@@ -108,19 +125,9 @@ class MenuTransactionReportRepository extends BaseRepository
                 'players.alias as player_alias',
                 'processed_users.username as processed_by_name',
                 'completed_users.username as completed_by_name',
-                DB::raw('COALESCE(SUM(menu_transaction_details.quantity), 0) as total_items'),
-            ])
-            ->groupBy(
-                'menu_transactions.id',
-                'menu_transactions.created_at',
-                'menu_transactions.guest_name',
-                'menu_transactions.payment_status',
-                'menu_transactions.payment_method',
-                'menu_transactions.grand_total',
-                'players.alias',
-                'processed_users.username',
-                'completed_users.username'
-            );
+                'tx_items.total_items as total_items',
+                'menu_transaction_invoices.invoice_number as invoice_number',
+            ]);
 
         $playerIds = $filters['player_ids'] ?? [];
         if (!is_array($playerIds)) {

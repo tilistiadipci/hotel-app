@@ -266,6 +266,7 @@ return [
         'grand_total' => 'Grand Total',
         'payment_status' => 'Status Pembayaran',
         'payment_method' => 'Metode Pembayaran',
+        'invoice_number' => 'Invoice Number',
         'payment_status_paid' => 'Paid',
         'payment_status_pending' => 'Pending',
         'payment_status_failed' => 'Failed',

@@ -358,7 +358,7 @@
                 const generatedByLabel = "{{ trans('common.report_player_duration.generated_by') }}";
                 const selectedRange = ($input.val() || '').trim() || '-';
                 const generatedAt = moment().format('DD/MM/YYYY HH:mm');
-                const generatedBy = "{{ auth()->user()->name ?? '-' }}";
+                const generatedBy = "{{ auth()->user()->profile->name ?? '-' }}";
 
                 const headerRows = [
                     [reportTitle],

@@ -101,6 +101,7 @@
                                         <th>{{ trans('common.report_menu_transactions.grand_total') }}</th>
                                         <th>{{ trans('common.report_menu_transactions.payment_status') }}</th>
                                         <th>{{ trans('common.report_menu_transactions.payment_method') }}</th>
+                                        <th>{{ trans('common.report_menu_transactions.invoice_number') }}</th>
                                         <th>{{ trans('common.report_menu_transactions.processed_by') }}</th>
                                         <th>{{ trans('common.report_menu_transactions.completed_by') }}</th>
                                     </tr>
@@ -226,6 +227,7 @@
                     { data: 'grand_total', name: 'menu_transactions.grand_total' },
                     { data: 'payment_status', name: 'menu_transactions.payment_status' },
                     { data: 'payment_method', name: 'menu_transactions.payment_method' },
+                    { data: 'invoice_number', name: 'menu_transaction_invoices.invoice_number' },
                     { data: 'processed_by', name: 'processed_by_name' },
                     { data: 'completed_by', name: 'completed_by_name' },
                 ],
@@ -259,7 +261,7 @@
                 const generatedByLabel = "{{ trans('common.report_menu_transactions.generated_by') }}";
                 const selectedRange = ($input.val() || '').trim() || '-';
                 const generatedAt = moment().format('DD/MM/YYYY HH:mm');
-                const generatedBy = "{{ auth()->user()->name ?? '-' }}";
+                const generatedBy = "{{ auth()->user()->profile->name ?? '-' }}";
 
                 const headerRows = [
                     [reportTitle],
@@ -276,6 +278,7 @@
                     "{{ trans('common.report_menu_transactions.grand_total') }}",
                     "{{ trans('common.report_menu_transactions.payment_status') }}",
                     "{{ trans('common.report_menu_transactions.payment_method') }}",
+                    "{{ trans('common.report_menu_transactions.invoice_number') }}",
                     "{{ trans('common.report_menu_transactions.processed_by') }}",
                     "{{ trans('common.report_menu_transactions.completed_by') }}",
                 ];

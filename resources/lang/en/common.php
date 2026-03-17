@@ -269,6 +269,7 @@ return [
         'grand_total' => 'Grand Total',
         'payment_status' => 'Payment Status',
         'payment_method' => 'Payment Method',
+        'invoice_number' => 'Invoice Number',
         'payment_status_paid' => 'Paid',
         'payment_status_pending' => 'Pending',
         'payment_status_failed' => 'Failed',
