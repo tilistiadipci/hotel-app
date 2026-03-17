@@ -109,7 +109,7 @@
         $(document).ready(function() {
             const $input = $('.daterange-picker');
             const initialValue = ($input.val() || '').trim();
-            let startDate = moment().startOf('day');
+            let startDate = moment().subtract(1, 'month').startOf('day');
             let endDate = moment().endOf('day');
 
             if (initialValue.includes(' - ')) {
@@ -133,9 +133,7 @@
                 opens: 'left'
             });
 
-            if (initialValue) {
-                $input.val(startDate.format('DD/MM/YYYY') + ' - ' + endDate.format('DD/MM/YYYY'));
-            }
+            $input.val(startDate.format('DD/MM/YYYY') + ' - ' + endDate.format('DD/MM/YYYY'));
 
             $input.on('apply.daterangepicker', function(ev, picker) {
                 $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format(

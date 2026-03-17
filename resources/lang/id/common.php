@@ -217,7 +217,7 @@ return [
     ],
 
     'report_booking_players' => [
-        'title' => 'Laporan Booking Player',
+        'title' => 'Booking Player',
         'table_title' => 'Data Booking Players',
         'export_excel' => 'Export Excel',
         'filter_players' => 'Filter Player',
@@ -232,6 +232,32 @@ return [
         'generated_range' => 'Rentang Tanggal',
         'generated_at' => 'Digenerate pada',
         'generated_by' => 'Digenerate oleh',
+    ],
+
+    'report_player_duration' => [
+        'title' => 'Pemakaian Player',
+        'table_title' => 'Data Durasi Pemakaian Player',
+        'chart_title' => 'Durasi Pemakaian (Jam)',
+        'chart_axis_label' => 'Jam',
+        'chart_series_label' => 'Durasi (Jam)',
+        'export_excel' => 'Export Excel',
+        'filter_players' => 'Filter Player',
+        'filter_date_range' => 'Pilih rentang tanggal',
+        'player_name' => 'Nama Player',
+        'player_alias' => 'Alias Player',
+        'usage_duration' => 'Lama Waktu Pemakaian',
+        'file_name' => 'player-durations.xlsx',
+        'sheet_name' => 'Player Durations',
+        'generated_range' => 'Rentang',
+        'generated_at' => 'Digenerate pada',
+        'generated_by' => 'Digenerate oleh',
+    ],
+
+    'duration' => [
+        'hour' => 'jam',
+        'hours' => 'jam',
+        'minute' => 'menit',
+        'minutes' => 'menit',
     ],
 
     'song' => [

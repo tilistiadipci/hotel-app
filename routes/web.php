@@ -23,6 +23,7 @@ use App\Http\Controllers\PlayerController;
 use App\Http\Controllers\RunningTextController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\BookingPlayerReportController;
+use App\Http\Controllers\BookingPlayerDurationReportController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -245,6 +246,14 @@ Route::middleware(['auth'])->group(function () {
                     ->name('booking-players.data');
                 Route::get('/booking-players/export', [BookingPlayerReportController::class, 'export'])
                     ->name('booking-players.export');
+                Route::get('/player-durations', [BookingPlayerDurationReportController::class, 'index'])
+                    ->name('player-durations.index');
+                Route::get('/player-durations/data', [BookingPlayerDurationReportController::class, 'data'])
+                    ->name('player-durations.data');
+                Route::get('/player-durations/export', [BookingPlayerDurationReportController::class, 'export'])
+                    ->name('player-durations.export');
+                Route::get('/player-durations/chart', [BookingPlayerDurationReportController::class, 'chart'])
+                    ->name('player-durations.chart');
             });
     });
 

@@ -132,6 +132,12 @@
                                     <i class="metismenu-icon"></i> {{ trans('common.report_booking_players.title') }}
                                 </a>
                             </li>
+                            <li class="{{ $page == 'report-player-durations' ? 'mm-active' : '' }}">
+                                <a href="{{ url('/reports/player-durations') }}"
+                                    class="{{ $page == 'report-player-durations' ? 'mm-active' : '' }}">
+                                    <i class="metismenu-icon"></i> {{ trans('common.report_player_duration.title') }}
+                                </a>
+                            </li>
                         </ul>
                     </li>
 
