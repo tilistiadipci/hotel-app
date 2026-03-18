@@ -477,6 +477,7 @@ return [
     'sync_media_info_step_2' => 'Run the Sync button.',
     'sync_media_info_step_3' => 'The application will read files based on the existing rules.',
     'sync_media_info_step_4' => 'The application will automatically add media data and move the files into storage.',
+    'sync_media_info_step_5' => 'This feature is only available for offline/onpremise servers.',
     'sync_clear' => 'Clear Media Sync',
     'sync_clear_title' => 'Clear Media Sync',
     'sync_clear_confirm' => 'All files in storage/app/public/media will be deleted. Continue?',

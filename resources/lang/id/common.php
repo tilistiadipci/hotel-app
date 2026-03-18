@@ -391,6 +391,7 @@ return [
     'sync_media_info_step_2' => 'Jalankan tombol Sync.',
     'sync_media_info_step_3' => 'Aplikasi akan membaca file sesuai aturan yang ada.',
     'sync_media_info_step_4' => 'Aplikasi akan otomatis menambahkan data media beserta file medianya ke storage.',
+    'sync_media_info_step_5' => 'Fitur ini hanya tersedia untuk server offline/onpremise.',
     'sync_clear' => 'Clear Media Sync',
     'sync_clear_title' => 'Clear Media Sync',
     'sync_clear_confirm' => 'Semua file di folder storage/app/public/media akan dihapus. Lanjutkan?',

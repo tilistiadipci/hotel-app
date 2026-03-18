@@ -223,6 +223,8 @@
                     <li>{{ trans('common.sync_media_info_step_2') }}</li>
                     <li>{{ trans('common.sync_media_info_step_3') }}</li>
                     <li>{{ trans('common.sync_media_info_step_4') }}</li>
+                    {{-- hanya untuk server offline --}}
+                    <li>{{ trans('common.sync_media_info_step_5') }}</li>
                 </ol>
             </div>
             <div class="custom-modal__footer d-flex justify-content-end mt-3">
