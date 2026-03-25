@@ -2,7 +2,10 @@
 
 namespace App\Repositories;
 
+use App\Models\Album;
+use App\Models\Artist;
 use App\Models\Song;
+use Illuminate\Validation\ValidationException;
 use Yajra\DataTables\Facades\DataTables;
 use App\Repositories\ArtistRepository;
 use App\Repositories\AlbumRepository;
@@ -76,6 +79,182 @@ class SongRepository extends BaseRepository
             ->make(true);
     }
 
+    public function findForDisplay(string $uid)
+    {
+        return $this->query()
+            ->with(['artist', 'album', 'imageMedia', 'audioMedia'])
+            ->where('uuid', $uid)
+            ->first();
+    }
+
+    public function findForEdit(string $uid)
+    {
+        return $this->query()
+            ->with(['imageMedia', 'audioMedia'])
+            ->where('uuid', $uid)
+            ->first();
+    }
+
+    public function preparePayload(array $attributes, ?string $uid = null): array
+    {
+        $payload = $attributes;
+        $existing = $uid ? $this->findUid($uid) : null;
+
+        $this->resolveArtistAlbum($payload);
+
+        if (!isset($payload['duration']) || $payload['duration'] === null || $payload['duration'] === '') {
+            $payload['duration'] = $existing->duration ?? 0;
+        }
+
+        if (empty($payload['title'])) {
+            $payload['title'] = $existing->title ?? 'Untitled';
+        }
+
+        return $payload;
+    }
+
+    public function buildPayloadFromImportRow(array $row, int $rowNumber): array
+    {
+        $artistName = trim((string) ($row['artist'] ?? ''));
+        if ($artistName === '') {
+            throw ValidationException::withMessages([
+                'artist' => "Baris {$rowNumber}: artist wajib diisi.",
+            ]);
+        }
+
+        $artist = $this->findOrCreateArtistByName($artistName);
+        $album = $this->findOrCreateAlbumByTitle(trim((string) ($row['album'] ?? '')), $artist->id);
+
+        $title = trim((string) ($row['title'] ?? ''));
+        if ($title === '') {
+            throw ValidationException::withMessages([
+                'title' => "Baris {$rowNumber}: title wajib diisi.",
+            ]);
+        }
+
+        $albumTitle = trim((string) ($row['album'] ?? ''));
+        if ($albumTitle === '') {
+            throw ValidationException::withMessages([
+                'album' => "Baris {$rowNumber}: album wajib diisi.",
+            ]);
+        }
+
+        $audioFileName = trim((string) ($row['audio_file'] ?? ''));
+        if ($audioFileName === '') {
+            throw ValidationException::withMessages([
+                'audio_file' => "Baris {$rowNumber}: audio_file wajib diisi.",
+            ]);
+        }
+
+        $imageFileName = trim((string) ($row['image_file'] ?? ''));
+        if ($imageFileName === '') {
+            throw ValidationException::withMessages([
+                'image_file' => "Baris {$rowNumber}: image_file wajib diisi.",
+            ]);
+        }
+
+        if ($this->titleExists($title)) {
+            throw ValidationException::withMessages([
+                'title' => "Baris {$rowNumber}: title \"{$title}\" sudah ada.",
+            ]);
+        }
+
+        $sortOrderRaw = trim((string) ($row['sort_order'] ?? ''));
+        $sortOrder = null;
+        if ($sortOrderRaw !== '') {
+            if (!ctype_digit($sortOrderRaw)) {
+                throw ValidationException::withMessages([
+                    'sort_order' => "Baris {$rowNumber}: sort_order harus berupa angka 0 atau lebih.",
+                ]);
+            }
+            $sortOrder = (int) $sortOrderRaw;
+        }
+
+        return [
+            'title' => $title,
+            'artist_id' => $artist->id,
+            'album_id' => $album->id,
+            'sort_order' => $sortOrder,
+            'is_active' => $this->normalizeImportBoolean($row['is_active'] ?? null, true, $rowNumber, 'is_active'),
+            'is_favorit' => $this->normalizeImportBoolean($row['is_favorit'] ?? null, false, $rowNumber, 'is_favorit'),
+        ];
+    }
+
+    public function findOrCreateArtistByName(string $name)
+    {
+        $name = trim($name);
+        $normalized = mb_strtolower($name);
+
+        $artist = Artist::query()
+            ->whereRaw('LOWER(name) = ?', [$normalized])
+            ->first();
+
+        if ($artist) {
+            return $artist;
+        }
+
+        return app(ArtistRepository::class)->create([
+            'name' => $name,
+        ]);
+    }
+
+    public function findOrCreateAlbumByTitle(string $title, int $artistId)
+    {
+        if ($title === '') {
+            return null;
+        }
+
+        $normalized = mb_strtolower(trim($title));
+        $album = Album::query()
+            ->where('artist_id', $artistId)
+            ->whereRaw('LOWER(title) = ?', [$normalized])
+            ->first();
+
+        if ($album) {
+            return $album;
+        }
+
+        return app(AlbumRepository::class)->create([
+            'artist_id' => $artistId,
+            'title' => trim($title),
+        ]);
+    }
+
+    public function titleExists(string $title, ?string $exceptUid = null): bool
+    {
+        $query = $this->query()
+            ->whereRaw('LOWER(title) = ?', [mb_strtolower(trim($title))]);
+
+        if ($exceptUid) {
+            $query->where('uuid', '!=', $exceptUid);
+        }
+
+        return $query->exists();
+    }
+
+    public function normalizeImportBoolean(mixed $value, bool $default, int $rowNumber, string $field): bool
+    {
+        $value = trim((string) $value);
+        if ($value === '') {
+            return $default;
+        }
+
+        $truthy = ['1', 'true', 'yes', 'ya'];
+        $falsy = ['0', 'false', 'no', 'tidak'];
+
+        if (in_array(mb_strtolower($value), $truthy, true)) {
+            return true;
+        }
+
+        if (in_array(mb_strtolower($value), $falsy, true)) {
+            return false;
+        }
+
+        throw ValidationException::withMessages([
+            $field => "Baris {$rowNumber}: {$field} harus bernilai 1 atau 0.",
+        ]);
+    }
+
     /**
      * Allow select2 tags (string values) to auto-create artist and album.
      */
@@ -83,19 +262,15 @@ class SongRepository extends BaseRepository
     {
         // resolve artist
         if (!empty($attributes['artist_id']) && !is_numeric($attributes['artist_id'])) {
-            $artistRepo = app(ArtistRepository::class);
-            $artist = $artistRepo->create(['name' => $attributes['artist_id']]);
+            $artistName = trim((string) $attributes['artist_id']);
+            $artist = $this->findOrCreateArtistByName($artistName);
             $attributes['artist_id'] = $artist->id;
         }
 
         // resolve album (optional)
         if (!empty($attributes['album_id']) && !is_numeric($attributes['album_id'])) {
-            // ensure artist_id already resolved
-            $albumRepo = app(AlbumRepository::class);
-            $album = $albumRepo->create([
-                'artist_id' => $attributes['artist_id'],
-                'title' => $attributes['album_id'],
-            ]);
+            $albumTitle = trim((string) $attributes['album_id']);
+            $album = $this->findOrCreateAlbumByTitle($albumTitle, (int) $attributes['artist_id']);
             $attributes['album_id'] = $album->id;
         }
     }

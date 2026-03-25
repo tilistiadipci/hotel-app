@@ -1,5 +1,5 @@
 <div class="mb-3 w-100 upload-block">
-    <label class="font-weight-bold d-block mb-2">{{ trans('common.image') }}</label>
+    <label class="font-weight-bold d-block mb-2">{{ trans('common.image') }} <span class="text-danger">*</span></label>
     <div class="d-flex align-items-center mb-2">
         <button type="button" class="btn btn-outline-primary btn-sm mr-2" id="btnPickImage">
             <i class="fa fa-image mr-1"></i> {{ trans('common.pick_file') }}

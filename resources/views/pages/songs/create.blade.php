@@ -77,7 +77,6 @@
 
             $('#artist_id').select2(tagSelectOptions);
             $('#album_id').select2(Object.assign({}, tagSelectOptions, {
-                allowClear: true,
                 placeholder: `{{ trans('common.song.album_placeholder') }}`
             }));
             $('#is_active').select2({

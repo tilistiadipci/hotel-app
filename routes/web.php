@@ -128,6 +128,8 @@ Route::middleware(['auth'])->group(function () {
             ->name('songs.')
             ->group(function () {
                 Route::post('/bulkDelete', [SongController::class, 'bulkDelete'])->name('bulkDelete');
+                Route::get('/import/template', [SongController::class, 'downloadImportTemplate'])->name('import.template');
+                Route::post('/import', [SongController::class, 'import'])->name('import');
             });
 
         // Players

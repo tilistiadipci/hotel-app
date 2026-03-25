@@ -12,7 +12,7 @@
         <div class="row">
             <div class="col-md-6">
                 <div class="position-relative row form-group">
-                    <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.title') }}</label>
+                    <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.title') }} <span class="text-danger">*</span></label>
                     <div class="col-sm-8">
                         @include('partials.forms.input', [
                             'elementId' => 'title',
@@ -24,9 +24,9 @@
                 </div>
 
                 <div class="position-relative row form-group">
-                    <label class="col-sm-4 col-form-label text-sm-right">Artist</label>
+                    <label class="col-sm-4 col-form-label text-sm-right">Artist <span class="text-danger">*</span></label>
                     <div class="col-sm-8">
-                        <select name="artist_id" id="artist_id" class="form-control select2 song-select">
+                        <select name="artist_id" id="artist_id" class="form-control select2 song-select" required>
                             @php
                                 $selectedArtist = $song->artist_id ?? old('artist_id');
                             @endphp
@@ -44,13 +44,13 @@
                 </div>
 
                 <div class="position-relative row form-group">
-                    <label class="col-sm-4 col-form-label text-sm-right">Album</label>
+                    <label class="col-sm-4 col-form-label text-sm-right">Album <span class="text-danger">*</span></label>
                     <div class="col-sm-8">
-                        <select name="album_id" id="album_id" class="form-control select2 song-select">
+                        <select name="album_id" id="album_id" class="form-control select2 song-select" required>
                             @php
                                 $selectedAlbum = $song->album_id ?? old('album_id');
                             @endphp
-                            <option value="" {{ $selectedAlbum ? '' : 'selected' }}>Tidak ada / Single</option>
+                            <option value="" disabled {{ $selectedAlbum ? '' : 'selected' }}>Pilih atau ketik album</option>
                             @if ($selectedAlbum && !is_numeric($selectedAlbum))
                                 <option value="{{ $selectedAlbum }}" selected>{{ $selectedAlbum }}</option>
                             @endif
@@ -68,10 +68,11 @@
                 {{-- Durasi otomatis dihitung backend dari file audio --}}
 
                 <div class="position-relative row form-group">
-                    <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.sort_order') }}</label>
+                    <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.sort_order') }} <span class="text-danger">*</span></label>
                     <div class="col-sm-8">
                         @include('partials.forms.input', [
                             'elementId' => 'sort_order',
+                            'required' => true,
                             'value' => $song->sort_order ?? old('sort_order', 0),
                             'type' => 'number',
                         ])
@@ -79,12 +80,12 @@
                 </div>
 
                 <div class="position-relative row form-group">
-                    <label class="col-sm-4 col-form-label text-sm-right">Status</label>
+                    <label class="col-sm-4 col-form-label text-sm-right">Status <span class="text-danger">*</span></label>
                     <div class="col-sm-8">
                         @php
                             $isActive = $song->is_active ?? old('is_active', 1);
                         @endphp
-                        <select name="is_active" id="is_active" class="form-control select2">
+                        <select name="is_active" id="is_active" class="form-control select2" required>
                             <option value="1" {{ $isActive == 1 ? 'selected' : '' }}>{{ trans('common.active') }}</option>
                             <option value="0" {{ $isActive == 0 ? 'selected' : '' }}>{{ trans('common.inactive') }}</option>
                         </select>

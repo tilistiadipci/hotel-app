@@ -15,6 +15,11 @@
                 ])
 
                 <div class="page-title-actions">
+                    @if (auth()->user()->role_id == 1)
+                        <button type="button" class="btn btn-info mr-2" data-toggle="modal" data-target="#songImportModal">
+                            <i class="fa fa-upload mr-1"></i> Upload File
+                        </button>
+                    @endif
                     @include('partials.buttons.btn-create-new', [
                         'url' => route('songs.create'),
                     ])
@@ -69,6 +74,93 @@
         </div>
 
         @include('pages.songs.components.filter-sidebar')
+
+        <div class="modal fade" id="songImportModal" tabindex="-1" role="dialog" aria-labelledby="songImportModalLabel" aria-hidden="true">
+            <div class="modal-dialog" role="document">
+                <div class="modal-content">
+                    <form id="songImportForm" enctype="multipart/form-data">
+                        @csrf
+                        <div class="modal-header">
+                            <h5 class="modal-title" id="songImportModalLabel">Import Songs dari Excel</h5>
+                            <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                                <span aria-hidden="true">&times;</span>
+                            </button>
+                        </div>
+                        <div class="modal-body">
+                            <div class="alert alert-light border">
+                                <div class="font-weight-bold mb-1">Alur import</div>
+                                <div class="small text-muted mb-2">
+                                    File gambar dan audio harus diletakkan dulu di folder
+                                    <code>MEDIA_STORAGE_PATH/uploads</code> dengan nama file yang sama persis seperti di Excel.
+                                </div>
+                                <a href="{{ route('songs.import.template') }}" class="btn btn-sm btn-outline-primary">
+                                    <i class="fa fa-download mr-1"></i> Download Template
+                                </a>
+                            </div>
+
+                            <div class="form-group mb-0">
+                                <label for="songImportFile">File Excel</label>
+                                <input type="file" class="form-control-file" id="songImportFile" name="file" accept=".xlsx,.xls,.csv" required>
+                                <small class="form-text text-muted">Format yang didukung: `.xlsx`, `.xls`, `.csv`.</small>
+                            </div>
+                        </div>
+                        <div class="modal-footer">
+                            <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ trans('common.close') }}</button>
+                            <button type="submit" class="btn btn-primary" id="submitSongImportBtn">
+                                <i class="fa fa-upload mr-1"></i> Import
+                            </button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="modal fade" id="songImportResultModal" tabindex="-1" role="dialog" aria-labelledby="songImportResultModalLabel" aria-hidden="true">
+            <div class="modal-dialog modal-lg" role="document">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h5 class="modal-title" id="songImportResultModalLabel">Hasil Import Songs</h5>
+                        <button type="button" class="close" data-dismiss="modal" aria-label="Close">
+                            <span aria-hidden="true">&times;</span>
+                        </button>
+                    </div>
+                    <div class="modal-body">
+                        <div id="songImportSummary" class="mb-3"></div>
+                        <div id="songImportInfosWrap" class="d-none mb-3">
+                            <h6 class="mb-2">Info</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 100px;">Baris</th>
+                                            <th>Info</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="songImportInfosBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                        <div id="songImportIssuesWrap" class="d-none">
+                            <h6 class="mb-2">Issues</h6>
+                            <div class="table-responsive">
+                                <table class="table table-sm table-bordered mb-0">
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 100px;">Baris</th>
+                                            <th>Issue</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="songImportIssuesBody"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-secondary" data-dismiss="modal">{{ trans('common.close') }}</button>
+                    </div>
+                </div>
+            </div>
+        </div>
     </div>
 @endsection
 
@@ -169,10 +261,22 @@
         var showUrl = "{{ route('songs.show', ':id') }}";
         var editUrl = "{{ route('songs.edit', ':id') }}";
         var destroyUrl = "{{ route('songs.destroy', ':id') }}";
+        var importUrl = "{{ route('songs.import') }}";
+        var csrfToken = "{{ csrf_token() }}";
         var scrollX = false;
         var fixedColumns = false;
 
         $(function () {
+            $('#songImportModal, #songImportResultModal').each(function () {
+                const $modal = $(this);
+
+                $modal.on('show.bs.modal', function () {
+                    if (!$modal.parent().is('body')) {
+                        $modal.appendTo('body');
+                    }
+                });
+            });
+
             $('#filterArtist, #filterAlbum, #filterStatus').select2({
                 theme: 'bootstrap4',
                 width: '100%',
@@ -203,6 +307,178 @@
             $('.clear-select').on('click', function () {
                 const target = $(this).data('target');
                 $(target).val(null).trigger('change');
+            });
+
+            function updateImportProgress(title, text) {
+                $('.swal-title').text(title);
+                $('.swal-text').text(text);
+            }
+
+            function showImportProgress(title, text) {
+                swal({
+                    title: title,
+                    text: text,
+                    buttons: false,
+                    closeOnClickOutside: false,
+                    closeOnEsc: false,
+                });
+            }
+
+            function renderImportResult(response) {
+                const data = response.data || {};
+                const infos = data.infos || [];
+                const issues = data.issues || [];
+
+                $('#songImportSummary').html(`
+                    <div class="alert alert-success mb-0">
+                        <div><strong>Total baris diproses:</strong> ${data.total_rows || 0}</div>
+                        <div><strong>Berhasil diimport:</strong> ${data.imported || 0}</div>
+                        <div><strong>Jumlah info:</strong> ${infos.length}</div>
+                        <div><strong>Jumlah issue:</strong> ${issues.length}</div>
+                    </div>
+                `);
+
+                if (infos.length) {
+                    $('#songImportInfosWrap').removeClass('d-none');
+                    $('#songImportInfosBody').html(
+                        infos.map(info => `
+                            <tr>
+                                <td>${info.row || '-'}</td>
+                                <td>${info.message || '-'}</td>
+                            </tr>
+                        `).join('')
+                    );
+                } else {
+                    $('#songImportInfosWrap').addClass('d-none');
+                    $('#songImportInfosBody').empty();
+                }
+
+                if (issues.length) {
+                    $('#songImportIssuesWrap').removeClass('d-none');
+                    $('#songImportIssuesBody').html(
+                        issues.map(issue => `
+                            <tr>
+                                <td>${issue.row || '-'}</td>
+                                <td>${issue.message || '-'}</td>
+                            </tr>
+                        `).join('')
+                    );
+                } else {
+                    $('#songImportIssuesWrap').addClass('d-none');
+                    $('#songImportIssuesBody').empty();
+                }
+
+                $('#songImportResultModal').modal('show');
+                if (typeof table !== 'undefined') {
+                    table.ajax.reload(null, false);
+                }
+            }
+
+            function processImportBatch(token, offset, limit) {
+                return $.ajax({
+                    url: importUrl,
+                    method: 'POST',
+                    data: {
+                        token: token,
+                        offset: offset,
+                        limit: limit,
+                        _token: csrfToken
+                    },
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken
+                    }
+                }).then(function(response) {
+                    const data = response.data || {};
+                    const totalRows = data.total_rows || 0;
+                    const processed = data.processed || 0;
+                    const percent = totalRows > 0 ? Math.min(100, Math.round((processed / totalRows) * 100)) : 100;
+
+                    updateImportProgress(
+                        'Import songs berjalan',
+                        `Memproses ${processed}/${totalRows} baris (${percent}%).`
+                    );
+
+                    if (data.completed) {
+                        swal.close();
+                        renderImportResult(response);
+                        return;
+                    }
+
+                    return processImportBatch(data.token, data.next_offset || processed, data.batch_size || limit);
+                });
+            }
+
+            $('#songImportForm').on('submit', function(e) {
+                e.preventDefault();
+
+                const form = this;
+                const formData = new FormData(form);
+                const $submitBtn = $('#submitSongImportBtn');
+
+                $submitBtn.prop('disabled', true).html('<i class="fa fa-spinner fa-spin mr-1"></i> Importing...');
+
+                $.ajax({
+                    url: importUrl,
+                    method: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    headers: {
+                        'X-CSRF-TOKEN': csrfToken
+                    },
+                    success: function(response) {
+                        const data = response.data || {};
+
+                        $('#songImportModal').modal('hide');
+                        form.reset();
+
+                        showImportProgress('Import songs berjalan', `Memproses 0/${data.total_rows || 0} baris (0%).`);
+
+                        if (data.completed) {
+                            swal.close();
+                            renderImportResult(response);
+                            return;
+                        }
+
+                        processImportBatch(data.token, data.next_offset || 0, data.batch_size || 5)
+                            .catch(function(xhr) {
+                                swal.close();
+
+                                let message = 'Import gagal diproses.';
+                                if (xhr.responseJSON?.errors) {
+                                    const firstKey = Object.keys(xhr.responseJSON.errors)[0];
+                                    message = xhr.responseJSON.errors[firstKey][0];
+                                } else if (xhr.responseJSON?.message) {
+                                    message = xhr.responseJSON.message;
+                                }
+
+                                swal({
+                                    title: 'Import gagal',
+                                    text: message,
+                                    icon: 'error',
+                                });
+                            });
+                    },
+                    error: function(xhr) {
+                        let message = 'Import gagal diproses.';
+
+                        if (xhr.responseJSON?.errors) {
+                            const firstKey = Object.keys(xhr.responseJSON.errors)[0];
+                            message = xhr.responseJSON.errors[firstKey][0];
+                        } else if (xhr.responseJSON?.message) {
+                            message = xhr.responseJSON.message;
+                        }
+
+                        swal({
+                            title: 'Import gagal',
+                            text: message,
+                            icon: 'error',
+                        });
+                    },
+                    complete: function() {
+                        $submitBtn.prop('disabled', false).html('<i class="fa fa-upload mr-1"></i> Import');
+                    }
+                });
             });
         });
     </script>
