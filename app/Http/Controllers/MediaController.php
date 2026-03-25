@@ -371,7 +371,7 @@ class MediaController extends Controller
 
     public function sync(Request $request)
     {
-        $sourceRoot = storage_path('app/public/media');
+        $sourceRoot = $this->syncSourceRoot();
         $destRoot = rtrim(config('filesystems.disks.media.root'), "/\\");
 
         $result = [
@@ -455,7 +455,7 @@ class MediaController extends Controller
 
     public function syncPreview(Request $request)
     {
-        $sourceRoot = storage_path('app/public/media');
+        $sourceRoot = $this->syncSourceRoot();
         $limitsBytes = config('media_upload.limits_bytes', []);
         $limitsMb = config('media_upload.limits_mb', []);
 
@@ -487,13 +487,16 @@ class MediaController extends Controller
 
             $baseName = pathinfo($originalName, PATHINFO_FILENAME);
             $safeBase = Str::slug($baseName);
-            $destDir = $type === 'audio' ? 'audios' : 'videos';
+            $destDir = match ($type) {
+                'audio' => 'audios',
+                'image' => 'images',
+                default => 'videos',
+            };
             $relativePath = $destDir . '/' . $safeBase . '.' . $extension;
             $existsInDb = $type
                 ? $this->mediaRepository->query()
                     ->where('storage_path', $relativePath)
                     ->orWhere('original_filename', $originalName)
-                    ->orWhere('name', $baseName)
                     ->exists()
                 : false;
             $destRoot = rtrim(config('filesystems.disks.media.root'), "/\\");
@@ -522,7 +525,7 @@ class MediaController extends Controller
                 'size' => $sizeBytes,
                 'status' => $status,
                 'exists_in_db' => $existsInDb,
-                'source_relative' => 'media/' . $originalName,
+                'source_relative' => $originalName,
                 'size_exceeded' => $sizeExceeded,
                 'size_limit_mb' => (int) ($limitsMb[$type] ?? 0),
                 'issue' => $issue,
@@ -547,7 +550,7 @@ class MediaController extends Controller
         $sourceRelative = trim($request->input('source_relative'));
         $type = $request->input('type');
 
-        $sourcePath = storage_path('app/public/' . ltrim($sourceRelative, '/\\'));
+        $sourcePath = $this->syncSourceAbsolutePath($sourceRelative);
         if (!is_file($sourcePath)) {
             return response()->json([
                 'status' => false,
@@ -568,7 +571,7 @@ class MediaController extends Controller
 
     public function syncClear(Request $request)
     {
-        $sourceRoot = storage_path('app/public/media');
+        $sourceRoot = $this->syncSourceRoot();
         if (!is_dir($sourceRoot)) {
             return response()->json([
                 'status' => true,
@@ -608,7 +611,7 @@ class MediaController extends Controller
             if ($relative === '') {
                 continue;
             }
-            $path = storage_path('app/public/' . ltrim($relative, '/\\'));
+            $path = $this->syncSourceAbsolutePath($relative);
             if (!is_file($path)) {
                 continue;
             }
@@ -690,6 +693,16 @@ class MediaController extends Controller
     {
         $root = config('filesystems.disks.media.root');
         return rtrim($root, "/\\") . DIRECTORY_SEPARATOR . ltrim($relativePath, "/\\");
+    }
+
+    private function syncSourceRoot(): string
+    {
+        return rtrim((string) config('filesystems.disks.media.root'), "/\\") . DIRECTORY_SEPARATOR . 'upload-sync';
+    }
+
+    private function syncSourceAbsolutePath(string $relativePath): string
+    {
+        return $this->syncSourceRoot() . DIRECTORY_SEPARATOR . ltrim($relativePath, "/\\");
     }
 
     private function deleteMediaWithFile($media): void
@@ -859,7 +872,6 @@ class MediaController extends Controller
         $duplicateInDb = $this->mediaRepository->query()
             ->where('storage_path', $relativePath)
             ->orWhere('original_filename', $originalName)
-            ->orWhere('name', $baseName)
             ->exists();
 
         if ($duplicateInDb) {

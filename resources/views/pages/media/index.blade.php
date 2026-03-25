@@ -40,6 +40,18 @@
             vertical-align: middle;
             font-size: 13px;
         }
+
+        .sync-summary {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            flex-wrap: wrap;
+        }
+
+        .sync-summary .badge {
+            font-size: 12px;
+            padding: 0.45rem 0.65rem;
+        }
     </style>
 @endsection
 
@@ -1041,7 +1053,6 @@
                         closeSwal();
                         const data = res.data || { items: [], total: 0 };
                         window.__syncPreviewItems = data.items || [];
-                        $('#syncPreviewCount').text(`${window.__syncPreviewItems.length} {{ trans('common.sync_media_found') }}`);
                         renderSyncPreview(window.__syncPreviewItems);
                         openSyncModal();
                     })
@@ -1094,13 +1105,34 @@
             });
 
             function renderSyncPreview(items) {
+                const imageCount = items.filter(it => it.type === 'image').length;
+                const audioCount = items.filter(it => it.type === 'audio').length;
+                const videoCount = items.filter(it => it.type === 'video').length;
+
+                $('#syncPreviewCount').html(`
+                    <div class="sync-summary">
+                        <span class="font-weight-semibold">${items.length} {{ trans('common.sync_media_found') }}</span>
+                        <span class="badge badge-success">${imageCount} gambar</span>
+                        <span class="badge badge-info">${audioCount} audio</span>
+                        <span class="badge badge-warning text-dark">${videoCount} video</span>
+                    </div>
+                `);
+
                 const rows = items.map(function(it) {
-                    const badge = it.status === 'ready' ? 'success' : 'secondary';
+                    let typeBadge = 'secondary';
+                    if (it.type === 'image') {
+                        typeBadge = 'success';
+                    } else if (it.type === 'audio') {
+                        typeBadge = 'info';
+                    } else if (it.type === 'video') {
+                        typeBadge = 'warning text-dark';
+                    }
+
                     const db = '';
                     const size = it.size ? humanSize(it.size) : '-';
                     const issue = it.issue ? `<span class="badge badge-danger">${it.issue}</span>` : '-';
                     return `<tr>
-                        <td><span class="badge badge-${badge}">${it.type.toUpperCase()}</span></td>
+                        <td><span class="badge badge-${typeBadge}">${it.type.toUpperCase()}</span></td>
                         <td>${it.name}</td>
                         <td class="text-muted">${size}</td>
                         <td>${issue}</td>
