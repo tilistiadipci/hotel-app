@@ -147,6 +147,8 @@ Route::middleware(['auth'])->group(function () {
             ->group(function () {
                 Route::get('/stream/{filename}', [MovieController::class, 'stream'])->name('stream');
                 Route::post('/bulkDelete', [MovieController::class, 'bulkDelete'])->name('bulkDelete');
+                Route::get('/import/template', [MovieController::class, 'downloadImportTemplate'])->name('import.template');
+                Route::post('/import', [MovieController::class, 'import'])->name('import');
             });
         Route::resource('movies', MovieController::class);
 

@@ -17,7 +17,7 @@
                 <div class="page-title-actions">
                     @if (auth()->user()->role_id == 1)
                         <button type="button" class="btn btn-info mr-2" data-toggle="modal" data-target="#songImportModal">
-                            <i class="fa fa-upload mr-1"></i> Upload File
+                            <i class="fa fa-upload"></i> Upload File
                         </button>
                     @endif
                     @include('partials.buttons.btn-create-new', [
