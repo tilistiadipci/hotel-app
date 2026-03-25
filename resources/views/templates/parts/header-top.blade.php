@@ -35,7 +35,7 @@
             </div>
         </div>
         <div class="app-header-right">
-            <div class="header-dots">
+            {{-- <div class="header-dots">
                 <div class="dropdown">
                     <button type="button" data-toggle="dropdown" class="p-0 btn btn-link">
                         <span class="icon-wrapper icon-wrapper-alt rounded-circle">
@@ -63,7 +63,7 @@
                         </button>
                     </div>
                 </div>
-            </div>
+            </div> --}}
             @if (auth()->user())
                 <div class="header-btn-lg pr-0">
                     <div class="widget-content p-0">
