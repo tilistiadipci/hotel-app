@@ -91,7 +91,7 @@
                                 <div class="font-weight-bold mb-1">Alur import</div>
                                 <div class="small text-muted mb-2">
                                     File gambar dan audio harus diletakkan dulu di folder
-                                    <code>MEDIA_STORAGE_PATH/uploads</code> dengan nama file yang sama persis seperti di Excel.
+                                    <code>MEDIA_STORAGE_PATH/upload-song</code> dengan nama file yang sama persis seperti di Excel.
                                 </div>
                                 <a href="{{ route('songs.import.template') }}" class="btn btn-sm btn-outline-primary">
                                     <i class="fa fa-download mr-1"></i> Download Template
