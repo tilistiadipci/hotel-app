@@ -44,11 +44,11 @@
                     </a>
                 </li>
                 @if (in_array(auth()->user()->role_id ?? null, [1, 2], true))
-                    <li class="{{ $page == 'tv channels' ? 'mm-active' : '' }}">
+                    {{-- <li class="{{ $page == 'tv channels' ? 'mm-active' : '' }}">
                         <a href="{{ url('/tv-channels') }}" class="{{ $page == 'tv channels' ? 'mm-active' : '' }}">
                             <i class="metismenu-icon pe-7s-monitor"></i> TV Channels
                         </a>
-                    </li>
+                    </li> --}}
                     <li class="{{ $page == 'songs' ? 'mm-active' : '' }}">
                         <a href="{{ url('/songs') }}" class="{{ $page == 'songs' ? 'mm-active' : '' }}">
                             <i class="metismenu-icon pe-7s-music"></i> {{ trans('common.song.title') }}

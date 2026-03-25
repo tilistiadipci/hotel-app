@@ -115,12 +115,12 @@ Route::middleware(['auth'])->group(function () {
             });
 
         // TV Channels
-        Route::resource('tv-channels', TVChannelController::class);
-        Route::prefix('tv-channels')
-            ->name('tv-channels.')
-            ->group(function () {
-                Route::post('/bulkDelete', [TVChannelController::class, 'bulkDelete'])->name('bulkDelete');
-            });
+        // Route::resource('tv-channels', TVChannelController::class);
+        // Route::prefix('tv-channels')
+        //     ->name('tv-channels.')
+        //     ->group(function () {
+        //         Route::post('/bulkDelete', [TVChannelController::class, 'bulkDelete'])->name('bulkDelete');
+        //     });
 
         // Songs
         Route::resource('songs', SongController::class);
