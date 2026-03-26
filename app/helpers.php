@@ -2,6 +2,7 @@
 
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
+use Illuminate\Validation\Rule;
 
 if (! function_exists('formatDate')) {
 
@@ -188,5 +189,18 @@ if (!function_exists('getMediaAudioUrl')) {
         }
 
         return rtrim(config('app.app_service_api'), '/') . '/media?type=audio&path=' . urlencode($path);
+    }
+}
+
+if (!function_exists('uniqueNotDeleted')) {
+    function uniqueNotDeleted($table, $column, $id = null)
+    {
+        $rule =  Rule::unique($table, $column);
+
+        if ($id == null) {
+            return $rule->whereNull('deleted_at');
+        }
+
+        return $rule->ignore($id)->whereNull('deleted_at');
     }
 }

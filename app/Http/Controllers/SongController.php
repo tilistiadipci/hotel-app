@@ -287,7 +287,11 @@ class SongController extends Controller
         $rules = [
             'artist_id' => 'required',
             'album_id' => 'required',
-            'title' => 'required|max:200|unique:songs,title' . ($songId ? ',' . $songId : ''),
+            'title' => [
+                'required',
+                'max:200',
+                uniqueNotDeleted('songs', 'title', $songId),
+            ],
             'audio' => 'nullable|file|mimes:mp3,wav,flac,aac,m4a,ogg|max:307200', // 300MB
             'duration' => 'nullable|integer|min:0',
             'image' => 'nullable|image|mimes:jpeg,png,jpg|max:1024',

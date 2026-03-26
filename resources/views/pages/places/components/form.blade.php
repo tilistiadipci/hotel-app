@@ -2,7 +2,8 @@
     $place = $place ?? null;
 @endphp
 
-<form action="{{ $place ? route('places.update', $place->uuid) : route('places.store') }}" method="POST" enctype="multipart/form-data">
+<form action="{{ $place ? route('places.update', $place->uuid) : route('places.store') }}" method="POST"
+    enctype="multipart/form-data">
     @csrf
     @if ($place)
         @method('PUT')
@@ -27,11 +28,13 @@
                     <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.category') }}</label>
                     <div class="col-sm-8">
                         <div class="d-flex">
-                            <select name="category_id" id="category_id" class="form-control select2" style="width: 100%;">
-                                <option value="">{{ trans('common.select_an_option') ?? 'Select an option' }}</option>
+                            <select name="category_id" id="category_id" class="form-control select2"
+                                style="width: 100%;">
+                                <option value="">{{ trans('common.select_an_option') ?? 'Select an option' }}
+                                </option>
                                 @foreach ($categories as $category)
                                     <option value="{{ $category->id }}"
-                                        {{ (old('category_id') == $category->id || ($place && $place->category_id == $category->id)) ? 'selected' : '' }}>
+                                        {{ old('category_id') == $category->id || ($place && $place->category_id == $category->id) ? 'selected' : '' }}>
                                         {{ $category->name }}
                                     </option>
                                 @endforeach
@@ -41,11 +44,17 @@
                                 <i class="fa fa-plus"></i>
                             </button>
                         </div>
+                        @error('category_id')
+                            <div class="text-danger ">{{ $message }}</div>
+                        @else
+                            <small class="text-primary" style="font-style: italic">* {{ trans('common.required') }}</small>
+                        @enderror
                     </div>
                 </div>
 
                 <div class="position-relative row form-group">
-                    <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.description') ?? 'Description' }}</label>
+                    <label
+                        class="col-sm-4 col-form-label text-sm-right">{{ trans('common.description') ?? 'Description' }}</label>
                     <div class="col-sm-8">
                         <textarea name="description" id="description" class="form-control" rows="3">{{ $place->description ?? old('description') }}</textarea>
                     </div>
@@ -58,6 +67,7 @@
                             'elementId' => 'address',
                             'value' => $place->address ?? old('address'),
                             'type' => 'text',
+                            'required' => true,
                         ])
                     </div>
                 </div>
@@ -68,8 +78,7 @@
                         @include('partials.forms.input', [
                             'elementId' => 'latitude',
                             'value' => $place->latitude ?? old('latitude'),
-                            'type' => 'number',
-                            'step' => '0.000001',
+                            'type' => 'text'
                         ])
                     </div>
                 </div>
@@ -80,8 +89,7 @@
                         @include('partials.forms.input', [
                             'elementId' => 'longitude',
                             'value' => $place->longitude ?? old('longitude'),
-                            'type' => 'number',
-                            'step' => '0.000001',
+                            'type' => 'text'
                         ])
                     </div>
                 </div>
@@ -167,16 +175,20 @@
             <div class="custom-modal__body">
                 <div class="form-group">
                     <label for="newPlaceCategoryName">{{ trans('common.name') }}</label>
-                    <input type="text" name="name" id="newPlaceCategoryName" class="form-control" required maxlength="100">
+                    <input type="text" name="name" id="newPlaceCategoryName" class="form-control" required
+                        maxlength="100">
                 </div>
                 <div class="form-group">
                     <label for="newPlaceCategorySort">{{ trans('common.sort_order') }}</label>
-                    <input type="number" name="sort_order" id="newPlaceCategorySort" class="form-control" min="0" step="1" value="0">
+                    <input type="number" name="sort_order" id="newPlaceCategorySort" class="form-control"
+                        min="0" step="1" value="0">
                 </div>
             </div>
             <div class="custom-modal__footer">
-                <button type="button" class="btn btn-secondary" data-modal-close>{{ trans('common.close') }}</button>
-                <button type="submit" class="btn btn-primary" id="savePlaceCategoryBtn">{{ trans('common.save') }}</button>
+                <button type="button" class="btn btn-secondary"
+                    data-modal-close>{{ trans('common.close') }}</button>
+                <button type="submit" class="btn btn-primary"
+                    id="savePlaceCategoryBtn">{{ trans('common.save') }}</button>
             </div>
         </form>
     </div>
@@ -196,14 +208,17 @@
             justify-content: center;
             z-index: 5000;
         }
+
         .custom-modal.is-open {
             display: flex;
         }
+
         .custom-modal__backdrop {
             position: absolute;
             inset: 0;
             background: rgba(0, 0, 0, 0.45);
         }
+
         .custom-modal__dialog {
             position: relative;
             background: #fff;
@@ -214,17 +229,20 @@
             z-index: 1;
             padding: 16px;
         }
+
         .custom-modal__header {
             display: flex;
             align-items: center;
             justify-content: space-between;
             margin-bottom: 8px;
         }
+
         .custom-modal__title {
             margin: 0;
             font-size: 18px;
             font-weight: 600;
         }
+
         .custom-modal__close {
             border: none;
             background: transparent;
@@ -233,15 +251,18 @@
             padding: 0 4px;
             cursor: pointer;
         }
+
         .custom-modal__body {
             padding: 4px 0 8px;
         }
+
         .custom-modal__footer {
             display: flex;
             justify-content: flex-end;
             gap: 8px;
             padding-top: 8px;
         }
+
         body.custom-modal-open {
             overflow: hidden;
         }
@@ -284,17 +305,17 @@
 
                 $('#btnAddPlaceCategory').on('click', openModal);
                 placeModal.find('[data-modal-close]').on('click', closeModal);
-                    placeModal.find('.custom-modal__backdrop').on('click', closeModal);
-                    $(document).off('keydown.customPlaceModal').on('keydown.customPlaceModal', function(e) {
-                        if (e.key === 'Escape' && placeModal.hasClass('is-open')) closeModal();
-                    });
+                placeModal.find('.custom-modal__backdrop').on('click', closeModal);
+                $(document).off('keydown.customPlaceModal').on('keydown.customPlaceModal', function(e) {
+                    if (e.key === 'Escape' && placeModal.hasClass('is-open')) closeModal();
+                });
 
                 // Preview image when selecting file
                 const imageInput = document.getElementById('image');
                 const previewWrapper = document.getElementById('imagePreviewWrapper');
                 const previewImg = document.getElementById('imagePreview');
                 if (imageInput && previewWrapper && previewImg) {
-                    imageInput.addEventListener('change', function () {
+                    imageInput.addEventListener('change', function() {
                         const file = this.files?.[0];
                         if (!file) {
                             previewWrapper.style.display = 'none';

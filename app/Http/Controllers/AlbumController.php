@@ -167,7 +167,7 @@ class AlbumController extends Controller
         }
     }
 
-    private function validateRequest(Request $request, string $uid = null): array
+    private function validateRequest(Request $request, ?string $uid = null): array
     {
         $albumId = null;
         if ($uid) {
@@ -176,7 +176,11 @@ class AlbumController extends Controller
 
         $rules = [
             'artist_id' => 'required|exists:artists,id',
-            'title' => 'required|max:150|unique:albums,title' . ($albumId ? ',' . $albumId : ''),
+            'title' => [
+                'required',
+                'max:150',
+                uniqueNotDeleted('albums', 'title', $albumId),
+            ],
             'cover_image' => 'nullable|image|mimes:jpeg,png,jpg|max:1024',
             'release_date' => 'nullable|date',
         ];

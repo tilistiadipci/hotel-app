@@ -254,7 +254,11 @@ class MovieController extends Controller
         $movieId = $movie->id ?? null;
 
         $rules = [
-            'title' => 'required|max:200|unique:movies,title' . ($movieId ? ',' . $movieId : ''),
+            'title' => [
+                'required',
+                'max:200',
+                uniqueNotDeleted('movies', 'title', $movieId),
+            ],
             'description' => 'required|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'image_media_id' => 'nullable|integer|exists:medias,id',

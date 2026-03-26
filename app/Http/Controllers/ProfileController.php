@@ -89,7 +89,11 @@ class ProfileController extends Controller
     {
         $this->validate($request, [
             'name' => 'required',
-            'email' => 'required|email|unique:users,email,' . $id,
+            'email' => [
+                'required',
+                'email',
+                uniqueNotDeleted('users', 'email', $id)
+            ],
             'phone' => 'required|min:6|max:20',
             'image' => 'nullable|image|mimes:jpeg,png,jpg|max:512',
             'image_media_id' => 'nullable|integer|exists:medias,id',

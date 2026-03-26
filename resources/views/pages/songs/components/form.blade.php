@@ -80,7 +80,7 @@
                 </div>
 
                 <div class="position-relative row form-group">
-                    <label class="col-sm-4 col-form-label text-sm-right">Status <span class="text-danger">*</span></label>
+                    <label class="col-sm-4 col-form-label text-sm-right">Status </label>
                     <div class="col-sm-8">
                         @php
                             $isActive = $song->is_active ?? old('is_active', 1);

@@ -122,7 +122,7 @@ class BaseRepository
 
     public function findUid($uid)
     {
-        return $this->model->where('uuid', $uid)->first();
+        return $this->model->where('uuid', $uid)->whereNull('deleted_at')->first();
     }
 
     public function findOrFail($id)

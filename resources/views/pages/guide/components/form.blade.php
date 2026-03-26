@@ -61,6 +61,11 @@
                                 <i class="fa fa-plus"></i>
                             </button>
                         </div>
+                        @error('category_id')
+                            <div class="text-danger ">{{ $message }}</div>
+                        @else
+                            <small class="text-primary" style="font-style: italic">* {{ trans('common.required') }}</small>
+                        @enderror
                     </div>
                 </div>
 

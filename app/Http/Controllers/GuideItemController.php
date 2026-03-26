@@ -187,7 +187,11 @@ class GuideItemController extends Controller
         }
 
         $rules = [
-            'title' => 'required|max:150|unique:guide_items,title' . ($itemId ? ',' . $itemId : ''),
+            'title' => [
+                'required',
+                'max:150',
+                uniqueNotDeleted('guide_items', 'title', $itemId),
+            ],
             'category_id' => 'required|integer|exists:guide_categories,id',
             'short_description' => 'nullable|string|max:255',
             'description' => 'nullable|string',

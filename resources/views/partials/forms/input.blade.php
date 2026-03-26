@@ -2,6 +2,11 @@
     @if (isset($step))
     step="{{ $step }}"
     @endif
+
+    @if($type == 'number')
+    min="0"
+    @endif
+
     class="form-control  @error($elementId) is-invalid @enderror" value="{{ $value }}"
     @if (isset($readonly)) readonly @endif>
 @error($elementId)

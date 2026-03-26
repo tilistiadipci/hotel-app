@@ -184,12 +184,16 @@ class PlaceController extends Controller
         }
 
         $rules = [
-            'name' => 'required|max:150|unique:places,name' . ($placeId ? ',' . $placeId : ''),
+            'name' => [
+                'required',
+                'max:150',
+                uniqueNotDeleted('places', 'name', $placeId),
+            ],
             'category_id' => 'required|integer|exists:places_categories,id',
             'description' => 'nullable|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'image_media_id' => 'nullable|integer|exists:medias,id',
-            'address' => 'nullable|max:255',
+            'address' => 'required|max:255',
             'latitude' => 'nullable|numeric',
             'longitude' => 'nullable|numeric',
             'distance_km' => 'nullable|numeric',

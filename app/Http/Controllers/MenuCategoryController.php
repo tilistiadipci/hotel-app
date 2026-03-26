@@ -71,7 +71,12 @@ class MenuCategoryController extends Controller
     public function store(Request $request)
     {
         $data = $request->validate([
-            'name' => 'required|string|max:100|unique:menu_categories,name',
+            'name' => [
+              'required',
+              'string',
+              'max:100',
+              uniqueNotDeleted('menu_categories', 'name'),
+            ],
             'description' => 'nullable|string',
             'sort_order' => 'nullable|integer|min:0',
             'is_active' => 'nullable|boolean',
@@ -111,7 +116,12 @@ class MenuCategoryController extends Controller
         }
 
         $data = $request->validate([
-            'name' => 'required|string|max:100|unique:menu_categories,name,' . $category->id,
+            'name' => [
+                'required',
+                'string',
+                'max:100',
+                uniqueNotDeleted('menu_categories', 'name', $category->id),
+            ],
             'description' => 'nullable|string',
             'sort_order' => 'nullable|integer|min:0',
             'is_active' => 'nullable|boolean',

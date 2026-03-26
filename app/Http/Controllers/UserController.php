@@ -263,7 +263,10 @@ class UserController extends Controller
             'name' => 'required|max:200',
             'username' => 'required',
             'gender' => 'required',
-            'email' => 'required|unique:users,email,' . $userIdForUnique,
+            'email' => [
+                'required',
+                uniqueNotDeleted('users', 'email', $userIdForUnique)
+            ],
             'phone' => 'required|min:6|max:20',
             'role_id' => 'required',
         ];

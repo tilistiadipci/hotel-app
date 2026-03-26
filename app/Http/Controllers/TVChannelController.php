@@ -180,7 +180,11 @@ class TVChannelController extends Controller
 
         $rules = [
             'name' => 'required|max:150',
-            'slug' => 'nullable|max:180|unique:tv_channels,slug' . ($channelId ? ',' . $channelId : ''),
+            'slug' => [
+                'nullable',
+                'max:180',
+                uniqueNotDeleted('tv_channels', 'slug', $channelId),
+            ],
             'type' => 'required|in:digital,streaming',
             'region' => 'required|in:national,international',
             'stream_url' => 'nullable|max:255',

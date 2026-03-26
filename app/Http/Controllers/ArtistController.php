@@ -149,7 +149,7 @@ class ArtistController extends Controller
         }
     }
 
-    private function validateRequest(Request $request, string $uid = null): array
+    private function validateRequest(Request $request, ?string $uid = null): array
     {
         $artistId = null;
         if ($uid) {
@@ -157,7 +157,11 @@ class ArtistController extends Controller
         }
 
         $rules = [
-            'name' => 'required|max:150|unique:artists,name' . ($artistId ? ',' . $artistId : ''),
+            'name' => [
+                'required',
+                'max:150',
+                uniqueNotDeleted('artists', 'name', $artistId),
+            ]
         ];
 
         return $request->validate($rules);

@@ -186,7 +186,11 @@ class MenuController extends Controller
         }
 
         $rules = [
-            'name' => 'required|max:150|unique:menu_items,name' . ($itemId ? ',' . $itemId : ''),
+            'name' => [
+                'required',
+                'max:150',
+                uniqueNotDeleted('menu_items', 'name', $itemId),
+            ],
             'category_id' => 'required|integer|exists:menu_categories,id',
             'description' => 'nullable|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
