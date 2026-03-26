@@ -5,10 +5,12 @@ namespace App\Repositories;
 use App\Models\Album;
 use App\Models\Artist;
 use App\Models\Song;
+use App\Models\SongPlaylist;
 use Illuminate\Validation\ValidationException;
 use Yajra\DataTables\Facades\DataTables;
 use App\Repositories\ArtistRepository;
 use App\Repositories\AlbumRepository;
+use App\Repositories\SongPlaylistRepository;
 
 class SongRepository extends BaseRepository
 {
@@ -62,13 +64,14 @@ class SongRepository extends BaseRepository
     public function getDatatable()
     {
         $query = $this->query()
-            ->with(['artist', 'album', 'audioMedia'])
+            ->with(['artist', 'album', 'playlist', 'audioMedia'])
             ->filter(request(['search', 'filters']));
 
         return DataTables::of($this->paginateDatatable($query))
             ->addIndexColumn()
             ->addColumn('artist', fn ($row) => optional($row->artist)->name)
             ->addColumn('album', fn ($row) => optional($row->album)->title)
+            ->addColumn('playlist', fn ($row) => optional($row->playlist)->name)
             ->addColumn('action', function ($row) {
                 return view('partials.datatable.action2', [
                     'row' => $row,
@@ -82,7 +85,7 @@ class SongRepository extends BaseRepository
     public function findForDisplay(string $uid)
     {
         return $this->query()
-            ->with(['artist', 'album', 'imageMedia', 'audioMedia'])
+            ->with(['artist', 'album', 'playlist', 'imageMedia', 'audioMedia'])
             ->where('uuid', $uid)
             ->first();
     }
@@ -124,6 +127,7 @@ class SongRepository extends BaseRepository
 
         $artist = $this->findOrCreateArtistByName($artistName);
         $album = $this->findOrCreateAlbumByTitle(trim((string) ($row['album'] ?? '')), $artist->id);
+        $playlist = $this->findOrCreatePlaylistByName(trim((string) ($row['playlist'] ?? '')));
 
         $title = trim((string) ($row['title'] ?? ''));
         if ($title === '') {
@@ -174,6 +178,7 @@ class SongRepository extends BaseRepository
             'title' => $title,
             'artist_id' => $artist->id,
             'album_id' => $album->id,
+            'song_playlist_id' => $playlist?->id,
             'sort_order' => $sortOrder,
             'is_active' => $this->normalizeImportBoolean($row['is_active'] ?? null, true, $rowNumber, 'is_active'),
             'is_favorit' => $this->normalizeImportBoolean($row['is_favorit'] ?? null, false, $rowNumber, 'is_favorit'),
@@ -220,6 +225,29 @@ class SongRepository extends BaseRepository
         ]);
     }
 
+    public function findOrCreatePlaylistByName(string $name): ?SongPlaylist
+    {
+        if ($name === '') {
+            return null;
+        }
+
+        $normalized = mb_strtolower(trim($name));
+        $playlist = SongPlaylist::query()
+            ->whereRaw('LOWER(name) = ?', [$normalized])
+            ->first();
+
+        if ($playlist) {
+            return $playlist;
+        }
+
+        return app(SongPlaylistRepository::class)->create([
+            'name' => trim($name),
+            'sort_order' => 0,
+            'is_active' => true,
+            'is_favorit' => false,
+        ]);
+    }
+
     public function titleExists(string $title, ?string $exceptUid = null): bool
     {
         $query = $this->query()
@@ -256,7 +284,7 @@ class SongRepository extends BaseRepository
     }
 
     /**
-     * Allow select2 tags (string values) to auto-create artist and album.
+     * Allow select2 tags (string values) to auto-create artist, album, and playlist.
      */
     private function resolveArtistAlbum(array &$attributes): void
     {
@@ -272,6 +300,16 @@ class SongRepository extends BaseRepository
             $albumTitle = trim((string) $attributes['album_id']);
             $album = $this->findOrCreateAlbumByTitle($albumTitle, (int) $attributes['artist_id']);
             $attributes['album_id'] = $album->id;
+        }
+
+        if (array_key_exists('song_playlist_id', $attributes)) {
+            if ($attributes['song_playlist_id'] === '' || $attributes['song_playlist_id'] === null) {
+                $attributes['song_playlist_id'] = null;
+            } elseif (!is_numeric($attributes['song_playlist_id'])) {
+                $playlistName = trim((string) $attributes['song_playlist_id']);
+                $playlist = $this->findOrCreatePlaylistByName($playlistName);
+                $attributes['song_playlist_id'] = $playlist?->id;
+            }
         }
     }
 }

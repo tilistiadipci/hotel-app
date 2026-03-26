@@ -88,20 +88,20 @@
                     </li>
 
                     <li class="{{ $page == 'running-texts' ? 'mm-active' : '' }}">
-                        <a href="{{ url('/running-texts') }}" class="{{ $page == 'running-texts' ? 'mm-active' : '' }}">
+                        <a href="{{ url('/running-texts') }}"
+                            class="{{ $page == 'running-texts' ? 'mm-active' : '' }}">
                             <i class="metismenu-icon fa fa-bullhorn"></i>
                             {{ trans('common.running_text.title') }}
                         </a>
                     </li>
 
                     <li
-                        class="{{ in_array($page, ['guide-categories', 'place-categories', 'movie-categories']) ? 'mm-active' : '' }}">
+                        class="{{ in_array($page, ['guide-categories', 'place-categories', 'movie-categories', 'song-playlists']) ? 'mm-active' : '' }}">
                         <a href="#">
                             <i class="metismenu-icon pe-7s-folder"></i> {{ trans('common.category') }}
                             <i class="metismenu-state-icon pe-7s-angle-down caret-left"></i>
                         </a>
                         <ul>
-
                             <li class="{{ $page == 'guide-categories' ? 'mm-active' : '' }}">
                                 <a href="{{ url('/guide-categories') }}"
                                     class="{{ $page == 'guide-categories' ? 'mm-active' : '' }}">
@@ -120,11 +120,18 @@
                                     <i class="metismenu-icon"></i> {{ trans('common.movie_category.title') }}
                                 </a>
                             </li>
+
+                            <li class="{{ $page == 'song-playlists' ? 'mm-active' : '' }}">
+                                <a href="{{ url('/song-playlists') }}" class="{{ $page == 'song-playlists' ? 'mm-active' : '' }}">
+                                    <i class="metismenu-icon"></i>
+                                    {{ trans('common.song_playlist.title') }}
+                                </a>
+                            </li>
                         </ul>
                     </li>
 
                     {{-- Reports --}}
-                    <li class="{{ in_array($page, ['report-booking-players']) ? 'mm-active' : '' }}">
+                    <li class="{{ in_array($page, ['report-booking-players', 'report-player-durations', 'report-menu-transactions']) ? 'mm-active' : '' }}">
                         <a href="#">
                             <i class="metismenu-icon fa fa-file-alt"></i> {{ trans('common.reports') }}
                             <i class="metismenu-state-icon pe-7s-angle-down caret-left"></i>
@@ -150,7 +157,6 @@
                             </li>
                         </ul>
                     </li>
-
 
                     {{-- pantry --}}
                     <li class="app-sidebar__heading">Pantry</li>

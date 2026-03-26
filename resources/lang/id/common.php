@@ -295,6 +295,11 @@ return [
         'title_singular' => 'Lagu',
         'artist' => 'Artis',
         'album' => 'Album',
+        'playlist' => 'Playlist',
+        'single' => 'Single',
+        'favorite' => 'Favorit',
+        'artist_placeholder' => 'Pilih atau ketik artis',
+        'album_select_placeholder' => 'Pilih atau ketik album',
         'title_field' => 'Judul',
         'url_stream' => 'URL Stream',
         'duration' => 'Durasi',
@@ -302,7 +307,18 @@ return [
         'stream_url' => 'Stream URL',
         'album_placeholder' => 'Album (boleh dikosongkan atau tambah baru)',
         'album_information' => 'Anda bisa mengetik nama album baru, otomatis akan dibuat.',
+        'playlist_placeholder' => 'Pilih atau ketik playlist',
+        'playlist_information' => 'Anda bisa memilih playlist yang ada atau mengetik nama playlist baru untuk otomatis dibuat.',
+        'playlist_required' => 'Playlist tidak boleh kosong.',
         'audio_information' => 'Informasi file: MP3, WAV, FLAC, AAC/M4A, OGG. Maks 300MB. Jika judul kosong, akan menggunakan nama file.',
+    ],
+
+    'song_playlist' => [
+        'title' => 'Playlist Lagu',
+        'title_singular' => 'Playlist Lagu',
+        'list_of_song_playlist' => 'Daftar Playlist Lagu',
+        'song_count' => 'Jumlah Lagu',
+        'songs_in_playlist' => 'Lagu di playlist ini',
     ],
 
     'movie' => [

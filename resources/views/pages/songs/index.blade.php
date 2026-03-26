@@ -60,6 +60,7 @@
                                     <th>{{ trans('common.title') }}</th>
                                     <th>{{ trans('common.song.artist') }}</th>
                                     <th>{{ trans('common.song.album') }}</th>
+                                    <th>{{ trans('common.song.playlist') }}</th>
                                     <th>{{ trans('common.song.duration') }}</th>
                                     <th>{{ trans('common.status') }}</th>
                                     <th style="text-align:center">{!! trans('common.action') !!}</th>
@@ -231,6 +232,7 @@
             },
             { data: 'artist', name: 'artist', defaultContent: '' },
             { data: 'album', name: 'album', defaultContent: '' },
+            { data: 'playlist', name: 'playlist', defaultContent: '' },
             {
                 data: 'duration',
                 name: 'duration',
@@ -242,7 +244,7 @@
                 name: 'is_active',
                 render: function(data, type, row) {
                     let badgeClass = row.is_active == 1 ? 'success' : 'secondary';
-                    let text = row.is_active == 1 ? 'Active' : 'Inactive';
+                    let text = row.is_active == 1 ? `{{ trans('common.active') }}` : `{{ trans('common.inactive') }}`;
                     return `<span class="badge badge-${badgeClass}">${text}</span>`;
                 }
             },

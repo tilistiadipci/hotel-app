@@ -7,6 +7,7 @@ use App\Repositories\AlbumRepository;
 use App\Repositories\ArtistRepository;
 use App\Repositories\MediaRepository;
 use App\Repositories\SongRepository;
+use App\Repositories\SongPlaylistRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
@@ -22,9 +23,10 @@ use Symfony\Component\HttpFoundation\StreamedResponse;
 
 class SongController extends Controller
 {
-    protected $songRepository;
-    protected $artistRepository;
-    protected $albumRepository;
+    protected SongRepository $songRepository;
+    protected ArtistRepository $artistRepository;
+    protected AlbumRepository $albumRepository;
+    protected SongPlaylistRepository $playlistRepository;
     protected MediaRepository $mediaRepository;
     private $page;
     private $icon = 'fa fa-music';
@@ -33,11 +35,13 @@ class SongController extends Controller
         SongRepository $songRepository,
         ArtistRepository $artistRepository,
         AlbumRepository $albumRepository,
+        SongPlaylistRepository $playlistRepository,
         MediaRepository $mediaRepository
     ) {
         $this->songRepository = $songRepository;
         $this->artistRepository = $artistRepository;
         $this->albumRepository = $albumRepository;
+        $this->playlistRepository = $playlistRepository;
         $this->mediaRepository = $mediaRepository;
         $this->page = 'songs';
     }
@@ -53,6 +57,7 @@ class SongController extends Controller
             'icon' => $this->icon,
             'artists' => $this->artistRepository->all(),
             'albums' => $this->albumRepository->all(),
+            'playlists' => $this->playlistRepository->all(),
         ]);
     }
 
@@ -63,6 +68,7 @@ class SongController extends Controller
             'icon' => $this->icon,
             'artists' => $this->artistRepository->all(),
             'albums' => $this->albumRepository->all(),
+            'playlists' => $this->playlistRepository->all(),
         ]);
     }
 
@@ -135,6 +141,7 @@ class SongController extends Controller
             'song' => $song,
             'artists' => $this->artistRepository->all(),
             'albums' => $this->albumRepository->all(),
+            'playlists' => $this->playlistRepository->all(),
         ]);
     }
 
@@ -287,6 +294,7 @@ class SongController extends Controller
         $rules = [
             'artist_id' => 'required',
             'album_id' => 'required',
+            'song_playlist_id' => 'nullable',
             'title' => [
                 'required',
                 'max:200',
@@ -465,13 +473,14 @@ class SongController extends Controller
 
         $sheet = $spreadsheet->getActiveSheet();
         $sheet->setTitle('Songs');
-        $headers = ['title', 'artist', 'album', 'image_file', 'audio_file', 'sort_order', 'is_active', 'is_favorit'];
+        $headers = ['title', 'artist', 'album', 'playlist', 'image_file', 'audio_file', 'sort_order', 'is_active', 'is_favorit'];
         $sheet->fromArray($headers, null, 'A1');
         $sheet->fromArray([
             [
                 'Gravity',
                 'John Mayer',
                 'Continuum',
+                'Morning Acoustic',
                 'gravity-cover.jpg',
                 'gravity.mp3',
                 1,
@@ -480,13 +489,13 @@ class SongController extends Controller
             ],
         ], null, 'A2');
 
-        foreach (range('A', 'H') as $column) {
+        foreach (range('A', 'I') as $column) {
             $sheet->getColumnDimension($column)->setAutoSize(true);
         }
 
-        $sheet->getStyle('A1:H1')->getFont()->setBold(true);
+        $sheet->getStyle('A1:I1')->getFont()->setBold(true);
 
-        $validationCols = ['G', 'H'];
+        $validationCols = ['H', 'I'];
         foreach ($validationCols as $column) {
             for ($row = 2; $row <= 200; $row++) {
                 $validation = $sheet->getCell($column . $row)->getDataValidation();
@@ -505,6 +514,7 @@ class SongController extends Controller
             ['title', 'Wajib. Judul lagu harus diisi.'],
             ['artist', 'Wajib. Jika nama artist belum ada di database, sistem akan membuat artist baru otomatis.'],
             ['album', 'Wajib. Jika nama album belum ada untuk artist tersebut, sistem akan membuat album baru otomatis.'],
+            ['playlist', 'Opsional. Jika nama playlist belum ada di database, sistem akan membuat playlist baru otomatis.'],
             ['image_file', 'Wajib. Isi nama file gambar lengkap dengan extension, contoh cover.jpg. File harus ada persis di folder MEDIA_STORAGE_PATH/upload-song.'],
             ['audio_file', 'Wajib. Isi nama file audio lengkap dengan extension, contoh song.mp3. File harus ada persis di folder MEDIA_STORAGE_PATH/upload-song.'],
             ['sort_order', 'Wajib. Harus angka 0 atau lebih.'],

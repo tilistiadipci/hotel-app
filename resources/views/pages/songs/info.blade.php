@@ -8,11 +8,12 @@
     $items = [
         trans('common.title') => $song->title ?? '-',
         trans('common.song.artist') => $song->artist->name ?? '-',
-        trans('common.song.album') => $song->album->title ?? 'Single',
+        trans('common.song.album') => $song->album->title ?? trans('common.song.single'),
+        trans('common.song.playlist') => $song->playlist->name ?? '-',
         trans('common.song.duration') => $time,
         trans('common.status') => $song->is_active ? trans('common.active') : trans('common.inactive'),
-        'Favorit' => $song->is_favorit ? 'Ya' : 'Tidak',
-        trans('common.created_at') => $channel->created_at ?? '-',
+        trans('common.song.favorite') => $song->is_favorit ? trans('common.yes') : trans('common.no'),
+        trans('common.created_at') => $song->created_at ?? '-',
     ];
 @endphp
 
@@ -30,7 +31,7 @@
     <div class="col-sm-4 text-center">
         <div class="card shadow-sm">
             <div class="card-body">
-                <img src="{{ $imageUrl }}" alt="{{ $channel->name ?? '' }}" class="img-fluid rounded mb-2"
+                <img src="{{ $imageUrl }}" alt="{{ $song->title ?? '' }}" class="img-fluid rounded mb-2"
                     style="max-height: 220px; object-fit: cover;">
                 <div class="small text-muted">{{ trans('common.image') }}</div>
             </div>

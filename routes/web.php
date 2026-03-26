@@ -7,6 +7,7 @@ use App\Http\Controllers\MovieCategoryController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\SettingWebsiteController;
 use App\Http\Controllers\SongController;
+use App\Http\Controllers\SongPlaylistController;
 use App\Http\Controllers\ThemeController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\TVChannelController;
@@ -130,6 +131,13 @@ Route::middleware(['auth'])->group(function () {
                 Route::post('/bulkDelete', [SongController::class, 'bulkDelete'])->name('bulkDelete');
                 Route::get('/import/template', [SongController::class, 'downloadImportTemplate'])->name('import.template');
                 Route::post('/import', [SongController::class, 'import'])->name('import');
+            });
+
+        Route::resource('song-playlists', SongPlaylistController::class);
+        Route::prefix('song-playlists')
+            ->name('song-playlists.')
+            ->group(function () {
+                Route::post('/bulkDelete', [SongPlaylistController::class, 'bulkDelete'])->name('bulkDelete');
             });
 
         // Players

@@ -33,7 +33,7 @@
                             @if ($selectedArtist && !is_numeric($selectedArtist))
                                 <option value="{{ $selectedArtist }}" selected>{{ $selectedArtist }}</option>
                             @endif
-                            <option value="" disabled {{ $selectedArtist ? '' : 'selected' }}>Pilih atau ketik artist</option>
+                            <option value="" disabled {{ $selectedArtist ? '' : 'selected' }}>{{ trans('common.song.artist_placeholder') }}</option>
                             @foreach ($artists as $artist)
                                 <option value="{{ $artist->id }}" {{ $selectedArtist == $artist->id ? 'selected' : '' }}>
                                     {{ $artist->name }}
@@ -50,7 +50,7 @@
                             @php
                                 $selectedAlbum = $song->album_id ?? old('album_id');
                             @endphp
-                            <option value="" disabled {{ $selectedAlbum ? '' : 'selected' }}>Pilih atau ketik album</option>
+                            <option value="" disabled {{ $selectedAlbum ? '' : 'selected' }}>{{ trans('common.song.album_select_placeholder') }}</option>
                             @if ($selectedAlbum && !is_numeric($selectedAlbum))
                                 <option value="{{ $selectedAlbum }}" selected>{{ $selectedAlbum }}</option>
                             @endif
@@ -61,6 +61,27 @@
                             @endforeach
                         </select>
                         <small class="text-muted d-block mt-1">{{ trans('common.song.album_information') }}</small>
+                    </div>
+                </div>
+
+                <div class="position-relative row form-group">
+                    <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.song.playlist') }}</label>
+                    <div class="col-sm-8">
+                        <select name="song_playlist_id" id="song_playlist_id" class="form-control select2 song-select">
+                            @php
+                                $selectedPlaylist = $song->song_playlist_id ?? old('song_playlist_id');
+                            @endphp
+                            <option value="" {{ $selectedPlaylist ? '' : 'selected' }}>{{ trans('common.song.playlist_placeholder') }}</option>
+                            @if ($selectedPlaylist && !is_numeric($selectedPlaylist))
+                                <option value="{{ $selectedPlaylist }}" selected>{{ $selectedPlaylist }}</option>
+                            @endif
+                            @foreach ($playlists as $playlist)
+                                <option value="{{ $playlist->id }}" {{ (string) $selectedPlaylist === (string) $playlist->id ? 'selected' : '' }}>
+                                    {{ $playlist->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <small class="text-muted d-block mt-1">{{ trans('common.song.playlist_information') }}</small>
                     </div>
                 </div>
 
@@ -93,14 +114,14 @@
                 </div>
 
                 <div class="position-relative row form-group">
-                    <label class="col-sm-4 col-form-label text-sm-right">Favorit</label>
+                    <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.song.favorite') }}</label>
                     <div class="col-sm-8">
                         @php
                             $isFavorit = $song->is_favorit ?? old('is_favorit', 0);
                         @endphp
                         <select name="is_favorit" id="is_favorit" class="form-control select2">
-                            <option value="1" {{ $isFavorit == 1 ? 'selected' : '' }}>Ya</option>
-                            <option value="0" {{ $isFavorit == 0 ? 'selected' : '' }}>Tidak</option>
+                            <option value="1" {{ $isFavorit == 1 ? 'selected' : '' }}>{{ trans('common.yes') }}</option>
+                            <option value="0" {{ $isFavorit == 0 ? 'selected' : '' }}>{{ trans('common.no') }}</option>
                         </select>
                     </div>
                 </div>

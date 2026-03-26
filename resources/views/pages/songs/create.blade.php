@@ -68,7 +68,7 @@
                 }
             };
 
-            ['#artist_id', '#album_id', '#is_active', '#is_favorit'].forEach((selector) => {
+            ['#artist_id', '#album_id', '#song_playlist_id', '#is_active', '#is_favorit'].forEach((selector) => {
                 const el = $(selector);
                 if (el.hasClass('select2-hidden-accessible')) {
                     el.select2('destroy');
@@ -78,6 +78,9 @@
             $('#artist_id').select2(tagSelectOptions);
             $('#album_id').select2(Object.assign({}, tagSelectOptions, {
                 placeholder: `{{ trans('common.song.album_placeholder') }}`
+            }));
+            $('#song_playlist_id').select2(Object.assign({}, tagSelectOptions, {
+                placeholder: `{{ trans('common.song.playlist_placeholder') }}`
             }));
             $('#is_active').select2({
                 theme: 'bootstrap4',

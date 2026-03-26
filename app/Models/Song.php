@@ -16,6 +16,7 @@ class Song extends Model
         'uuid',
         'artist_id',
         'album_id',
+        'song_playlist_id',
         'title',
         'song_id',
         'duration',
@@ -72,6 +73,11 @@ class Song extends Model
     public function imageMedia()
     {
         return $this->belongsTo(Media::class, 'image_id');
+    }
+
+    public function playlist()
+    {
+        return $this->belongsTo(SongPlaylist::class, 'song_playlist_id');
     }
 
     public function audioMedia()

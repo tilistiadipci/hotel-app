@@ -300,11 +300,27 @@ return [
         'artist' => 'Artist',
         'duration' => 'Duration',
         'album' => 'Album',
+        'playlist' => 'Playlist',
+        'single' => 'Single',
+        'favorite' => 'Favorite',
+        'artist_placeholder' => 'Choose or type an artist',
+        'album_select_placeholder' => 'Choose or type an album',
         'file' => 'File',
         'stream_url' => 'Stream URL',
         'album_placeholder' => 'Album (can be empty or add new)',
         'album_information' => 'You can type a new album name, it will be created automatically.',
+        'playlist_placeholder' => 'Choose or type a playlist',
+        'playlist_information' => 'You can choose an existing playlist or type a new playlist name to create it automatically.',
+        'playlist_required' => 'Playlist cannot be empty.',
         'audio_information' => 'File information: MP3, WAV, FLAC, AAC/M4A, OGG. Max 300MB. If title is empty, it will use the file name.',
+    ],
+
+    'song_playlist' => [
+        'title' => 'Song Playlists',
+        'title_singular' => 'Song Playlist',
+        'list_of_song_playlist' => 'List of Song Playlists',
+        'song_count' => 'Song Count',
+        'songs_in_playlist' => 'Songs in this playlist',
     ],
 
     'movie' => [
