@@ -45,6 +45,10 @@
             margin-top: 20px;
         }
 
+        .app-header__logo {
+            justify-content: center;
+        }
+
         .ucfirst {
             text-transform: lowercase;
         }

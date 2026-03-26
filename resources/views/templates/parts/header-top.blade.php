@@ -1,23 +1,9 @@
 <div class="app-header header-shadow">
-    <div class="app-header__logo">
-        <div class="logo-src"></div>
-        <div class="header__pane ml-auto">
-            <div>
-                <button type="button" class="hamburger close-sidebar-btn hamburger--elastic" data-class="closed-sidebar">
-                    <span class="hamburger-box">
-                        <span class="hamburger-inner"></span>
-                    </span>
-                </button>
+    <div class="app-header__logo text-center">
+        <div class="d-flex align-items-center text-center" style="gap: 10px;">
+            <div class="font-weight-bold text-dark text-center" style="font-size: 18px; line-height: 1.2;">
+                {{ session('settings')['general_app_name'] }}
             </div>
-        </div>
-    </div>
-    <div class="app-header__mobile-menu">
-        <div>
-            <button type="button" class="hamburger hamburger--elastic mobile-toggle-nav">
-                <span class="hamburger-box">
-                    <span class="hamburger-inner"></span>
-                </span>
-            </button>
         </div>
     </div>
     <div class="app-header__menu">
@@ -150,8 +136,7 @@
                                                         </a>
                                                     </li>
                                                     <li class="nav-item">
-                                                        <a href="{{ url('profile') }}#changePassword"
-                                                            class="nav-link">
+                                                        <a href="{{ url('profile') }}#changePassword" class="nav-link">
                                                             {{ trans('common.profile.change_password') }}
                                                         </a>
                                                     </li>

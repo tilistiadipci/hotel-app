@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Support\Facades\Auth;
+use App\Repositories\SettingRepository;
 
 class LoginController extends Controller
 {
@@ -30,20 +31,25 @@ class LoginController extends Controller
      */
     protected $redirectTo = '/';
 
+    protected $settingRepository;
+
     /**
      * Create a new controller instance.
      *
      * @return void
      */
-    public function __construct()
+    public function __construct(SettingRepository $settingRepository)
     {
         $this->middleware('guest')->except('logout');
         $this->middleware('auth')->only('logout');
+
+        $this->settingRepository = $settingRepository;
     }
 
     public function logout()
     {
         Auth::logout();
+        session()->forget('settings');
         return redirect('/login');
     }
 
@@ -53,6 +59,7 @@ class LoginController extends Controller
         User::where('id', auth()->id())->update(['last_login_at' => now()]);
 
         $role = auth()->user()->role;
+        $this->settingRepository->getSettings();
 
         if ($role->category == 'master') {
             return redirect()->route('dashboard.index');

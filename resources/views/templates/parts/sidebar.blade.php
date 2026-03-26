@@ -1,6 +1,10 @@
 <div class="app-sidebar sidebar-shadow">
-    <div class="app-header__logo">
-        <div class="logo-src"></div>
+    <div class="app-header__logo text-center">
+        <div class="d-flex align-items-center text-center" style="gap: 10px;">
+            <div class="font-weight-bold text-dark pr-2" style="font-size: 16px; line-height: 1.2;">
+                {{ session('settings')['general_app_name'] }}
+            </div>
+        </div>
         <div class="header__pane ml-auto">
             <div>
                 <button type="button" class="hamburger close-sidebar-btn hamburger--elastic" data-class="closed-sidebar">

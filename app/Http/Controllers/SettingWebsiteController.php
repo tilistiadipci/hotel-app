@@ -8,6 +8,7 @@ use App\Repositories\UserRepository;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
+use PhpOffice\PhpSpreadsheet\Writer\Ods\Settings;
 use Throwable;
 
 class SettingWebsiteController extends Controller
@@ -31,20 +32,7 @@ class SettingWebsiteController extends Controller
             return redirect()->route('pages.errors.404');
         }
 
-        $settings = session('settings');
-        if (!is_array($settings)) {
-            $settings = [
-                'default_language' => $this->getLanguageSetting(),
-                'notification_email_alerts' => $this->settingRepository->getBoolValueByKey('notification_email_alerts', true),
-                'notification_push_notifications' => $this->settingRepository->getBoolValueByKey('notification_push_notifications', false),
-                'notification_sms_booking_alerts' => $this->settingRepository->getBoolValueByKey('notification_sms_booking_alerts', true),
-                'tax_percentage_grand_total_status' => $this->settingRepository->getValueByKey('tax_percentage_grand_total_status', 'inactive'),
-                'tax_percentage_grand_total' => $this->settingRepository->getNumericValueByKey('tax_percentage_grand_total', 0),
-                'service_charge_status' => $this->settingRepository->getValueByKey('service_charge_status', 'inactive'),
-                'service_charge_fixed' => $this->settingRepository->getNumericValueByKey('service_charge_fixed', 0),
-            ];
-            session(['settings' => $settings]);
-        }
+        $settings = $this->settingRepository->getSettings();
 
         $generalAppName = (string) $this->settingRepository->getValueByKey('general_app_name', config('app.name'));
         $generalAppLogoId = $this->settingRepository->getValueByKey('general_app_logo', '');
@@ -135,6 +123,8 @@ class SettingWebsiteController extends Controller
 
             session(['settings_refresh' => true]);
         }
+
+        $this->settingRepository->getSettings();
 
         return redirect()->route('settings.index')->with('success', trans('common.success.update'));
     }
