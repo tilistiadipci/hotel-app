@@ -8,7 +8,6 @@ use App\Repositories\UserRepository;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
-use PhpOffice\PhpSpreadsheet\Writer\Ods\Settings;
 use Throwable;
 
 class SettingWebsiteController extends Controller
@@ -32,11 +31,13 @@ class SettingWebsiteController extends Controller
             return redirect()->route('pages.errors.404');
         }
 
+        $canManageAppMenus = $this->canManageAppMenus($user);
+
         $settings = $this->settingRepository->getSettings();
 
-        $generalAppName = (string) $this->settingRepository->getValueByKey('general_app_name', config('app.name'));
-        $generalAppLogoId = $this->settingRepository->getValueByKey('general_app_logo', '');
-        $generalAppLogo2Id = $this->settingRepository->getValueByKey('general_app_logo2', '');
+        $generalAppName = (string) ($settings['general_app_name'] ?? config('app.name'));
+        $generalAppLogoId = $settings['general_app_logo'] ?? '';
+        $generalAppLogo2Id = $settings['general_app_logo2'] ?? '';
         $generalAppLogoMedia = null;
         $generalAppLogo2Media = null;
         if (is_numeric($generalAppLogoId)) {
@@ -57,6 +58,7 @@ class SettingWebsiteController extends Controller
             'profile' => true,
             'page' => 'settings',
             'settings' => $settings,
+            'canManageAppMenus' => $canManageAppMenus,
             'generalAppName' => $generalAppName,
             'generalAppLogoId' => $generalAppLogoMedia?->id,
             'generalAppLogoUrl' => $generalAppLogoMedia ? getMediaImageUrl($generalAppLogoMedia->storage_path, 200, 200) : null,
@@ -68,9 +70,14 @@ class SettingWebsiteController extends Controller
     public function update(Request $request): RedirectResponse
     {
         $section = $request->input('section');
+        $restrictedSections = ['customize_menu_active', 'on_mobile'];
 
         if (!in_array($section, ['language', 'notifications', 'transaction_charge', 'general', 'customize_menu', 'customize_menu_active', 'on_mobile', 'others'], true)) {
             return redirect()->route('settings.index')->with('error', 'Invalid settings section.');
+        }
+
+        if (in_array($section, $restrictedSections, true) && !$this->canManageAppMenus(auth()->user())) {
+            abort(403);
         }
 
         if ($section === 'language') {
@@ -141,41 +148,53 @@ class SettingWebsiteController extends Controller
         }
 
         if ($section === 'customize_menu') {
-            $validated = $request->validate([
+            $rules = [
                 'menu_home_label' => ['required', 'string', 'max:100'],
                 'menu_live_tv_label' => ['required', 'string', 'max:100'],
-                'menu_live_tv_status' => ['required', Rule::in(['active', 'inactive'])],
                 'menu_streaming_tv_label' => ['required', 'string', 'max:100'],
-                'menu_streaming_tv_status' => ['required', Rule::in(['active', 'inactive'])],
                 'menu_music_label' => ['required', 'string', 'max:100'],
-                'menu_music_status' => ['required', Rule::in(['active', 'inactive'])],
                 'menu_vod_label' => ['required', 'string', 'max:100'],
-                'menu_vod_status' => ['required', Rule::in(['active', 'inactive'])],
                 'menu_guide_label' => ['required', 'string', 'max:100'],
-                'menu_guide_status' => ['required', Rule::in(['active', 'inactive'])],
                 'menu_nearby_label' => ['required', 'string', 'max:100'],
-                'menu_nearby_status' => ['required', Rule::in(['active', 'inactive'])],
                 'menu_shopping_label' => ['required', 'string', 'max:100'],
-                'menu_shopping_status' => ['required', Rule::in(['active', 'inactive'])],
-            ]);
+            ];
+
+            if ($this->canManageAppMenus(auth()->user())) {
+                $rules += [
+                    'menu_live_tv_status' => ['required', Rule::in(['active', 'inactive'])],
+                    'menu_streaming_tv_status' => ['required', Rule::in(['active', 'inactive'])],
+                    'menu_music_status' => ['required', Rule::in(['active', 'inactive'])],
+                    'menu_vod_status' => ['required', Rule::in(['active', 'inactive'])],
+                    'menu_guide_status' => ['required', Rule::in(['active', 'inactive'])],
+                    'menu_nearby_status' => ['required', Rule::in(['active', 'inactive'])],
+                    'menu_shopping_status' => ['required', Rule::in(['active', 'inactive'])],
+                ];
+            }
+
+            $validated = $request->validate($rules);
 
             $menuSettings = [
                 'menu_home_label' => 'Menu Home Label',
                 'menu_live_tv_label' => 'Menu Live TV Label',
-                'menu_live_tv_status' => 'Menu Live TV Status',
                 'menu_streaming_tv_label' => 'Menu Streaming TV Label',
-                'menu_streaming_tv_status' => 'Menu Streaming TV Status',
                 'menu_music_label' => 'Menu Music Label',
-                'menu_music_status' => 'Menu Music Status',
                 'menu_vod_label' => 'Menu VOD Label',
-                'menu_vod_status' => 'Menu VOD Status',
                 'menu_guide_label' => 'Menu Guide Label',
-                'menu_guide_status' => 'Menu Guide Status',
                 'menu_nearby_label' => 'Menu Nearby Label',
-                'menu_nearby_status' => 'Menu Nearby Status',
                 'menu_shopping_label' => 'Menu Shopping Label',
-                'menu_shopping_status' => 'Menu Shopping Status',
             ];
+
+            if ($this->canManageAppMenus(auth()->user())) {
+                $menuSettings += [
+                    'menu_live_tv_status' => 'Menu Live TV Status',
+                    'menu_streaming_tv_status' => 'Menu Streaming TV Status',
+                    'menu_music_status' => 'Menu Music Status',
+                    'menu_vod_status' => 'Menu VOD Status',
+                    'menu_guide_status' => 'Menu Guide Status',
+                    'menu_nearby_status' => 'Menu Nearby Status',
+                    'menu_shopping_status' => 'Menu Shopping Status',
+                ];
+            }
 
             foreach ($menuSettings as $key => $name) {
                 $this->settingRepository->saveByKey($name, $key, $validated[$key]);
@@ -262,7 +281,7 @@ class SettingWebsiteController extends Controller
             session(['settings_refresh' => true]);
         }
 
-        $this->settingRepository->getSettings();
+        $this->settingRepository->getSettings(true);
 
         return redirect()->route('settings.index')->with('success', trans('common.success.update'));
     }
@@ -292,5 +311,12 @@ class SettingWebsiteController extends Controller
             base_path('settings/lang.json'),
             json_encode(['lang_code' => $langCode], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
         );
+    }
+
+    protected function canManageAppMenus($user): bool
+    {
+        $roleCategory = strtolower((string) ($user->role->category ?? ''));
+
+        return (int) ($user->role_id ?? 0) === 1 || in_array($roleCategory, ['master', 'superadmin'], true);
     }
 }

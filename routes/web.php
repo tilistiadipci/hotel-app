@@ -124,21 +124,23 @@ Route::middleware(['auth'])->group(function () {
         //     });
 
         // Songs
-        Route::resource('songs', SongController::class);
-        Route::prefix('songs')
-            ->name('songs.')
-            ->group(function () {
-                Route::post('/bulkDelete', [SongController::class, 'bulkDelete'])->name('bulkDelete');
-                Route::get('/import/template', [SongController::class, 'downloadImportTemplate'])->name('import.template');
-                Route::post('/import', [SongController::class, 'import'])->name('import');
-            });
+        Route::middleware('setting.active:menu_music_status')->group(function () {
+            Route::resource('songs', SongController::class);
+            Route::prefix('songs')
+                ->name('songs.')
+                ->group(function () {
+                    Route::post('/bulkDelete', [SongController::class, 'bulkDelete'])->name('bulkDelete');
+                    Route::get('/import/template', [SongController::class, 'downloadImportTemplate'])->name('import.template');
+                    Route::post('/import', [SongController::class, 'import'])->name('import');
+                });
 
-        Route::resource('song-playlists', SongPlaylistController::class);
-        Route::prefix('song-playlists')
-            ->name('song-playlists.')
-            ->group(function () {
-                Route::post('/bulkDelete', [SongPlaylistController::class, 'bulkDelete'])->name('bulkDelete');
-            });
+            Route::resource('song-playlists', SongPlaylistController::class);
+            Route::prefix('song-playlists')
+                ->name('song-playlists.')
+                ->group(function () {
+                    Route::post('/bulkDelete', [SongPlaylistController::class, 'bulkDelete'])->name('bulkDelete');
+                });
+        });
 
         // Players
         Route::resource('players', PlayerController::class);
@@ -150,54 +152,60 @@ Route::middleware(['auth'])->group(function () {
             });
 
         // Movies (custom routes first to avoid conflict with resource show)
-        Route::prefix('movies')
-            ->name('movies.')
-            ->group(function () {
-                Route::get('/stream/{filename}', [MovieController::class, 'stream'])->name('stream');
-                Route::post('/bulkDelete', [MovieController::class, 'bulkDelete'])->name('bulkDelete');
-                Route::get('/import/template', [MovieController::class, 'downloadImportTemplate'])->name('import.template');
-                Route::post('/import', [MovieController::class, 'import'])->name('import');
-            });
-        Route::resource('movies', MovieController::class);
+        Route::middleware('setting.active:menu_vod_status')->group(function () {
+            Route::prefix('movies')
+                ->name('movies.')
+                ->group(function () {
+                    Route::get('/stream/{filename}', [MovieController::class, 'stream'])->name('stream');
+                    Route::post('/bulkDelete', [MovieController::class, 'bulkDelete'])->name('bulkDelete');
+                    Route::get('/import/template', [MovieController::class, 'downloadImportTemplate'])->name('import.template');
+                    Route::post('/import', [MovieController::class, 'import'])->name('import');
+                });
+            Route::resource('movies', MovieController::class);
 
-        // Movies Categories
-        Route::resource('movie-categories', MovieCategoryController::class);
-        Route::prefix('movie-categories')
-            ->name('movie-categories.')
-            ->group(function () {
-                Route::post('/bulkDelete', [MovieCategoryController::class, 'bulkDelete'])->name('bulkDelete');
-            });
+            // Movies Categories
+            Route::resource('movie-categories', MovieCategoryController::class);
+            Route::prefix('movie-categories')
+                ->name('movie-categories.')
+                ->group(function () {
+                    Route::post('/bulkDelete', [MovieCategoryController::class, 'bulkDelete'])->name('bulkDelete');
+                });
+        });
 
         // Places
-        Route::resource('places', PlaceController::class);
-        Route::prefix('places')
-            ->name('places.')
-            ->group(function () {
-                Route::post('/bulkDelete', [PlaceController::class, 'bulkDelete'])->name('bulkDelete');
-            });
+        Route::middleware('setting.active:menu_nearby_status')->group(function () {
+            Route::resource('places', PlaceController::class);
+            Route::prefix('places')
+                ->name('places.')
+                ->group(function () {
+                    Route::post('/bulkDelete', [PlaceController::class, 'bulkDelete'])->name('bulkDelete');
+                });
 
-        // Place Categories
-        Route::resource('place-categories', PlaceCategoryController::class);
-        Route::prefix('place-categories')
-            ->name('place-categories.')
-            ->group(function () {
-                Route::post('/bulkDelete', [PlaceCategoryController::class, 'bulkDelete'])->name('bulkDelete');
-            });
+            // Place Categories
+            Route::resource('place-categories', PlaceCategoryController::class);
+            Route::prefix('place-categories')
+                ->name('place-categories.')
+                ->group(function () {
+                    Route::post('/bulkDelete', [PlaceCategoryController::class, 'bulkDelete'])->name('bulkDelete');
+                });
+        });
 
         // Guide
-        Route::resource('guides', GuideItemController::class);
-        Route::prefix('guides')
-            ->name('guides.')
-            ->group(function () {
-                Route::post('/bulkDelete', [GuideItemController::class, 'bulkDelete'])->name('bulkDelete');
-            });
-        // Guide Categories
-        Route::resource('guide-categories', GuideCategoryController::class);
-        Route::prefix('guide-categories')
-            ->name('guide-categories.')
-            ->group(function () {
-                Route::post('/bulkDelete', [GuideCategoryController::class, 'bulkDelete'])->name('bulkDelete');
-            });
+        Route::middleware('setting.active:menu_guide_status')->group(function () {
+            Route::resource('guides', GuideItemController::class);
+            Route::prefix('guides')
+                ->name('guides.')
+                ->group(function () {
+                    Route::post('/bulkDelete', [GuideItemController::class, 'bulkDelete'])->name('bulkDelete');
+                });
+            // Guide Categories
+            Route::resource('guide-categories', GuideCategoryController::class);
+            Route::prefix('guide-categories')
+                ->name('guide-categories.')
+                ->group(function () {
+                    Route::post('/bulkDelete', [GuideCategoryController::class, 'bulkDelete'])->name('bulkDelete');
+                });
+        });
 
         // Running Texts
         Route::resource('running-texts', RunningTextController::class);
@@ -209,19 +217,21 @@ Route::middleware(['auth'])->group(function () {
             });
 
         // Menu
-        Route::resource('menu', MenuController::class);
-        Route::prefix('menu')
-            ->name('menu.')
-            ->group(function () {
-                Route::post('/bulkDelete', [MenuController::class, 'bulkDelete'])->name('bulkDelete');
-            });
-        // Menu Categories
-        Route::resource('menu-categories', MenuCategoryController::class);
-        Route::prefix('menu-categories')
-            ->name('menu-categories.')
-            ->group(function () {
-                Route::post('/bulkDelete', [MenuCategoryController::class, 'bulkDelete'])->name('bulkDelete');
-            });
+        Route::middleware('setting.active:menu_shopping_status')->group(function () {
+            Route::resource('menu', MenuController::class);
+            Route::prefix('menu')
+                ->name('menu.')
+                ->group(function () {
+                    Route::post('/bulkDelete', [MenuController::class, 'bulkDelete'])->name('bulkDelete');
+                });
+            // Menu Categories
+            Route::resource('menu-categories', MenuCategoryController::class);
+            Route::prefix('menu-categories')
+                ->name('menu-categories.')
+                ->group(function () {
+                    Route::post('/bulkDelete', [MenuCategoryController::class, 'bulkDelete'])->name('bulkDelete');
+                });
+        });
 
         // Media Library
         Route::prefix('media')

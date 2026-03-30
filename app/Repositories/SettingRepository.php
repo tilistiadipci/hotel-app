@@ -7,13 +7,19 @@ use Exception;
 
 class SettingRepository extends BaseRepository
 {
+    protected ?array $loadedSettings = null;
+
     public function __construct(Setting $setting)
     {
         parent::__construct($setting);
     }
 
-    public function getSettings()
+    public function getSettings(bool $refresh = false)
     {
+        if (!$refresh && session()->has('settings') && !session('settings_refresh')) {
+            return session('settings');
+        }
+
         $settings = [
             'default_language' => $this->getLanguageSetting(),
             'general_app_name' => $this->getValueByKey('general_app_name', config('app.name')),
@@ -62,18 +68,19 @@ class SettingRepository extends BaseRepository
         ];
 
         session(['settings' => $settings]);
+        session()->forget('settings_refresh');
 
         return $settings;
     }
 
     public function getValueByKey(string $key, ?string $default = null): ?string
     {
-        return $this->query()->where('key', $key)->value('value') ?? $default;
+        return $this->getLoadedSettings()[$key] ?? $default;
     }
 
     public function getBoolValueByKey(string $key, bool $default = false): bool
     {
-        $value = $this->query()->where('key', $key)->value('value');
+        $value = $this->getLoadedSettings()[$key] ?? null;
 
         if ($value === null) {
             return $default;
@@ -84,7 +91,7 @@ class SettingRepository extends BaseRepository
 
     public function getNumericValueByKey(string $key, int|float|string $default = 0): int|float|string
     {
-        $value = $this->query()->where('key', $key)->value('value');
+        $value = $this->getLoadedSettings()[$key] ?? null;
 
         return $value ?? $default;
     }
@@ -101,8 +108,21 @@ class SettingRepository extends BaseRepository
         }
 
         $setting->save();
+        $this->loadedSettings = null;
+        session()->forget('settings');
 
         return $setting;
+    }
+
+    protected function getLoadedSettings(): array
+    {
+        if ($this->loadedSettings !== null) {
+            return $this->loadedSettings;
+        }
+
+        $this->loadedSettings = $this->query()->pluck('value', 'key')->all();
+
+        return $this->loadedSettings;
     }
 
     protected function getLanguageSetting(): string

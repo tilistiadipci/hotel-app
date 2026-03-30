@@ -3,16 +3,17 @@
 @section('content')
     @php
         $activeTab = request('tab');
+        $canManageAppMenus = $canManageAppMenus ?? false;
 
         if (!$activeTab && old('section') === 'customize_menu') {
             $activeTab = 'customize-menu';
         }
 
-        if (!$activeTab && old('section') === 'customize_menu_active') {
+        if ($canManageAppMenus && !$activeTab && old('section') === 'customize_menu_active') {
             $activeTab = 'customize-menu';
         }
 
-        if (!$activeTab && old('section') === 'on_mobile') {
+        if ($canManageAppMenus && !$activeTab && old('section') === 'on_mobile') {
             $activeTab = 'on-mobile';
         }
 
@@ -64,13 +65,15 @@
                             {{ trans('common.settings_page.others') }}
                         </a>
                     </li>
-                    <li class="nav-item">
-                        <a class="nav-link {{ $activeTab === 'on-mobile' ? 'active' : '' }}" id="on-mobile-tab"
-                            data-toggle="tab" href="#onMobileTab" role="tab" aria-controls="onMobileTab"
-                            aria-selected="{{ $activeTab === 'on-mobile' ? 'true' : 'false' }}">
-                            {{ trans('common.settings_page.on_mobile') }}
-                        </a>
-                    </li>
+                    @if ($canManageAppMenus)
+                        <li class="nav-item">
+                            <a class="nav-link {{ $activeTab === 'on-mobile' ? 'active' : '' }}" id="on-mobile-tab"
+                                data-toggle="tab" href="#onMobileTab" role="tab" aria-controls="onMobileTab"
+                                aria-selected="{{ $activeTab === 'on-mobile' ? 'true' : 'false' }}">
+                                {{ trans('common.settings_page.on_mobile') }}
+                            </a>
+                        </li>
+                    @endif
                 </ul>
 
                 <div class="tab-content">
@@ -89,10 +92,12 @@
                         @include('pages.website.other_setting')
                     </div>
 
-                    <div class="tab-pane fade {{ $activeTab === 'on-mobile' ? 'show active' : '' }}" id="onMobileTab"
-                        role="tabpanel" aria-labelledby="on-mobile-tab">
-                        @include('pages.website.on_mobile_setting')
-                    </div>
+                    @if ($canManageAppMenus)
+                        <div class="tab-pane fade {{ $activeTab === 'on-mobile' ? 'show active' : '' }}" id="onMobileTab"
+                            role="tabpanel" aria-labelledby="on-mobile-tab">
+                            @include('pages.website.on_mobile_setting')
+                        </div>
+                    @endif
                 </div>
             </div>
         </div>
