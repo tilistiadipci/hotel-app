@@ -159,7 +159,7 @@
                     </li>
 
                     {{-- pantry --}}
-                    <li class="app-sidebar__heading">Pantry</li>
+                    <li class="app-sidebar__heading">{{ trans('common.menu.title_singular') }}</li>
                     <li class="{{ $page == 'menu-categories' ? 'mm-active' : '' }}">
                         <a href="{{ url('/menu-categories') }}"
                             class="{{ $page == 'menu-categories' ? 'mm-active' : '' }}">
@@ -168,7 +168,7 @@
                     </li>
                     <li class="{{ $page == 'menu-items' ? 'mm-active' : '' }}">
                         <a href="{{ url('/menu') }}" class="{{ $page == 'menu-items' ? 'mm-active' : '' }}">
-                            <i class="metismenu-icon fa fa-utensils"></i> Menu
+                            <i class="metismenu-icon fa fa-list"></i> {{ trans('common.menu.title') }}
                         </a>
                     </li>
                 @endif

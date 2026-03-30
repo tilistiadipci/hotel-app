@@ -343,9 +343,9 @@ return [
     ],
 
     'menu' => [
-        'list_of_menu' => 'Daftar Menu',
-        'title' => 'Menu',
-        'title_singular' => 'Menu',
+        'list_of_menu' => 'Daftar Belanja',
+        'title' => 'Belanja',
+        'title_singular' => 'Item Belanja',
         'category' => 'Kategori',
         'price' => 'Harga',
         'discount' => 'Diskon',
@@ -357,9 +357,9 @@ return [
     ],
 
     'menu_category' => [
-        'list_of_menu_category' => 'Daftar Kategori Menu',
-        'title' => 'Kategori Menu',
-        'title_singular' => 'Kategori Menu',
+        'list_of_menu_category' => 'Daftar Kategori Belanja',
+        'title' => 'Kategori Belanja',
+        'title_singular' => 'Kategori Belanja',
     ],
 
     'guide_category' => [
@@ -525,6 +525,30 @@ return [
         'bahasa_indonesia' => 'Bahasa Indonesia',
         'copy' => 'Salin',
         'api_key_copied' => 'API key berhasil disalin',
+        'others' => 'Lainnya',
+        'customize_menu' => 'Penyesuaian Menu',
+        'customize_menu_desc' => 'Ubah nama menu yang tampil di aplikasi website. Semua field disimpan sebagai teks.',
+        'menu_home' => 'Home',
+        'menu_live_tv' => 'Live TV',
+        'menu_streaming_tv' => 'Streaming TV',
+        'menu_music' => 'Music',
+        'menu_vod' => 'VOD',
+        'menu_guide' => 'Guide',
+        'menu_nearby' => 'Nearby',
+        'menu_shopping' => 'Shopping',
+        'other_apps_desc' => 'Pilih aplikasi lain yang ingin diaktifkan pada menu.',
+        'netflix' => 'Netflix',
+        'vidio' => 'Vidio',
+        'disney' => 'Disney',
+        'wetv' => 'WeTV',
+        'prime' => 'Prime',
+        'youtube' => 'YouTube',
+        'about_phone' => 'About Phone',
+        'about_email' => 'About Email',
+        'about_website' => 'About Website',
+        'about_ssid' => 'About SSID',
+        'about_wifi_password' => 'About WiFi Password',
+        'customize_menu_other' => 'Penyesuaian Menu Lainnya',
     ],
 
     'running_text' => [

@@ -430,9 +430,9 @@ return [
     ],
 
     'menu' => [
-        'list_of_menu' => 'List of Menu Items',
-        'title' => 'Menu Items',
-        'title_singular' => 'Menu Item',
+        'list_of_menu' => 'List of Shopping Items',
+        'title' => 'Shopping Items',
+        'title_singular' => 'Shopping',
         'price' => 'Price',
         'discount' => 'Discount',
         'tax' => 'Tax',
@@ -443,9 +443,9 @@ return [
     ],
 
     'menu_category' => [
-        'list_of_menu_category' => 'List of Menu Categories',
-        'title' => 'Menu Categories',
-        'title_singular' => 'Menu Category',
+        'list_of_menu_category' => 'List of Shopping Categories',
+        'title' => 'Shopping Categories',
+        'title_singular' => 'Shopping Category',
     ],
 
     'guide_category' => [
@@ -537,6 +537,30 @@ return [
         'bahasa_indonesia' => 'Bahasa Indonesia',
         'copy' => 'Copy',
         'api_key_copied' => 'API key copied',
+        'others' => 'Other',
+        'customize_menu' => 'Customize Menu',
+        'customize_menu_desc' => 'Rename the menu labels shown in the website app. All fields are stored as text.',
+        'menu_home' => 'Home',
+        'menu_live_tv' => 'Live TV',
+        'menu_streaming_tv' => 'Streaming TV',
+        'menu_music' => 'Music',
+        'menu_vod' => 'VOD',
+        'menu_guide' => 'Guide',
+        'menu_nearby' => 'Nearby',
+        'menu_shopping' => 'Shopping',
+        'other_apps_desc' => 'Choose which additional apps should be active in the menu.',
+        'netflix' => 'Netflix',
+        'vidio' => 'Vidio',
+        'disney' => 'Disney',
+        'wetv' => 'WeTV',
+        'prime' => 'Prime',
+        'youtube' => 'YouTube',
+        'about_phone' => 'About Phone',
+        'about_email' => 'About Email',
+        'about_website' => 'About Website',
+        'about_ssid' => 'About SSID',
+        'about_wifi_password' => 'About WiFi Password',
+        'customize_menu_other' => 'Customize Menu Others',
     ],
 
     'running_text' => [

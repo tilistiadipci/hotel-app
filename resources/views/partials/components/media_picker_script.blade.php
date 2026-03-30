@@ -24,9 +24,12 @@
         const formEl = document.querySelector('form');
         const imageMediaId = document.getElementById('image_media_id');
         const imageLabel = document.getElementById('selectedImageLabel');
+        const imageMediaId2 = document.getElementById('image_media_id2');
+        const imageLabel2 = document.getElementById('selectedImageLabel2');
         const videoLabel = document.getElementById('selectedVideoLabel');
         const audioLabel = document.getElementById('selectedAudioLabel');
         const btnPickImage = document.getElementById('btnPickImage');
+        const btnPickImage2 = document.getElementById('btnPickImage2');
         const btnPickVideo = document.getElementById('btnPickVideo');
         const btnPickAudio = document.getElementById('btnPickAudio');
         const modalPicker = $('#modalMediaPicker');
@@ -51,6 +54,27 @@
         let pickerResumable = null;
         let pickerNext = null;
         let pickerBusy = false;
+        let currentImageTarget = 1;
+
+        function resolveImageTarget() {
+            if (currentImageTarget === 2) {
+                return {
+                    input: imageMediaId2,
+                    label: imageLabel2,
+                    previewWrap: document.getElementById('imagePreviewWrap2'),
+                    previewImage: document.getElementById('imagePreview2'),
+                    currentCover: document.getElementById('currentCoverPreview2'),
+                };
+            }
+
+            return {
+                input: imageMediaId,
+                label: imageLabel,
+                previewWrap: document.getElementById('imagePreviewWrap'),
+                previewImage: document.getElementById('imagePreview'),
+                currentCover: document.getElementById('currentCoverPreview'),
+            };
+        }
 
         function extractAjaxErrorMessage(xhr, fallback = 'Upload gagal.') {
             if (!xhr) return fallback;
@@ -442,16 +466,16 @@
             const type = $(this).data('type');
             const thumb = $(this).data('thumb') || '';
             if (type === 'image') {
-                imageMediaId && (imageMediaId.value = id);
-                imageLabel && (imageLabel.textContent = name);
-                const wrap = document.getElementById('imagePreviewWrap');
-                const img = document.getElementById('imagePreview');
+                const imageTarget = resolveImageTarget();
+                imageTarget.input && (imageTarget.input.value = id);
+                imageTarget.label && (imageTarget.label.textContent = name);
+                const wrap = imageTarget.previewWrap;
+                const img = imageTarget.previewImage;
                 if (img && wrap && thumb) {
                     img.src = thumb;
                     wrap.classList.remove('d-none');
                 }
-                const currentCover = document.getElementById('currentCoverPreview');
-                currentCover && currentCover.classList.add('d-none');
+                imageTarget.currentCover && imageTarget.currentCover.classList.add('d-none');
             } else if (type === 'video') {
                 hiddenVideoMediaId && (hiddenVideoMediaId.value = id);
                 videoLabel && (videoLabel.textContent = name);
@@ -654,18 +678,18 @@
                 if (res.status && res.media) {
                     const m = res.media;
                     if (pickerType === 'image') {
-                        imageMediaId && (imageMediaId.value = m.id);
-                        imageLabel && (imageLabel.textContent = m.name || m.original_filename);
+                        const imageTarget = resolveImageTarget();
+                        imageTarget.input && (imageTarget.input.value = m.id);
+                        imageTarget.label && (imageTarget.label.textContent = m.name || m.original_filename);
                         if (m.thumb_url) {
-                            const wrap = document.getElementById('imagePreviewWrap');
-                            const img = document.getElementById('imagePreview');
+                            const wrap = imageTarget.previewWrap;
+                            const img = imageTarget.previewImage;
                             if (img && wrap) {
                                 img.src = m.thumb_url;
                                 wrap.classList.remove('d-none');
                             }
                         }
-                        const currentCover = document.getElementById('currentCoverPreview');
-                        currentCover && currentCover.classList.add('d-none');
+                        imageTarget.currentCover && imageTarget.currentCover.classList.add('d-none');
                     } else if (pickerType === 'audio') {
                         audioMediaId && (audioMediaId.value = m.id);
                         audioLabel && (audioLabel.textContent = m.name || m.original_filename);
@@ -683,7 +707,14 @@
             });
         });
 
-        btnPickImage && btnPickImage.addEventListener('click', () => openPicker('image'));
+        btnPickImage && btnPickImage.addEventListener('click', () => {
+            currentImageTarget = 1;
+            openPicker('image');
+        });
+        btnPickImage2 && btnPickImage2.addEventListener('click', () => {
+            currentImageTarget = 2;
+            openPicker('image');
+        });
         btnPickVideo && btnPickVideo.addEventListener('click', () => openPicker('video'));
         btnPickAudio && btnPickAudio.addEventListener('click', () => openPicker('audio'));
 
