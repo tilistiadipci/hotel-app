@@ -12,6 +12,10 @@
             $activeTab = 'customize-menu';
         }
 
+        if (!$activeTab && old('section') === 'on_mobile') {
+            $activeTab = 'on-mobile';
+        }
+
         if (!$activeTab && old('section') === 'others') {
             $activeTab = 'others';
         }
@@ -60,6 +64,13 @@
                             {{ trans('common.settings_page.others') }}
                         </a>
                     </li>
+                    <li class="nav-item">
+                        <a class="nav-link {{ $activeTab === 'on-mobile' ? 'active' : '' }}" id="on-mobile-tab"
+                            data-toggle="tab" href="#onMobileTab" role="tab" aria-controls="onMobileTab"
+                            aria-selected="{{ $activeTab === 'on-mobile' ? 'true' : 'false' }}">
+                            {{ trans('common.settings_page.on_mobile') }}
+                        </a>
+                    </li>
                 </ul>
 
                 <div class="tab-content">
@@ -76,6 +87,11 @@
                     <div class="tab-pane fade {{ $activeTab === 'others' ? 'show active' : '' }}" id="othersTab"
                         role="tabpanel" aria-labelledby="others-tab">
                         @include('pages.website.other_setting')
+                    </div>
+
+                    <div class="tab-pane fade {{ $activeTab === 'on-mobile' ? 'show active' : '' }}" id="onMobileTab"
+                        role="tabpanel" aria-labelledby="on-mobile-tab">
+                        @include('pages.website.on_mobile_setting')
                     </div>
                 </div>
             </div>
@@ -103,7 +119,7 @@
                 toggle.value = toggle.checked ? 'active' : 'inactive';
             });
 
-            document.querySelectorAll('.customize-menu-toggle, .other-app-toggle, .menu-item-toggle').forEach(function(toggle) {
+            document.querySelectorAll('.customize-menu-toggle, .other-app-toggle, .menu-item-toggle, .mobile-menu-toggle').forEach(function(toggle) {
                 toggle.addEventListener('change', function() {
                     this.value = this.checked ? 'active' : 'inactive';
                 });

@@ -41,6 +41,15 @@ class SettingRepository extends BaseRepository
             'other_apps_wetv' => $this->getValueByKey('other_apps_wetv', 'inactive'),
             'other_apps_prime' => $this->getValueByKey('other_apps_prime', 'inactive'),
             'other_apps_youtube' => $this->getValueByKey('other_apps_youtube', 'inactive'),
+            'mobile_menu_music' => $this->getValueByKey('mobile_menu_music', 'active'),
+            'mobile_menu_vod' => $this->getValueByKey('mobile_menu_vod', 'active'),
+            'mobile_menu_guide' => $this->getValueByKey('mobile_menu_guide', 'active'),
+            'mobile_menu_nearby' => $this->getValueByKey('mobile_menu_nearby', 'active'),
+            'mobile_menu_shopping' => $this->getValueByKey('mobile_menu_shopping', 'active'),
+            'mobile_menu_other_page_website' => $this->getValueByKey(
+                'mobile_menu_other_page_website',
+                $this->getValueByKey('mobile_menu_other_apps', 'active')
+            ),
             'about_phone' => $this->getValueByKey('about_phone', ''),
             'about_email' => $this->getValueByKey('about_email', ''),
             'about_website' => $this->getValueByKey('about_website', ''),

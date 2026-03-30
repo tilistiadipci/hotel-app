@@ -69,7 +69,7 @@ class SettingWebsiteController extends Controller
     {
         $section = $request->input('section');
 
-        if (!in_array($section, ['language', 'notifications', 'transaction_charge', 'general', 'customize_menu', 'customize_menu_active', 'others'], true)) {
+        if (!in_array($section, ['language', 'notifications', 'transaction_charge', 'general', 'customize_menu', 'customize_menu_active', 'on_mobile', 'others'], true)) {
             return redirect()->route('settings.index')->with('error', 'Invalid settings section.');
         }
 
@@ -206,6 +206,32 @@ class SettingWebsiteController extends Controller
             ];
 
             foreach ($activeSettings as $key => $name) {
+                $this->settingRepository->saveByKey($name, $key, $validated[$key]);
+            }
+
+            session(['settings_refresh' => true]);
+        }
+
+        if ($section === 'on_mobile') {
+            $validated = $request->validate([
+                'mobile_menu_music' => ['required', Rule::in(['active', 'inactive'])],
+                'mobile_menu_vod' => ['required', Rule::in(['active', 'inactive'])],
+                'mobile_menu_guide' => ['required', Rule::in(['active', 'inactive'])],
+                'mobile_menu_nearby' => ['required', Rule::in(['active', 'inactive'])],
+                'mobile_menu_shopping' => ['required', Rule::in(['active', 'inactive'])],
+                'mobile_menu_other_page_website' => ['required', Rule::in(['active', 'inactive'])],
+            ]);
+
+            $mobileSettings = [
+                'mobile_menu_music' => 'Mobile Menu Music',
+                'mobile_menu_vod' => 'Mobile Menu VOD',
+                'mobile_menu_guide' => 'Mobile Menu Guide',
+                'mobile_menu_nearby' => 'Mobile Menu Nearby',
+                'mobile_menu_shopping' => 'Mobile Menu Shopping',
+                'mobile_menu_other_page_website' => 'Mobile Menu Other Page Website',
+            ];
+
+            foreach ($mobileSettings as $key => $name) {
                 $this->settingRepository->saveByKey($name, $key, $validated[$key]);
             }
 
