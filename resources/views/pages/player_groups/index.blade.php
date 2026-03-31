@@ -104,7 +104,15 @@
             },
             {
                 data: 'players_count',
-                name: 'players_count'
+                name: 'players_count',
+                render: function(data, type, row) {
+                    return `<a href="javascript:void(0)"
+                                data-uid="${row.uuid ?? row.id}"
+                                onclick="show('${row.uuid ?? row.id}')"
+                            >
+                            ${row.players_count || 0}
+                        </a>`;
+                }
             },
             {
                 name: 'is_active',

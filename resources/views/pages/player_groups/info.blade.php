@@ -26,8 +26,12 @@
     </tr>
     <tr>
         <td colspan="2">
-            <table>
-                @forelse ($playerGroup->players as $players)
+            <table class="table table-bordered table-sm table-striped mb-0">
+                <tr>
+                    <th>{{ trans('common.name') }}</th>
+                    <th>{{ trans('common.player.serial') }}</th>
+                </tr>
+                @forelse ($playerGroup->players as $player)
                     <tr>
                         <td>{{ $player->name }}</td>
                         <td>{{ $player->serial }}</td>
@@ -43,46 +47,3 @@
         </td>
     </tr>
 </table>
-
-<script>
-    $(document)
-        .off('click.player-token')
-        .on('click.player-token', '.js-player-token', function() {
-            const $btn = $(this);
-            const url = $btn.data('url');
-            if (!url) {
-                return;
-            }
-
-            const originalText = $btn.text();
-            $btn.prop('disabled', true).text('Processing...');
-
-            $.ajax({
-                url: url,
-                type: 'POST',
-                data: {
-                    _token: "{{ csrf_token() }}"
-                },
-                success: function(res) {
-                    if (res && res.status) {
-                        $('#player-token-value').text(res.token || '-');
-                        $btn.text('Regenerate Token');
-                        toastr["success"](res.message || "Success", "Success");
-                        return;
-                    }
-
-                    $btn.text(originalText);
-                    toastr["error"](res.message || "Failed", "Warning");
-                },
-                error: function(xhr) {
-                    $btn.text(originalText);
-                    const msg = xhr.responseJSON && xhr.responseJSON.message ? xhr.responseJSON
-                        .message : "Failed";
-                    toastr["error"](msg, "Warning");
-                },
-                complete: function() {
-                    $btn.prop('disabled', false);
-                }
-            });
-        });
-</script>

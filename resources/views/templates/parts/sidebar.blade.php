@@ -127,7 +127,7 @@
                     <li
                         class="{{ in_array($page, ['guide-categories', 'place-categories', 'movie-categories', 'song-playlists']) ? 'mm-active' : '' }}">
                         <a href="#">
-                            <i class="metismenu-icon pe-7s-folder"></i> {{ trans('common.category') }}
+                            <i class="metismenu-icon pe-7s-folder"></i> Group & {{ trans('common.category') }}
                             <i class="metismenu-state-icon pe-7s-angle-down caret-left"></i>
                         </a>
                         <ul>
