@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Repositories\PlayerGroupRepository;
 use App\Repositories\PlayerRepository;
 use App\Repositories\ThemeRepository;
 use Illuminate\Http\Request;
@@ -11,13 +12,15 @@ use Illuminate\Validation\ValidationException;
 class PlayerController extends Controller
 {
     protected PlayerRepository $playerRepository;
+    protected PlayerGroupRepository $playerGroupRepository;
     protected ThemeRepository $themeRepository;
     private string $page = 'players';
     private string $icon = 'fa fa-users';
 
-    public function __construct(PlayerRepository $playerRepository, ThemeRepository $themeRepository)
+    public function __construct(PlayerRepository $playerRepository, PlayerGroupRepository $playerGroupRepository, ThemeRepository $themeRepository)
     {
         $this->playerRepository = $playerRepository;
+        $this->playerGroupRepository = $playerGroupRepository;
         $this->themeRepository = $themeRepository;
     }
 
@@ -39,6 +42,7 @@ class PlayerController extends Controller
             'page' => $this->page,
             'icon' => $this->icon,
             'themes' => $this->themeRepository->getList(),
+            'playerGroups' => $this->playerGroupRepository->get(),
         ]);
     }
 
@@ -99,6 +103,7 @@ class PlayerController extends Controller
             'icon' => $this->icon,
             'player' => $player,
             'themes' => $this->themeRepository->getList(),
+            'playerGroups' => $this->playerGroupRepository->get(),
         ]);
     }
 
@@ -205,6 +210,7 @@ class PlayerController extends Controller
             ],
             'theme_id' => 'required|integer|exists:themes,id',
             'is_active' => 'nullable|boolean',
+            'player_group_id' => 'nullable|integer|exists:player_groups,id',
         ];
 
         $data = $request->validate($rules);

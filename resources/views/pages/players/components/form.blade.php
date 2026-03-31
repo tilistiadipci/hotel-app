@@ -51,6 +51,32 @@
                 </div>
 
                 <div class="position-relative row form-group">
+                    <label class="col-sm-3 col-form-label text-sm-right">{{ trans('common.player_group.title_singular') }}</label>
+                    <div class="col-sm-9">
+                        <div class="d-flex">
+                            <select name="player_group_id" id="player_group_id" class="form-control select2 @error('player_group_id') is-invalid @enderror" style="width: 100%;">
+                                <option value="">{{ trans('common.select_an_option') }}</option>
+                                @foreach ($playerGroups as $playerGroup)
+                                    <option value="{{ $playerGroup->id }}"
+                                        {{ (string) old('player_group_id', $player->player_group_id ?? '') === (string) $playerGroup->id ? 'selected' : '' }}>
+                                        {{ $playerGroup->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                            <button type="button" class="btn btn-outline-primary ml-2" title="Add Player Group" onclick="window.location.href='{{ route('player-groups.create') }}'">
+                                <i class="fa fa-plus"></i>
+                            </button>
+                        </div>
+
+                        @error('player_group_id')
+                            <div class="text-danger">{{ $message }}</div>
+                        @else
+                            <small class="text-primary" style="font-style: italic">* {{ trans('common.required') }}</small>
+                        @enderror
+                    </div>
+                </div>
+
+                <div class="position-relative row form-group">
                     <label class="col-sm-3 col-form-label text-sm-right">{{ trans('common.theme.title_singular') }}</label>
                     <div class="col-sm-9">
                         <select name="theme_id" id="theme_id" class="form-control select2 @error('theme_id') is-invalid @enderror" style="width: 100%;">
