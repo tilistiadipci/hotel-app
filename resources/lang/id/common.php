@@ -102,6 +102,7 @@ return [
     'complete_upload' => 'Selesaikan Unggah',
     'usage' => 'Penggunaan',
     'edit_media' => 'Ubah Nama Media',
+    'no_data' => 'Tidak ada data',
 
     'list_month' => [
         'january' => 'Januari',
@@ -178,7 +179,7 @@ return [
         'region' => 'Region',
         'stream_url' => 'Stream URL',
         'frequency' => 'Frekuensi',
-        'quality' => 'Kualitas',
+        'quality' => 'Kualitas',1
     ],
 
     'player' => [
@@ -187,6 +188,14 @@ return [
         'title_singular' => 'Player',
         'serial' => 'Serial Number',
         'cannot_deactivate_when_booked' => 'Player tidak bisa dinonaktifkan karena masih sedang dibooking dan belum checkout.',
+    ],
+
+    'player_group' => [
+        'list_of_player_groups' => 'Daftar Grup Player',
+        'title' => 'Group Player',
+        'title_singular' => 'Group Player',
+        'player_count' => 'Jumlah Player',
+        'players_in_group' => 'Player dalam Group ini',
     ],
 
     'booking' => [

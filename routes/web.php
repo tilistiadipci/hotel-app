@@ -21,6 +21,7 @@ use App\Http\Controllers\GuideCategoryController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\MenuTransactionController;
 use App\Http\Controllers\PlayerController;
+use App\Http\Controllers\PlayerGroupController;
 use App\Http\Controllers\RunningTextController;
 use App\Http\Controllers\BookingController;
 use App\Http\Controllers\BookingPlayerReportController;
@@ -149,6 +150,14 @@ Route::middleware(['auth'])->group(function () {
             ->group(function () {
                 Route::post('/bulkDelete', [PlayerController::class, 'bulkDelete'])->name('bulkDelete');
                 Route::post('/{player}/token', [PlayerController::class, 'regenerateToken'])->name('token');
+            });
+
+        // Player Groups
+        Route::resource('player-groups', PlayerGroupController::class);
+        Route::prefix('player-groups')
+            ->name('player-groups.')
+            ->group(function () {
+                Route::post('/bulkDelete', [PlayerGroupController::class, 'bulkDelete'])->name('bulkDelete');
             });
 
         // Movies (custom routes first to avoid conflict with resource show)

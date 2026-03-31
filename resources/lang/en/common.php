@@ -106,6 +106,7 @@ return [
     'complete_upload' => 'Complete Uploaded',
     'usage' => 'Stroage Usage',
     'edit_media' => 'Edit Media Name',
+    'no_data' => 'No data',
 
     'list_month' => [
         'january' => 'January',
@@ -190,6 +191,14 @@ return [
         'title_singular' => 'Player',
         'serial' => 'Serial Number',
         'cannot_deactivate_when_booked' => 'This player cannot be deactivated because it is still booked and has not been checked out.',
+    ],
+
+    'player_group' => [
+        'list_of_player_groups' => 'List of Player Groups',
+        'title' => 'Player Groups',
+        'title_singular' => 'Player Group',
+        'player_count' => 'Player Count',
+        'players_in_group' => 'Players in this group',
     ],
 
     'booking' => [
