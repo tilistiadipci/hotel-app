@@ -61,7 +61,7 @@ class WarningController extends Controller
             $firebase = new FirebaseService();
             foreach ($warnings as $warning) {
 
-                $topic = 'player_' . $warning->player->serial;
+                $topic = 'warning_player_' . $warning->player->serial;
 
                 try {
                     $result = $firebase->sendToTopic($topic, [
