@@ -65,7 +65,7 @@ class WarningController extends Controller
 
                 try {
                     $result = $firebase->sendToTopic($topic, [
-                        'type' => $request->type,
+                        'type' => $request->type == 'other' ? $request->other_type : $request->type,
                         'priority' => $request->priority,
                         'message' => $request->message,
                         'schedule_mode' => $request->schedule_mode,
