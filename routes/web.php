@@ -27,6 +27,7 @@ use App\Http\Controllers\BookingController;
 use App\Http\Controllers\BookingPlayerReportController;
 use App\Http\Controllers\BookingPlayerDurationReportController;
 use App\Http\Controllers\MenuTransactionReportController;
+use App\Http\Controllers\WarningController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -224,6 +225,10 @@ Route::middleware(['auth'])->group(function () {
                 Route::post('/bulkDelete', [RunningTextController::class, 'bulkDelete'])->name('bulkDelete');
                 Route::post('/preview-rss', [RunningTextController::class, 'previewRss'])->name('preview-rss');
             });
+
+        Route::get('warnings', [WarningController::class, 'index'])->name('warnings.index');
+        Route::get('warnings/create', [WarningController::class, 'create'])->name('warnings.create');
+        Route::post('warnings', [WarningController::class, 'store'])->name('warnings.store');
 
         // Menu
         Route::middleware('setting.active:menu_shopping_status')->group(function () {

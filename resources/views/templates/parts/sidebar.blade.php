@@ -56,6 +56,13 @@
                         <i class="metismenu-icon fa fa-calendar"></i> Checkin/Checkout
                     </a>
                 </li>
+
+                <li class="{{ $page == 'warnings' ? 'mm-active' : '' }}">
+                    <a href="{{ route('warnings.index') }}" class="{{ $page == 'warnings' ? 'mm-active' : '' }}">
+                        <i class="metismenu-icon fa fa-exclamation-triangle"></i>
+                        Warning Broadcast
+                    </a>
+                </li>
                 @if (in_array(auth()->user()->role_id ?? null, [1, 2], true))
 
                     {{-- media --}}

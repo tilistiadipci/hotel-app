@@ -63,6 +63,8 @@ return [
             // only a MemoryRepository is supported.
             'repository' => MemoryRepository::class,
 
+            'qos' => env('MQTT_QOS', 1),
+
             // Additional settings used for the connection to the broker.
             // All of these settings are entirely optional and have sane defaults.
             'connection_settings' => [
@@ -92,7 +94,7 @@ return [
                 'last_will' => [
                     'topic' => env('MQTT_LAST_WILL_TOPIC'),
                     'message' => env('MQTT_LAST_WILL_MESSAGE'),
-                    'quality_of_service' => env('MQTT_LAST_WILL_QUALITY_OF_SERVICE', 0),
+                    'quality_of_service' => env('MQTT_LAST_WILL_QUALITY_OF_SERVICE', 1),
                     'retain' => env('MQTT_LAST_WILL_RETAIN', false),
                 ],
 
