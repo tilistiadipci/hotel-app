@@ -2,21 +2,19 @@
 
 @section('content')
     <div class="app-main__inner">
-
         <div class="app-page-title">
             <div class="page-title-wrapper">
-
                 @include('templates.parts.breadcrumb', [
-                    'title' => trans('common.menu_category.title'),
+                    'title' => trans('common.menu_tenant.title'),
                     'icon' => $icon,
                     'breadcrumbs' => [
-                        ['href' => '#', 'label' => trans('common.menu_category.title')],
+                        ['href' => '#', 'label' => trans('common.menu_tenant.title')],
                     ],
                 ])
 
                 <div class="page-title-actions">
                     @include('partials.buttons.btn-create-new', [
-                        'url' => route('menu-categories.create'),
+                        'url' => route('menu-tenants.create'),
                     ])
                 </div>
             </div>
@@ -27,10 +25,11 @@
                 <div class="card mb-3">
                     <div class="card-header-tab card-header">
                         <div class="card-header-title font-size-lg text-capitalize font-weight-normal">
-                            {{ trans('common.menu_category.list_of_menu_category') }}
+                            {{ trans('common.menu_tenant.list_of_menu_tenant') }}
                         </div>
                         <div class="btn-actions-pane-right actions-icon-btn d-flex align-items-center">
-                            <button class="btn btn-sm btn-danger" id="applyBulkAction" data-toggle="tooltip" title="{{ trans('common.bulk_delete') }}">
+                            <button class="btn btn-sm btn-danger" id="applyBulkAction" data-toggle="tooltip"
+                                title="{{ trans('common.bulk_delete') }}">
                                 <i class="fa fa-trash text-white"></i>
                             </button>
                         </div>
@@ -46,8 +45,9 @@
                                         </label>
                                     </th>
                                     <th style="width:60px">No</th>
-                                    <th>{{ trans('common.tenant') }}</th>
                                     <th>{{ trans('common.name') }}</th>
+                                    <th>{{ trans('common.service_charge') }}</th>
+                                    <th>{{ trans('common.description') }}</th>
                                     <th>{{ trans('common.sort_order') }}</th>
                                     <th>{{ trans('common.status') }}</th>
                                     <th style="text-align:center">{!! trans('common.action') !!}</th>
@@ -73,7 +73,7 @@
                 className: 'text-center',
                 width: '4%',
                 render: function(data, type, row) {
-                    return `<input type="checkbox" class="data-check" name="checkbox" value="${row.uuid ?? row.id}">`;
+                    return `<input type="checkbox" class="data-check" name="checkbox" value="${row.uuid}">`;
                 }
             },
             {
@@ -87,18 +87,15 @@
                 }
             },
             {
-                data: 'tenant',
-                name: 'tenant.name',
-                defaultContent: ''
-            },
-            {
                 data: 'name',
                 name: 'name',
                 render: function(data, type, row) {
-                    let url = `{{ url('menu-categories') }}/${row.uuid ?? row.id}/edit`
-                    return `<a href="${url}">${row.name || ''}</a>`
+                    let url = `{{ url('menu-tenants') }}/${row.uuid}/edit`;
+                    return `<a href="${url}">${row.name || ''}</a>`;
                 }
             },
+            { data: 'service_charge_display', name: 'service_charge', defaultContent: '0.00' },
+            { data: 'description', name: 'description', defaultContent: '' },
             { data: 'sort_order', name: 'sort_order', defaultContent: '' },
             {
                 name: 'is_active',
@@ -119,27 +116,12 @@
             { data: 'created_at', name: 'created_at', visible: false },
         ];
 
-        var getUrl = "{{ route('menu-categories.index') }}";
-        var showUrl = "{{ route('menu-categories.show', ':id') }}";
-        var editUrl = "{{ route('menu-categories.edit', ':id') }}";
-        var destroyUrl = "{{ route('menu-categories.destroy', ':id') }}";
+        var getUrl = "{{ route('menu-tenants.index') }}";
+        var showUrl = "{{ route('menu-tenants.show', ':id') }}";
+        var editUrl = "{{ route('menu-tenants.edit', ':id') }}";
+        var destroyUrl = "{{ route('menu-tenants.destroy', ':id') }}";
         var scrollX = false;
         var fixedColumns = false;
-
-        $(function () {
-            $('#filterStatus').select2({
-                theme: 'bootstrap4',
-                width: '100%',
-                allowClear: true,
-                placeholder: "{{ trans('common.all') }}",
-                dropdownParent: $('#filterSidebar')
-            });
-
-            $('.clear-select').on('click', function () {
-                const target = $(this).data('target');
-                $(target).val(null).trigger('change');
-            });
-        });
     </script>
 
     @include('js.datatable')

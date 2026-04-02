@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Repositories\UserRepository;
 use App\Repositories\RoleRepository;
 use App\Repositories\MediaRepository;
+use App\Repositories\MenuTenantRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\Controller;
@@ -17,6 +18,7 @@ class UserController extends Controller
 {
     protected $userRepository;
     protected $roleRepository;
+    protected $tenantRepository;
     protected MediaRepository $mediaRepository;
     private $page;
     private $icon = 'fa fa-users';
@@ -24,10 +26,12 @@ class UserController extends Controller
     public function __construct(
         UserRepository $userRepository,
         RoleRepository $roleRepository,
+        MenuTenantRepository $tenantRepository,
         MediaRepository $mediaRepository
     ) {
         $this->userRepository = $userRepository;
         $this->roleRepository = $roleRepository;
+        $this->tenantRepository = $tenantRepository;
         $this->mediaRepository = $mediaRepository;
         $this->page = 'users';
     }
@@ -57,6 +61,7 @@ class UserController extends Controller
             'page' => $this->page,
             'icon' => $this->icon,
             'roles' => $this->roleRepository->getRoles(),
+            'tenants' => $this->tenantOptions(),
         ]);
     }
 
@@ -157,6 +162,7 @@ class UserController extends Controller
                 'icon' => $this->icon,
                 'user' => $this->userRepository->whereWith(['profile.imageMedia'], ['uuid' => $uid])->first(),
                 'roles' => $this->roleRepository->getRoles(),
+                'tenants' => $this->tenantOptions(),
             ]);
         }
     }
@@ -269,6 +275,8 @@ class UserController extends Controller
             ],
             'phone' => 'required|min:6|max:20',
             'role_id' => 'required',
+            'menu_tenant_ids' => 'nullable|array',
+            'menu_tenant_ids.*' => 'integer|exists:menu_tenants,id',
         ];
 
         // file rule: allow empty, guard dimensions to avoid ValueError when tmp path missing
@@ -303,7 +311,14 @@ class UserController extends Controller
             $messages['email.unique'] = trans('common.error.unique', ['attribute'=> trans('common.email')]);
         }
 
-        $request->validate($rules, $messages);
+        $validated = $request->validate($rules, $messages);
+
+        $role = $this->roleRepository->find($validated['role_id'] ?? null);
+        if (($role->category ?? null) === 'operator' && empty($validated['menu_tenant_ids'] ?? [])) {
+            throw ValidationException::withMessages([
+                'menu_tenant_ids' => trans('common.error.required', ['attribute' => trans('common.tenant')]),
+            ]);
+        }
     }
 
     private function resolveAvatar(Request $request, ?int $existingImageId, array &$createdMediaIds, array &$storedPaths): ?int
@@ -360,5 +375,15 @@ class UserController extends Controller
             'media_id' => $media->id,
             'relative_path' => $relativePath,
         ];
+    }
+
+    private function tenantOptions()
+    {
+        return $this->tenantRepository->query()
+            ->where('is_active', 1)
+            ->whereNull('deleted_at')
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
     }
 }

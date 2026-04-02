@@ -2,138 +2,163 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Controllers\HelperController;
-use App\Repositories\MediaRepository;
 use App\Repositories\MenuCategoryRepository;
 use App\Repositories\MenuItemRepository;
 use App\Repositories\MenuTenantRepository;
+use App\Repositories\MediaRepository;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
-class MenuController extends Controller
+class MenuTenantController extends Controller
 {
-    protected $itemRepository;
-    protected $categoryRepository;
-    protected $tenantRepository;
-    protected MediaRepository $mediaRepository;
-    private $page;
-    private $icon = 'fa fa-utensils';
+    private string $page = 'menu-tenants';
+    private string $icon = 'fa fa-store';
 
     public function __construct(
-        MenuItemRepository $itemRepository,
-        MenuCategoryRepository $categoryRepository,
-        MenuTenantRepository $tenantRepository,
-        MediaRepository $mediaRepository
+        private readonly MenuTenantRepository $tenantRepository,
+        private readonly MenuCategoryRepository $categoryRepository,
+        private readonly MenuItemRepository $itemRepository,
+        private readonly MediaRepository $mediaRepository,
     ) {
-        $this->itemRepository = $itemRepository;
-        $this->categoryRepository = $categoryRepository;
-        $this->tenantRepository = $tenantRepository;
-        $this->mediaRepository = $mediaRepository;
-        $this->page = 'menu-items';
     }
 
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            return $this->itemRepository->getDatatable();
+            return $this->tenantRepository->getDatatable();
         }
 
-        return view('pages.menu.index', [
+        return view('pages.menu_tenants.index', [
             'page' => $this->page,
             'icon' => $this->icon,
-            'tenants' => $this->getTenantOptions(),
-            'categories' => $this->getCategoryOptions(),
         ]);
     }
 
     public function create()
     {
-        return view('pages.menu.create', [
+        return view('pages.menu_tenants.create', [
             'page' => $this->page,
             'icon' => $this->icon,
-            'tenants' => $this->getTenantOptions(),
-            'categories' => $this->getCategoryOptions(),
         ]);
     }
 
     public function store(Request $request)
     {
         $data = $this->validateRequest($request);
-
         $createdMediaIds = [];
         $storedPaths = [];
+        $data['slug'] = Str::slug($data['name']);
+
+        if ($this->tenantRepository->findBySlug($data['slug'])) {
+            throw ValidationException::withMessages([
+                'name' => 'Tenant dengan nama tersebut sudah ada.',
+            ]);
+        }
 
         try {
             DB::beginTransaction();
 
             $this->handleUploadImage($request, $data, null, $createdMediaIds, $storedPaths);
-            $this->itemRepository->create($data);
+            $this->tenantRepository->create($data);
 
             DB::commit();
-
-            return redirect()->route('menu.index')->with('success', trans('common.success.create'));
         } catch (\Exception $e) {
             DB::rollBack();
             app(HelperController::class)->cleanupMedia($createdMediaIds, $storedPaths);
             $this->debugError($e);
-
             return redirect()->back()->with('error', $e->getMessage());
         }
+
+        return redirect()->route('menu-tenants.index')->with('success', trans('common.success.create'));
     }
 
     public function edit(string $uid)
     {
-        $item = $this->itemRepository->findUid($uid);
-        if (!$item) {
+        $tenant = $this->tenantRepository->findUid($uid);
+        if (!$tenant) {
             return redirect()->route('error.404');
         }
 
-        return view('pages.menu.edit', [
+        return view('pages.menu_tenants.edit', [
             'page' => $this->page,
             'icon' => $this->icon,
-            'item' => $item->load('tenant', 'category', 'imageMedia'),
-            'tenants' => $this->getTenantOptions(),
-            'categories' => $this->getCategoryOptions(),
+            'tenant' => $tenant,
         ]);
     }
 
     public function update(Request $request, string $uid)
     {
-        $data = $this->validateRequest($request, $uid);
+        $tenant = $this->tenantRepository->findUid($uid);
+        if (!$tenant) {
+            return redirect()->route('error.404');
+        }
+
+        $data = $this->validateRequest($request, $tenant->id);
         $createdMediaIds = [];
         $storedPaths = [];
+        $data['slug'] = Str::slug($data['name']);
 
         try {
             DB::beginTransaction();
 
             $this->handleUploadImage($request, $data, $uid, $createdMediaIds, $storedPaths);
-            $this->itemRepository->updateByUid($uid, $data);
+            $this->tenantRepository->update($tenant->id, $data);
 
             DB::commit();
-
-            return redirect()->route('menu.index')->with('success', trans('common.success.update'));
         } catch (\Exception $e) {
             DB::rollBack();
             app(HelperController::class)->cleanupMedia($createdMediaIds, $storedPaths);
             $this->debugError($e);
-
             return redirect()->back()->with('error', $e->getMessage());
         }
+
+        return redirect()->route('menu-tenants.index')->with('success', trans('common.success.update'));
     }
 
     public function destroy(string $uid)
     {
+        $tenant = $this->tenantRepository->findUid($uid);
+        if (!$tenant) {
+            return response()->json([
+                'status' => false,
+                'message' => trans('common.error.404'),
+            ]);
+        }
+
         try {
-            $this->itemRepository->delete($uid);
+            DB::beginTransaction();
+
+            $this->itemRepository->query()
+                ->where('menu_tenant_id', $tenant->id)
+                ->update([
+                    'deleted_by' => auth()->id(),
+                    'deleted_at' => now(),
+                ]);
+
+            $this->categoryRepository->query()
+                ->where('menu_tenant_id', $tenant->id)
+                ->update([
+                    'deleted_by' => auth()->id(),
+                    'deleted_at' => now(),
+                ]);
+
+            $tenant->deleted_by = auth()->id();
+            $tenant->save();
+            $tenant->delete();
+
+            DB::commit();
 
             return response()->json([
                 'status' => true,
                 'message' => trans('common.success.delete'),
             ]);
         } catch (\Exception $e) {
+            DB::rollBack();
+
             return response()->json([
                 'status' => false,
                 'message' => env('APP_DEBUG') ? $e->getMessage() : trans('common.error.500'),
@@ -141,12 +166,60 @@ class MenuController extends Controller
         }
     }
 
+    public function bulkDelete(Request $request)
+    {
+        $uids = $request->uids ?? [];
+        if (empty($uids)) {
+            return response()->json([
+                'status' => false,
+                'message' => trans('common.choose_item_text'),
+            ]);
+        }
+
+        try {
+            DB::beginTransaction();
+
+            $tenants = $this->tenantRepository->query()
+                ->whereIn('uuid', $uids)
+                ->get();
+
+            $tenantIds = $tenants->pluck('id')->all();
+
+            $this->itemRepository->query()
+                ->whereIn('menu_tenant_id', $tenantIds)
+                ->update([
+                    'deleted_by' => auth()->id(),
+                    'deleted_at' => now(),
+                ]);
+
+            $this->categoryRepository->query()
+                ->whereIn('menu_tenant_id', $tenantIds)
+                ->update([
+                    'deleted_by' => auth()->id(),
+                    'deleted_at' => now(),
+                ]);
+
+            $this->tenantRepository->bulkDeleteByUid($uids, null, false);
+
+            DB::commit();
+
+            return response()->json([
+                'status' => true,
+                'message' => trans('common.success.delete'),
+            ]);
+        } catch (\Exception $e) {
+            DB::rollBack();
+
+            return $this->debugErrorResJson($e);
+        }
+    }
+
     public function show(Request $request, string $uid)
     {
-        $item = $this->itemRepository->findUid($uid);
+        $tenant = $this->tenantRepository->findUid($uid);
 
         if ($request->ajax()) {
-            if (!$item) {
+            if (!$tenant) {
                 return response()->json([
                     'status' => false,
                     'message' => trans('common.error.404'),
@@ -155,95 +228,46 @@ class MenuController extends Controller
 
             return response()->json([
                 'status' => true,
-                'data' => view('pages.menu.info', [
-                    'page' => $this->page,
-                    'item' => $item->load('tenant', 'category', 'imageMedia'),
+                'data' => view('pages.menu_tenants.info', [
+                    'tenant' => $tenant->load('imageMedia'),
                 ])->render(),
                 'return_type' => 'json',
             ]);
         }
 
-        if (!$item) {
+        if (!$tenant) {
             return redirect()->route('error.404');
         }
 
-        return view('pages.menu.show', [
-            'page' => $this->page,
-            'item' => $item->load('tenant', 'category', 'imageMedia'),
-            'icon' => $this->icon,
-        ]);
+        return redirect()->route('menu-tenants.index');
     }
 
-    public function bulkDelete(Request $request)
+    private function validateRequest(Request $request, ?int $tenantId = null): array
     {
-        try {
-            $this->itemRepository->bulkDeleteByUid($request->uids ?? []);
-
-            return response()->json([
-                'status' => true,
-                'message' => trans('common.success.delete'),
-            ]);
-        } catch (\Exception $e) {
-            return $this->debugErrorResJson($e);
-        }
-    }
-
-    private function validateRequest(Request $request, ?string $uid = null): array
-    {
-        $itemId = null;
-        if ($uid) {
-            $itemId = optional($this->itemRepository->findUid($uid))->id;
-        }
-
-        $validated = $request->validate([
-            'name' => ['required', 'max:150'],
-            'menu_tenant_id' => ['required', 'integer', 'exists:menu_tenants,id'],
-            'category_id' => ['required', 'integer', 'exists:menu_categories,id'],
+        return $request->validate([
+            'name' => [
+                'required',
+                'string',
+                'max:150',
+                Rule::unique('menu_tenants', 'name')
+                    ->ignore($tenantId)
+                    ->whereNull('deleted_at'),
+            ],
             'description' => 'nullable|string',
             'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
             'image_media_id' => 'nullable|integer|exists:medias,id',
-            'price' => 'required|numeric|min:0',
-            'discount_price' => 'nullable|numeric|min:0',
-            'is_available' => 'required|boolean',
+            'location' => 'nullable|string|max:150',
+            'service_charge' => 'required|numeric|min:0',
             'sort_order' => 'nullable|integer|min:0',
-            'preparation_time' => 'nullable|integer|min:0',
+            'is_active' => 'nullable|boolean',
         ]);
-
-        $request->validate([
-            'name' => [
-                Rule::unique('menu_items', 'name')
-                    ->ignore($itemId)
-                    ->where('menu_tenant_id', $validated['menu_tenant_id'])
-                    ->whereNull('deleted_at'),
-            ],
-        ]);
-
-        $category = $this->categoryRepository->query()
-            ->where('id', $validated['category_id'])
-            ->where('menu_tenant_id', $validated['menu_tenant_id'])
-            ->whereNull('deleted_at')
-            ->first();
-
-        if (!$category) {
-            throw ValidationException::withMessages([
-                'category_id' => 'Kategori tidak sesuai dengan tenant yang dipilih.',
-            ]);
-        }
-
-        if (!$uid && !$request->file('image') && !$request->filled('image_media_id')) {
-            throw ValidationException::withMessages([
-                'image' => 'Silakan unggah gambar atau pilih dari media yang sudah ada.',
-            ]);
-        }
-
-        return $validated;
     }
 
     private function handleUploadImage(Request $request, array &$data, ?string $uid = null, array &$createdMediaIds = [], array &$storedPaths = []): void
     {
         $file = $request->file('image');
         $selectedMediaId = $request->input('image_media_id');
-        $existing = $uid ? $this->itemRepository->findUid($uid) : null;
+        $existing = $uid ? $this->tenantRepository->findUid($uid) : null;
 
         if ($file && $file->isValid()) {
             $stored = $this->storeImageFile($file);
@@ -292,26 +316,5 @@ class MenuController extends Controller
             'media_id' => $media->id,
             'relative_path' => $relativePath,
         ];
-    }
-
-    private function getTenantOptions()
-    {
-        return $this->tenantRepository->query()
-            ->where('is_active', 1)
-            ->whereNull('deleted_at')
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
-    }
-
-    private function getCategoryOptions()
-    {
-        return $this->categoryRepository->query()
-            ->where('is_active', 1)
-            ->whereNull('deleted_at')
-            ->orderBy('menu_tenant_id')
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
     }
 }

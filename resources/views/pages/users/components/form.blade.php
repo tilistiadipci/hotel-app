@@ -56,7 +56,7 @@
                                 $gender = $user->profile->gender;
                             }
                         @endphp
-                        <select name="gender" id="gender" class="form-control select2">
+                        <select name="gender" id="gender" class="form-control select2" style="width: 100%">
                             <option value="">Select Gender</option>
                             <option value="male" {{ $gender == 'male' ? 'selected' : '' }}>
                                 Male
@@ -69,8 +69,7 @@
                         @if ($errors->has('gender'))
                             <div class="text-danger">{{ $errors->first('gender') }}</div>
                         @else
-                            <small class="text-primary" style="font-style: italic">*
-                                {{ trans('common.required') }}</small>
+                            <small class="text-primary" style="font-style: italic">* {{ trans('common.required') }}</small>
                         @endif
                     </div>
                 </div>
@@ -78,7 +77,7 @@
                 <div class="position-relative row form-group">
                     <label class="col-sm-4 col-form-label text-sm-right">Status</label>
                     <div class="col-sm-8">
-                        <select name="is_active" id="is_active" class="form-control select2">
+                        <select name="is_active" id="is_active" class="form-control select2"style="width: 100%">
                             <option value="1" {{ isset($user) && $user->is_active == 1 ? 'selected' : '' }}>
                                 {{ trans('common.active') }}</option>
                             <option value="0" {{ isset($user) && $user->is_active == 0 ? 'selected' : '' }}>
@@ -99,6 +98,28 @@
                             'labelOption' => 'Select Role',
                             'required' => true,
                         ])
+                    </div>
+                </div>
+
+                @php
+                    $selectedTenantIds = isset($user) ? $user->menuTenants->pluck('id')->toArray() : (array) old('menu_tenant_ids', []);
+                @endphp
+                <div class="position-relative row form-group" id="operatorTenantWrapper" style="display: none;">
+                    <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.tenant') }}</label>
+                    <div class="col-sm-8">
+                        <select name="menu_tenant_ids[]" id="menu_tenant_ids"
+                            class="form-control select2 @error('menu_tenant_ids') is-invalid @enderror" multiple style="width: 100%;">
+                            @foreach ($tenants as $tenant)
+                                <option value="{{ $tenant->id }}" {{ in_array($tenant->id, $selectedTenantIds) ? 'selected' : '' }}>
+                                    {{ $tenant->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        @error('menu_tenant_ids')
+                            <div class="text-danger">{{ $message }}</div>
+                        @else
+                            <small class="text-primary" style="font-style: italic">* {{ trans('common.required') }}</small>
+                        @enderror
                     </div>
                 </div>
 
@@ -174,4 +195,45 @@
     @parent
 
     @include('partials.components.media_picker_script')
+    <script>
+        (function waitForjQuery() {
+            if (window.jQuery) {
+                ['#gender', '#is_active', '#role_id', '#menu_tenant_ids'].forEach(selector => {
+                    const el = $(selector);
+                    if (el.length) {
+                        if (el.hasClass('select2-hidden-accessible')) {
+                            el.select2('destroy');
+                        }
+                        el.select2({
+                            theme: 'bootstrap4',
+                            width: '100%',
+                            placeholder: "{{ trans('common.select_an_option') ?? 'Select an option' }}"
+                        });
+                    }
+                });
+
+                const roleMap = @json($roles->mapWithKeys(fn ($role) => [(string) $role->id => $role->category]));
+                const $role = $('#role_id');
+                const $wrapper = $('#operatorTenantWrapper');
+                const $tenantSelect = $('#menu_tenant_ids');
+
+                function syncOperatorTenantVisibility() {
+                    const selectedRole = String($role.val() || '');
+                    const isOperator = roleMap[selectedRole] === 'operator';
+
+                    if (isOperator) {
+                        $wrapper.show();
+                    } else {
+                        $wrapper.hide();
+                        $tenantSelect.val(null).trigger('change');
+                    }
+                }
+
+                $role.on('change', syncOperatorTenantVisibility);
+                syncOperatorTenantVisibility();
+            } else {
+                setTimeout(waitForjQuery, 50);
+            }
+        })();
+    </script>
 @endsection

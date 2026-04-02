@@ -63,11 +63,12 @@ class MenuItemRepository extends BaseRepository
     public function getDatatable()
     {
         $query = $this->query()
-            ->with(['category', 'imageMedia'])
+            ->with(['tenant', 'category', 'imageMedia'])
             ->filter(request(['search', 'filters']));
 
         return DataTables::of($this->paginateDatatable($query))
             ->addIndexColumn()
+            ->addColumn('tenant', fn ($row) => optional($row->tenant)->name)
             ->addColumn('category', fn ($row) => optional($row->category)->name)
             ->addColumn('price_display', fn ($row) => number_format($row->price, 2))
             ->addColumn('discount_display', fn ($row) => $row->discount_price ? number_format($row->discount_price, 2) : '')

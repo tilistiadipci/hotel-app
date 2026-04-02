@@ -2,6 +2,7 @@
     $item = $item ?? null;
     $imageUrl = getMediaImageUrl($item->imageMedia->storage_path ?? 'images/no-image.png');
     $items = [
+        trans('common.tenant') => optional($item->tenant)->name ?? '-',
         trans('common.name') => $item->name,
         trans('common.category') => optional($item->category)->name ?? '-',
         trans('common.menu.price') => number_format($item->price ?? 0, 2),

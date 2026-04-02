@@ -34,6 +34,11 @@ class MenuItem extends Model
         return $this->belongsTo(MenuCategory::class, 'category_id');
     }
 
+    public function tenant()
+    {
+        return $this->belongsTo(MenuTenant::class, 'menu_tenant_id');
+    }
+
     public function scopeFilter($query, array $filters)
     {
         $query->when($filters['search']['value'] ?? false, function ($query, $search) {
@@ -56,6 +61,10 @@ class MenuItem extends Model
 
         $query->when($filter['category_id'] ?? false, function ($q, $categoryId) {
             $q->where('category_id', $categoryId);
+        });
+
+        $query->when($filter['menu_tenant_id'] ?? false, function ($q, $tenantId) {
+            $q->where('menu_tenant_id', $tenantId);
         });
     }
 

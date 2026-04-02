@@ -214,6 +214,13 @@
                     {{-- pantry --}}
                     @if ($isShoppingMenuActive)
                         <li class="app-sidebar__heading">{{ trans('common.menu.title_singular') }}</li>
+                        <li class="{{ $page == 'menu-tenants' ? 'mm-active' : '' }}">
+                            <a href="{{ url('/menu-tenants') }}"
+                                class="{{ $page == 'menu-tenants' ? 'mm-active' : '' }}">
+                                <i class="metismenu-icon fa fa-store"></i>
+                                {{ trans('common.menu_tenant.title') }}
+                            </a>
+                        </li>
                         <li class="{{ $page == 'menu-categories' ? 'mm-active' : '' }}">
                             <a href="{{ url('/menu-categories') }}"
                                 class="{{ $page == 'menu-categories' ? 'mm-active' : '' }}">

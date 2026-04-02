@@ -21,7 +21,8 @@ class User extends Authenticatable
         'password',
         'last_login_at',
         'is_active',
-        'role_id'
+        'role_id',
+        'menu_tenant_id',
     ];
 
     protected $hidden = [
@@ -88,5 +89,16 @@ class User extends Authenticatable
     public function profile()
     {
         return $this->hasOne(UserProfile::class, 'user_id', 'id');
+    }
+
+    public function menuTenant()
+    {
+        return $this->belongsTo(MenuTenant::class, 'menu_tenant_id');
+    }
+
+    public function menuTenants()
+    {
+        return $this->belongsToMany(MenuTenant::class, 'menu_tenant_user', 'user_id', 'menu_tenant_id')
+            ->withTimestamps();
     }
 }

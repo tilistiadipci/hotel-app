@@ -18,6 +18,8 @@ return [
     'photo' => 'Foto',
     'title' => 'Judul',
     'category' => 'Kategori',
+    'tenant' => 'Tenant',
+    'service_charge' => 'Biaya Layanan',
     'type' => 'Tipe',
     'bulk_edit' => 'Ubah Semua',
     'bulk_delete' => 'Hapus Semua',
@@ -267,10 +269,12 @@ return [
         'table_title' => 'Data Transaksi Menu',
         'export_excel' => 'Export Excel',
         'filter_players' => 'Filter Player',
+        'filter_tenant' => 'Filter Tenant',
         'filter_date_range' => 'Pilih rentang tanggal',
         'tx_date' => 'Tanggal',
         'guest_name' => 'Nama Tamu',
         'player_alias' => 'Alias Player',
+        'tenant_name' => 'Tenant',
         'total_items' => 'Total Pesanan Item',
         'grand_total' => 'Grand Total',
         'payment_status' => 'Status Pembayaran',
@@ -354,7 +358,7 @@ return [
     'menu' => [
         'list_of_menu' => 'Daftar Belanja',
         'title' => 'Belanja',
-        'title_singular' => 'Item Belanja',
+        'title_singular' => 'Shopping',
         'category' => 'Kategori',
         'price' => 'Harga',
         'discount' => 'Diskon',
@@ -369,6 +373,12 @@ return [
         'list_of_menu_category' => 'Daftar Kategori Belanja',
         'title' => 'Kategori Belanja',
         'title_singular' => 'Kategori Belanja',
+    ],
+
+    'menu_tenant' => [
+        'list_of_menu_tenant' => 'Daftar Tenant Belanja',
+        'title' => 'Tenant Belanja',
+        'title_singular' => 'Tenant Belanja',
     ],
 
     'guide_category' => [
@@ -450,6 +460,7 @@ return [
         'cancelled_by' => 'Dibatalkan Oleh',
         'guest_room' => 'Tamu / Kamar',
         'payment_method' => 'Metode Pembayaran',
+        'tenant' => 'Tenant',
         'items_purchased' => 'Item Dibeli',
         'pantry_item' => 'Item pantry',
         'unit_price' => 'Harga Satuan',

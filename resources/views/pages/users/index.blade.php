@@ -57,6 +57,7 @@
                                     <th>{{ trans('common.email') }}</th>
                                     <th>{{ trans('common.user.username') }}</th>
                                     <th>{{ trans('common.user.role') }}</th>
+                                    <th>{{ trans('common.tenant') }}</th>
                                     <th>{{ trans('common.user.status') }}</th>
                                     <th style="text-align:center">{!! trans('common.action') !!}</th>
                                 </tr>
@@ -149,6 +150,11 @@
                 render: function(data, type, row) {
                     return getRoleText(row.role_id);
                 }
+            },
+            {
+                data: 'tenants',
+                name: 'tenants',
+                defaultContent: ''
             },
             {
                 name: 'status',

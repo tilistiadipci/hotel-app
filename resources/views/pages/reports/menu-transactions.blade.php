@@ -26,6 +26,16 @@
                             </select>
                         </div>
                         <div class="form-group">
+                            <select name="menu_tenant_id" id="tenantMenuTx" class="form-control">
+                                <option value="">{{ trans('common.all') }}</option>
+                                @foreach ($tenants as $tenant)
+                                    <option value="{{ $tenant->id }}" {{ (string) ($filters['menu_tenant_id'] ?? '') === (string) $tenant->id ? 'selected' : '' }}>
+                                        {{ $tenant->name }}
+                                    </option>
+                                @endforeach
+                            </select>
+                        </div>
+                        <div class="form-group">
                             <select name="payment_status" id="paymentStatusMenuTx" class="form-control">
                                 <option value="">{{ trans('common.all') }}</option>
                                 <option value="paid" {{ ($filters['payment_status'] ?? '') === 'paid' ? 'selected' : '' }}>
@@ -97,6 +107,7 @@
                                         <th>{{ trans('common.report_menu_transactions.tx_date') }}</th>
                                         <th>{{ trans('common.report_menu_transactions.guest_name') }}</th>
                                         <th>{{ trans('common.report_menu_transactions.player_alias') }}</th>
+                                        <th>{{ trans('common.report_menu_transactions.tenant_name') }}</th>
                                         <th>{{ trans('common.report_menu_transactions.total_items') }}</th>
                                         <th>{{ trans('common.report_menu_transactions.grand_total') }}</th>
                                         <th>{{ trans('common.report_menu_transactions.payment_status') }}</th>
@@ -214,6 +225,7 @@
                     data: function(d) {
                         d.daterange = $input.val();
                         d.player_ids = $('#playerIdsMenuTx').val() || [];
+                        d.menu_tenant_id = $('#tenantMenuTx').val() || '';
                         d.payment_status = $('#paymentStatusMenuTx').val() || '';
                         d.payment_method = $('#paymentMethodMenuTx').val() || '';
                     }
@@ -223,6 +235,7 @@
                     { data: 'created_at', name: 'menu_transactions.created_at' },
                     { data: 'guest_name', name: 'menu_transactions.guest_name' },
                     { data: 'player_alias', name: 'player_alias' },
+                    { data: 'tenant_name', name: 'tenant_name' },
                     { data: 'total_items', name: 'total_items' },
                     { data: 'grand_total', name: 'menu_transactions.grand_total' },
                     { data: 'payment_status', name: 'menu_transactions.payment_status' },
@@ -246,6 +259,7 @@
                 return $.get("{{ route('reports.menu-transactions.export') }}", {
                     daterange: $input.val(),
                     player_ids: $('#playerIdsMenuTx').val() || [],
+                    menu_tenant_id: $('#tenantMenuTx').val() || '',
                     payment_status: $('#paymentStatusMenuTx').val() || '',
                     payment_method: $('#paymentMethodMenuTx').val() || '',
                     offset: offset,
@@ -274,6 +288,7 @@
                     "{{ trans('common.report_menu_transactions.tx_date') }}",
                     "{{ trans('common.report_menu_transactions.guest_name') }}",
                     "{{ trans('common.report_menu_transactions.player_alias') }}",
+                    "{{ trans('common.report_menu_transactions.tenant_name') }}",
                     "{{ trans('common.report_menu_transactions.total_items') }}",
                     "{{ trans('common.report_menu_transactions.grand_total') }}",
                     "{{ trans('common.report_menu_transactions.payment_status') }}",

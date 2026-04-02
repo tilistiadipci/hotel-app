@@ -71,11 +71,14 @@ class UserRepository extends BaseRepository
         $query = $this->query()
             ->where('role_id', '!=', 1)
             ->where('id', '!=', auth()->user()->id)
-            ->with(['profile.imageMedia', 'role'])
+            ->with(['profile.imageMedia', 'role', 'menuTenants'])
             ->filter(request(['search', 'filters']));
 
         return DataTables::of($this->paginateDatatable($query))
                 ->addIndexColumn()
+                ->addColumn('tenants', function ($row) {
+                    return $row->menuTenants->pluck('name')->implode(', ');
+                })
                 ->addColumn('action', function($row){
                     return view('partials.datatable.action2', [
                         'row' => $row
@@ -92,6 +95,7 @@ class UserRepository extends BaseRepository
             'email' => $data['email'],
             'password' => $data['password'] ?? Hash::make('12345678'),
             'role_id' => $data['role_id'],
+            'menu_tenant_id' => $data['menu_tenant_id'] ?? null,
             'is_active' => $data['is_active']
         ]);
 
@@ -105,6 +109,8 @@ class UserRepository extends BaseRepository
             'user_id' => $user->id
         ]);
 
+        $this->syncMenuTenants($user, $data);
+
         return $user;
     }
 
@@ -115,6 +121,7 @@ class UserRepository extends BaseRepository
             'username' => $request['username'],
             'password' => $request['password'] ?? Hash::make('12345678'),
             'role_id' => $request['role_id'],
+            'menu_tenant_id' => $request['menu_tenant_id'] ?? null,
             'is_active' => $request['is_active']
         ];
 
@@ -136,6 +143,8 @@ class UserRepository extends BaseRepository
             'gender' => $request['gender'],
             'image_id' => $request['image_id'] ?? $request['existing_image_id'] ?? null,
         ]);
+
+        $this->syncMenuTenants($user, $request);
     }
 
     public function bulkDeleteByUid(array $uids, $fieldName = 'image_id', $destroyImage = false)
@@ -195,5 +204,33 @@ class UserRepository extends BaseRepository
     public function count()
     {
         return $this->query()->where('role_id', '!=', 1)->count();
+    }
+
+    private function syncMenuTenants(User $user, array $data): void
+    {
+        $roleCategory = optional($user->role)->category;
+        $tenantIds = collect($data['menu_tenant_ids'] ?? [])
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        if ($roleCategory !== 'operator') {
+            $user->menuTenants()->sync([]);
+            if ($user->menu_tenant_id !== null) {
+                $user->menu_tenant_id = null;
+                $user->save();
+            }
+            return;
+        }
+
+        $user->menuTenants()->sync($tenantIds);
+
+        $primaryTenantId = !empty($tenantIds) ? $tenantIds[0] : null;
+        if ((int) ($user->menu_tenant_id ?? 0) !== (int) ($primaryTenantId ?? 0)) {
+            $user->menu_tenant_id = $primaryTenantId;
+            $user->save();
+        }
     }
 }

@@ -29,6 +29,9 @@ class MenuTransactionReportRepository extends BaseRepository
             ->addColumn('player_alias', function ($row) {
                 return $row->player_alias ?? '-';
             })
+            ->addColumn('tenant_name', function ($row) {
+                return $row->tenant_name ?? '-';
+            })
             ->addColumn('total_items', function ($row) {
                 return (int) ($row->total_items ?? 0);
             })
@@ -68,6 +71,7 @@ class MenuTransactionReportRepository extends BaseRepository
                     Carbon::parse($row->created_at)->format('d/m/Y H:i'),
                     $row->guest_name ?? '-',
                     $row->player_alias ?? '-',
+                    $row->tenant_name ?? '-',
                     (int) ($row->total_items ?? 0),
                     number_format((float) ($row->grand_total ?? 0), 0),
                     $row->payment_status ? strtoupper($row->payment_status) : '-',
@@ -108,6 +112,7 @@ class MenuTransactionReportRepository extends BaseRepository
         $query = DB::table('menu_transaction_invoices')
             ->join('menu_transactions', 'menu_transactions.id', '=', 'menu_transaction_invoices.menu_transaction_id')
             ->join('players', 'players.id', '=', 'menu_transactions.player_id')
+            ->leftJoin('menu_tenants', 'menu_tenants.id', '=', 'menu_transactions.menu_tenant_id')
             ->leftJoinSub($itemsSubQuery, 'tx_items', function ($join) {
                 $join->on('tx_items.menu_transaction_id', '=', 'menu_transactions.id');
             })
@@ -123,6 +128,7 @@ class MenuTransactionReportRepository extends BaseRepository
                 'menu_transactions.payment_method',
                 'menu_transactions.grand_total',
                 'players.alias as player_alias',
+                'menu_tenants.name as tenant_name',
                 'processed_users.username as processed_by_name',
                 'completed_users.username as completed_by_name',
                 'tx_items.total_items as total_items',
@@ -135,6 +141,11 @@ class MenuTransactionReportRepository extends BaseRepository
         }
         if (!empty($playerIds)) {
             $query->whereIn('menu_transactions.player_id', $playerIds);
+        }
+
+        $tenantId = $filters['menu_tenant_id'] ?? null;
+        if (!empty($tenantId)) {
+            $query->where('menu_transactions.menu_tenant_id', $tenantId);
         }
 
         $dateRange = trim((string) ($filters['daterange'] ?? ''));

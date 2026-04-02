@@ -82,8 +82,11 @@ class MenuTransactionRepository extends BaseRepository
     {
         return $this->query()->with([
             'invoice',
+            'tenant',
             'player',
             'details.menu.imageMedia',
+            'details.tenant',
+            'details.category',
             'createdBy',
             'processedBy',
             'completedBy',
@@ -94,7 +97,7 @@ class MenuTransactionRepository extends BaseRepository
     public function baseListQuery()
     {
         return $this->query()
-            ->with(['invoice', 'player'])
+            ->with(['invoice', 'tenant', 'player'])
             ->withCount('details');
     }
 }

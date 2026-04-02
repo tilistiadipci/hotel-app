@@ -22,7 +22,7 @@
         </div>
         <div class="text-muted small mb-2">{{ formatDate($transaction->created_at, true, 'M d, Y - h:i:s') }}</div>
         <div class="d-flex justify-content-between align-items-center">
-            <div class="text-muted">{{ $transaction->player->alias }} - {{ $transaction->guest_name }}</div>
+            <div class="text-muted">{{ optional($transaction->tenant)->name ?? '-' }} | {{ $transaction->player->alias }} - {{ $transaction->guest_name }}</div>
             <strong>{{ number_format((float) $transaction->grand_total, 0) }}</strong>
         </div>
     </button>

@@ -1,11 +1,12 @@
 <div class="mb-3 w-100 upload-block">
-    <label class="font-weight-bold d-block mb-2">{{ trans('common.image') }} <span class="text-danger">*</span></label>
+    <label class="font-weight-bold d-block mb-2">{{ trans('common.image') }}</label>
     <div class="d-flex align-items-center mb-2">
         <button type="button" class="btn btn-outline-primary btn-sm mr-2" id="btnPickImage">
             <i class="fa fa-image mr-1"></i> {{ trans('common.pick_file') }}
         </button>
         <div class="text-muted small" id="selectedImageLabel">{{ trans('common.no_file_selected') }}</div>
     </div>
+    <small class="text-primary d-block mb-2" style="font-style: italic">* {{ trans('common.required') }}</small>
     <input type="hidden" name="image_media_id" id="image_media_id"
         value="{{ old('image_media_id', $data->imageMedia->id ?? '') }}">
     <input type="file" name="image" id="image" class="form-control-file d-none" accept="image/*">

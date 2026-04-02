@@ -20,6 +20,7 @@ use App\Http\Controllers\GuideItemController;
 use App\Http\Controllers\GuideCategoryController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\MenuTransactionController;
+use App\Http\Controllers\MenuTenantController;
 use App\Http\Controllers\PlayerController;
 use App\Http\Controllers\PlayerGroupController;
 use App\Http\Controllers\RunningTextController;
@@ -237,6 +238,12 @@ Route::middleware(['auth'])->group(function () {
                 ->name('menu.')
                 ->group(function () {
                     Route::post('/bulkDelete', [MenuController::class, 'bulkDelete'])->name('bulkDelete');
+                });
+            Route::resource('menu-tenants', MenuTenantController::class);
+            Route::prefix('menu-tenants')
+                ->name('menu-tenants.')
+                ->group(function () {
+                    Route::post('/bulkDelete', [MenuTenantController::class, 'bulkDelete'])->name('bulkDelete');
                 });
             // Menu Categories
             Route::resource('menu-categories', MenuCategoryController::class);

@@ -18,6 +18,8 @@ return [
     'photo' => 'Photo',
     'title' => 'Title',
     'category' => 'Category',
+    'tenant' => 'Tenant',
+    'service_charge' => 'Service Charge',
     'type' => 'Type',
     'bulk_edit' => 'Bulk Edit',
     'bulk_delete' => 'Bulk Delete',
@@ -270,10 +272,12 @@ return [
         'table_title' => 'Menu Transactions Data',
         'export_excel' => 'Export Excel',
         'filter_players' => 'Filter Players',
+        'filter_tenant' => 'Filter Tenant',
         'filter_date_range' => 'Select date range',
         'tx_date' => 'Date',
         'guest_name' => 'Guest Name',
         'player_alias' => 'Player Alias',
+        'tenant_name' => 'Tenant',
         'total_items' => 'Total Items',
         'grand_total' => 'Grand Total',
         'payment_status' => 'Payment Status',
@@ -388,6 +392,7 @@ return [
         'cancelled_by' => 'Cancelled By',
         'guest_room' => 'Guest / Room',
         'payment_method' => 'Payment Method',
+        'tenant' => 'Tenant',
         'items_purchased' => 'Items Purchased',
         'pantry_item' => 'Pantry item',
         'unit_price' => 'Unit Price',
@@ -455,6 +460,12 @@ return [
         'list_of_menu_category' => 'List of Shopping Categories',
         'title' => 'Shopping Categories',
         'title_singular' => 'Shopping Category',
+    ],
+
+    'menu_tenant' => [
+        'list_of_menu_tenant' => 'List of Shopping Tenants',
+        'title' => 'Shopping Tenants',
+        'title_singular' => 'Shopping Tenant',
     ],
 
     'guide_category' => [

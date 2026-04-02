@@ -4,6 +4,10 @@
 
 <table class="table table-sm table-borderless">
     <tr>
+        <th style="width: 140px;">{{ trans('common.tenant') }}</th>
+        <td>{{ optional($category->tenant)->name ?? '-' }}</td>
+    </tr>
+    <tr>
         <th style="width: 140px;">{{ trans('common.name') }}</th>
         <td>{{ $category->name ?? '-' }}</td>
     </tr>

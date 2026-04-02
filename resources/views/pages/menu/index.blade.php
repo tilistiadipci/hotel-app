@@ -30,13 +30,16 @@
                             {{ trans('common.menu.list_of_menu') }}
                         </div>
                         <div class="btn-actions-pane-right actions-icon-btn d-flex align-items-center">
-                            <button class="btn btn-sm btn-light mr-2" id="filterBtn" data-toggle="tooltip" title="{{ trans('common.filter') }}">
+                            <button class="btn btn-sm btn-light mr-2" id="filterBtn" data-toggle="tooltip"
+                                title="{{ trans('common.filter') }}">
                                 <i class="fa fa-filter"></i>
                             </button>
-                            <button class="btn btn-sm btn-light mr-2" id="resetFilterBtn" data-toggle="tooltip" title="{{ trans('common.reset') }}">
+                            <button class="btn btn-sm btn-light mr-2" id="resetFilterBtn" data-toggle="tooltip"
+                                title="{{ trans('common.reset') }}">
                                 <i class="fa fa-undo"></i>
                             </button>
-                            <button class="btn btn-sm btn-danger" id="applyBulkAction" data-toggle="tooltip" title="{{ trans('common.bulk_delete') }}">
+                            <button class="btn btn-sm btn-danger" id="applyBulkAction" data-toggle="tooltip"
+                                title="{{ trans('common.bulk_delete') }}">
                                 <i class="fa fa-trash text-white"></i>
                             </button>
                         </div>
@@ -52,6 +55,7 @@
                                         </label>
                                     </th>
                                     <th style="width:60px">No</th>
+                                    <th>{{ trans('common.tenant') }}</th>
                                     <th>{{ trans('common.name') }}</th>
                                     <th>{{ trans('common.category') }}</th>
                                     <th>{{ trans('common.menu.price') }}</th>
@@ -77,6 +81,7 @@
     <script>
         function attachFilters(d) {
             d.filters = {
+                menu_tenant_id: $('#filterTenant').val(),
                 category_id: $('#filterCategory').val(),
                 status: $('#filterStatus').val(),
             };
@@ -89,7 +94,7 @@
 
         function resetFilters() {
             $('#filterForm')[0].reset();
-            $('#filterCategory, #filterStatus').val(null).trigger('change');
+            $('#filterTenant, #filterCategory, #filterStatus').val(null).trigger('change');
             table.search('').draw();
             table.ajax.reload();
             toggleFilter(false);
@@ -123,14 +128,19 @@
                 }
             },
             {
+                data: 'tenant',
+                name: 'tenant.name',
+                defaultContent: ''
+            },
+            {
                 data: 'name',
                 name: 'name',
                 render: function(data, type, row) {
-                    let url = `{{ url('menu') }}/${row.uuid}/edit`
-                    return `<a href="${url}">${row.name || ''}</a>`
+                    let url = `{{ url('menu') }}/${row.uuid}/edit`;
+                    return `<a href="${url}">${row.name || ''}</a>`;
                 }
             },
-            { data: 'category', name: 'category', defaultContent: '' },
+            { data: 'category', name: 'category.name', defaultContent: '' },
             {
                 data: 'price',
                 name: 'price',
@@ -173,13 +183,39 @@
         var fixedColumns = false;
 
         $(function () {
-            $('#filterCategory, #filterStatus').select2({
+            const $tenant = $('#filterTenant');
+            const $category = $('#filterCategory');
+
+            $('#filterTenant, #filterCategory, #filterStatus').select2({
                 theme: 'bootstrap4',
                 width: '100%',
                 allowClear: true,
                 placeholder: "{{ trans('common.all') }}",
                 dropdownParent: $('#filterSidebar')
             });
+
+            const allCategoryOptions = $category.find('option').clone();
+
+            function syncCategoryOptions() {
+                const tenantId = $tenant.val();
+                const currentValue = $category.val();
+
+                $category.empty().append(allCategoryOptions.clone().filter(function() {
+                    const optionTenantId = $(this).data('tenant-id');
+                    return !tenantId || !optionTenantId || String(optionTenantId) === String(tenantId);
+                }));
+
+                if ($category.find(`option[value="${currentValue}"]`).length) {
+                    $category.val(currentValue);
+                } else {
+                    $category.val(null);
+                }
+
+                $category.trigger('change.select2');
+            }
+
+            $tenant.on('change', syncCategoryOptions);
+            syncCategoryOptions();
 
             $('.clear-select').on('click', function () {
                 const target = $(this).data('target');

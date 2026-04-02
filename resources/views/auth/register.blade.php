@@ -13,10 +13,9 @@
                             @csrf
                             <div class="form-row">
                                 <div class="col-md-6">
-                                    <div class="position-relative form-group"><label for="email" class=""><span
-                                                class="text-danger">*</span> Email</label><input name="email"
+                                    <div class="position-relative form-group"><label for="email" class="">Email</label><input name="email"
                                             id="email" placeholder="Email here..." type="email"
-                                            class="form-control"></div>
+                                            class="form-control"><small class="text-primary d-block mt-1" style="font-style: italic">* {{ trans('common.required') }}</small></div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="position-relative form-group"><label for="name"
@@ -25,15 +24,15 @@
                                 </div>
                                 <div class="col-md-6">
                                     <div class="position-relative form-group"><label for="examplePassword"
-                                            class=""><span class="text-danger">*</span> Password</label><input
+                                            class="">Password</label><input
                                             name="password" id="examplePassword" placeholder="Password here..."
-                                            type="password" class="form-control"></div>
+                                            type="password" class="form-control"><small class="text-primary d-block mt-1" style="font-style: italic">* {{ trans('common.required') }}</small></div>
                                 </div>
                                 <div class="col-md-6">
                                     <div class="position-relative form-group"><label for="domainName"
-                                            class=""><span class="text-danger">*</span> Domain Name</label><input
+                                            class="">Domain Name</label><input
                                             name="domain" id="domainName" placeholder="Domain name here..."
-                                            type="text" class="form-control"></div>
+                                            type="text" class="form-control"><small class="text-primary d-block mt-1" style="font-style: italic">* {{ trans('common.required') }}</small></div>
                                 </div>
                             </div>
                             <div class="mt-3 position-relative form-check"><input name="check" id="exampleCheck"

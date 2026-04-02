@@ -25,15 +25,33 @@
                 </div>
 
                 <div class="position-relative row form-group">
+                    <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.tenant') }}</label>
+                    <div class="col-sm-8">
+                        <select name="menu_tenant_id" id="menu_tenant_id"
+                            class="form-control select2 @error('menu_tenant_id') is-invalid @enderror" style="width: 100%;" required>
+                            <option value="">{{ trans('common.select_an_option') ?? 'Select an option' }}</option>
+                            @foreach ($tenants as $tenant)
+                                <option value="{{ $tenant->id }}"
+                                    {{ (string) old('menu_tenant_id', $item->menu_tenant_id ?? '') === (string) $tenant->id ? 'selected' : '' }}>
+                                    {{ $tenant->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <small class="text-primary font-italic d-block mt-1">* {{ trans('common.required') }}</small>
+                        @error('menu_tenant_id')
+                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                        @enderror
+                    </div>
+                </div>
+
+                <div class="position-relative row form-group">
                     <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.category') }}</label>
                     <div class="col-sm-8">
                         <div class="d-flex">
-                            <select name="category_id" id="category_id" class="form-control select2"
-                                style="width: 100%;">
-                                <option value="">{{ trans('common.select_an_option') ?? 'Select an option' }}
-                                </option>
+                            <select name="category_id" id="category_id" class="form-control select2" style="width: 100%;">
+                                <option value="">{{ trans('common.select_an_option') ?? 'Select an option' }}</option>
                                 @foreach ($categories as $category)
-                                    <option value="{{ $category->id }}"
+                                    <option value="{{ $category->id }}" data-tenant-id="{{ $category->menu_tenant_id }}"
                                         {{ old('category_id') == $category->id || ($item && $item->category_id == $category->id) ? 'selected' : '' }}>
                                         {{ $category->name }}
                                     </option>
@@ -48,8 +66,7 @@
                 </div>
 
                 <div class="position-relative row form-group">
-                    <label
-                        class="col-sm-4 col-form-label text-sm-right">{{ trans('common.description') ?? 'Description' }}</label>
+                    <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.description') ?? 'Description' }}</label>
                     <div class="col-sm-8">
                         <textarea name="description" id="description" class="form-control" rows="3">{{ $item->description ?? old('description') }}</textarea>
                     </div>
@@ -136,7 +153,6 @@
     </div>
 </form>
 
-{{-- Custom Modal Add Menu Category --}}
 <div id="modalAddMenuCategory" class="custom-modal" aria-hidden="true">
     <div class="custom-modal__backdrop" data-modal-close></div>
     <div class="custom-modal__dialog" role="dialog" aria-modal="true" aria-labelledby="modalAddMenuCategoryLabel">
@@ -147,15 +163,16 @@
         <form id="formAddMenuCategory">
             @csrf
             <div class="custom-modal__body">
+                <div class="alert alert-info py-2 px-3 mb-3">
+                    {{ trans('common.tenant') }}: <strong id="selectedTenantName">-</strong>
+                </div>
                 <div class="form-group">
                     <label for="newMenuCategoryName">{{ trans('common.name') }}</label>
-                    <input type="text" name="name" id="newMenuCategoryName" class="form-control" required
-                        maxlength="100">
+                    <input type="text" name="name" id="newMenuCategoryName" class="form-control" required maxlength="100">
                 </div>
                 <div class="form-group">
                     <label for="newMenuCategorySort">{{ trans('common.sort_order') }} (optional)</label>
-                    <input type="number" name="sort_order" id="newMenuCategorySort" class="form-control"
-                        min="0" step="1">
+                    <input type="number" name="sort_order" id="newMenuCategorySort" class="form-control" min="0" step="1">
                 </div>
             </div>
             <div class="custom-modal__footer">
@@ -171,7 +188,6 @@
 @section('css')
     @parent
     <style>
-        /* Custom modal styling */
         .custom-modal {
             position: fixed;
             inset: 0;
@@ -250,7 +266,7 @@
     <script>
         (function waitForjQuery() {
             if (window.jQuery) {
-                ['#category_id', '#is_available'].forEach(selector => {
+                ['#menu_tenant_id', '#category_id', '#is_available'].forEach(selector => {
                     const el = $(selector);
                     if (el.hasClass('select2-hidden-accessible')) {
                         el.select2('destroy');
@@ -262,9 +278,47 @@
                     });
                 });
 
-                // Custom modal handlers
+                const $tenant = $('#menu_tenant_id');
+                const $category = $('#category_id');
+                let allCategoryOptions = $category.find('option').clone();
+
+                const syncCategoryOptions = () => {
+                    const tenantId = $tenant.val();
+                    const currentValue = $category.val();
+
+                    $category.empty().append(allCategoryOptions.clone().filter(function() {
+                        const optionTenantId = $(this).data('tenant-id');
+                        return !tenantId || !optionTenantId || String(optionTenantId) === String(tenantId);
+                    }));
+
+                    if ($category.find(`option[value="${currentValue}"]`).length) {
+                        $category.val(currentValue);
+                    } else {
+                        $category.val(null);
+                    }
+
+                    $category.trigger('change.select2');
+                };
+
+                $tenant.on('change', function() {
+                    const tenantText = $(this).find('option:selected').text() || '-';
+                    $('#selectedTenantName').text(tenantText);
+                    syncCategoryOptions();
+                });
+
+                $tenant.trigger('change');
+
                 const menuModal = $('#modalAddMenuCategory');
                 const openModal = () => {
+                    if (!$tenant.val()) {
+                        swal.fire({
+                            icon: 'warning',
+                            title: 'Tenant wajib dipilih',
+                            text: 'Pilih tenant terlebih dahulu sebelum menambahkan kategori.',
+                        });
+                        return;
+                    }
+
                     menuModal.addClass('is-open').attr('aria-hidden', 'false');
                     $('body').addClass('custom-modal-open');
                     $('#newMenuCategoryName').val('').focus();
@@ -282,7 +336,6 @@
                     if (e.key === 'Escape' && menuModal.hasClass('is-open')) closeModal();
                 });
 
-                // Preview image
                 const imageInput = document.getElementById('image');
                 const previewWrapper = document.getElementById('imagePreviewWrapper');
                 const previewImg = document.getElementById('imagePreview');
@@ -301,7 +354,6 @@
                     });
                 }
 
-                // AJAX add category
                 $('#formAddMenuCategory').on('submit', function(e) {
                     e.preventDefault();
                     const btn = $('#saveMenuCategoryBtn');
@@ -309,11 +361,15 @@
                     $.ajax({
                         url: "{{ route('menu-categories.store') }}",
                         method: 'POST',
-                        data: $(this).serialize(),
+                        data: $(this).serialize() + '&menu_tenant_id=' + encodeURIComponent($tenant.val() || ''),
                         success: function(res) {
                             if (res.status) {
                                 const opt = new Option(res.data.name, res.data.id, true, true);
-                                $('#category_id').append(opt).trigger('change');
+                                const $opt = $(opt).attr('data-tenant-id', res.data.menu_tenant_id);
+                                allCategoryOptions = allCategoryOptions.add($opt.clone());
+                                $category.append($opt);
+                                syncCategoryOptions();
+                                $category.val(String(res.data.id)).trigger('change');
                                 closeModal();
                             }
                         },
@@ -322,8 +378,7 @@
                             swal.fire({
                                 icon: 'error',
                                 title: 'Error',
-                                text: xhr.responseJSON?.message ||
-                                    'Error adding category. Please try again.',
+                                text: xhr.responseJSON?.message || 'Error adding category. Please try again.',
                             });
                         },
                         complete: function() {

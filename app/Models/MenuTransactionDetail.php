@@ -23,6 +23,16 @@ class MenuTransactionDetail extends Model
         return $this->belongsTo(MenuTransaction::class, 'menu_transaction_id');
     }
 
+    public function tenant()
+    {
+        return $this->belongsTo(MenuTenant::class, 'menu_tenant_id');
+    }
+
+    public function category()
+    {
+        return $this->belongsTo(MenuCategory::class, 'category_id');
+    }
+
     public function menu()
     {
         return $this->belongsTo(MenuItem::class, 'menu_id');

@@ -25,6 +25,26 @@
                 </div>
 
                 <div class="position-relative row form-group">
+                    <label class="col-sm-3 col-form-label text-sm-right">{{ trans('common.tenant') }}</label>
+                    <div class="col-sm-9">
+                        <select name="menu_tenant_id" id="menu_tenant_id"
+                            class="form-control select2 @error('menu_tenant_id') is-invalid @enderror" style="width: 100%;" required>
+                            <option value="">{{ trans('common.select_an_option') ?? 'Select an option' }}</option>
+                            @foreach ($tenants as $tenant)
+                                <option value="{{ $tenant->id }}"
+                                    {{ (string) old('menu_tenant_id', $category->menu_tenant_id ?? '') === (string) $tenant->id ? 'selected' : '' }}>
+                                    {{ $tenant->name }}
+                                </option>
+                            @endforeach
+                        </select>
+                        <small class="text-primary font-italic d-block mt-1">* {{ trans('common.required') }}</small>
+                        @error('menu_tenant_id')
+                            <div class="invalid-feedback d-block">{{ $message }}</div>
+                        @enderror
+                    </div>
+                </div>
+
+                <div class="position-relative row form-group">
                     <label class="col-sm-3 col-form-label text-sm-right">{{ trans('common.description') }}</label>
                     <div class="col-sm-9">
                         <textarea name="description" id="description" class="form-control" rows="3">{{ $category->description ?? old('description') }}</textarea>
@@ -73,14 +93,16 @@
     <script>
         (function waitForjQuery() {
             if (window.jQuery) {
-                const el = $('#is_active');
-                if (el.hasClass('select2-hidden-accessible')) {
-                    el.select2('destroy');
-                }
-                el.select2({
-                    theme: 'bootstrap4',
-                    width: '100%',
-                    placeholder: "{{ trans('common.select_an_option') ?? 'Select an option' }}"
+                ['#menu_tenant_id', '#is_active'].forEach(selector => {
+                    const el = $(selector);
+                    if (el.hasClass('select2-hidden-accessible')) {
+                        el.select2('destroy');
+                    }
+                    el.select2({
+                        theme: 'bootstrap4',
+                        width: '100%',
+                        placeholder: "{{ trans('common.select_an_option') ?? 'Select an option' }}"
+                    });
                 });
             } else {
                 setTimeout(waitForjQuery, 50);

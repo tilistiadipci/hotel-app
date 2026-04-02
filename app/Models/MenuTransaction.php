@@ -34,6 +34,7 @@ class MenuTransaction extends Model
             // Generate invoice immediately after transaksi dibuat.
             MenuTransactionInvoice::create([
                 'menu_transaction_id' => $model->id,
+                'menu_tenant_id' => $model->menu_tenant_id,
                 'uuid' => Str::uuid()->toString(),
                 'invoice_number' => MenuTransactionInvoice::generateInvoiceNumber(),
                 'created_by' => $model->created_by,
@@ -44,6 +45,11 @@ class MenuTransaction extends Model
     public function player()
     {
         return $this->belongsTo(Player::class, 'player_id');
+    }
+
+    public function tenant()
+    {
+        return $this->belongsTo(MenuTenant::class, 'menu_tenant_id');
     }
 
     public function details()

@@ -20,9 +20,13 @@ class MenuCategoryRepository extends BaseRepository
         return $this->model->create($attributes);
     }
 
-    public function findBySlug(string $slug)
+    public function findBySlug(string $slug, ?int $tenantId = null)
     {
-        return $this->model->where('slug', $slug)->first();
+        return $this->model
+            ->when($tenantId, fn ($query) => $query->where('menu_tenant_id', $tenantId))
+            ->where('slug', $slug)
+            ->whereNull('deleted_at')
+            ->first();
     }
 
     public function bulkDeleteByUid(array $uids, $fieldName = null, $destroyImage = false)

@@ -10,6 +10,7 @@
         trans('common.address') => $user->profile->address ?? '-',
         trans('common.gender') => $user->profile->gender ?? '-',
         trans('common.user.role') => $user->role->name ?? '-',
+        trans('common.tenant') => $user->menuTenants->pluck('name')->implode(', ') ?: '-',
         trans('common.user.status') => ($user->is_active ? trans('common.active') : trans('common.inactive')),
         trans('common.created_at') => $user->created_at ?? '-',
         trans('common.last_login') => $user->last_login_at ?? '-',

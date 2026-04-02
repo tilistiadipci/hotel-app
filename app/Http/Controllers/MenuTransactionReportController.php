@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\MenuTenant;
 use App\Models\Player;
 use App\Repositories\MenuTransactionReportRepository;
 use Illuminate\Http\Request;
@@ -21,6 +22,7 @@ class MenuTransactionReportController extends Controller
         $filters = $request->only([
             'daterange',
             'player_ids',
+            'menu_tenant_id',
             'payment_status',
             'payment_method',
         ]);
@@ -31,12 +33,19 @@ class MenuTransactionReportController extends Controller
             ->where('is_active', 1)
             ->orderBy('name')
             ->get();
+        $tenants = MenuTenant::query()
+            ->select(['id', 'name'])
+            ->where('is_active', 1)
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
 
         return view('pages.reports.menu-transactions', [
             'page' => $this->page,
             'icon' => $this->icon,
             'filters' => $filters,
             'players' => $players,
+            'tenants' => $tenants,
             'selectedPlayerIds' => $selectedPlayerIds,
         ]);
     }
@@ -46,6 +55,7 @@ class MenuTransactionReportController extends Controller
         $filters = $request->only([
             'daterange',
             'player_ids',
+            'menu_tenant_id',
             'payment_status',
             'payment_method',
         ]);
@@ -58,6 +68,7 @@ class MenuTransactionReportController extends Controller
         $filters = $request->only([
             'daterange',
             'player_ids',
+            'menu_tenant_id',
             'payment_status',
             'payment_method',
         ]);

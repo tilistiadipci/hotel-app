@@ -87,6 +87,10 @@
                     <div class="transaction-meta__label">{{ trans('common.transaction.payment_method') }}</div>
                     <div class="transaction-meta__value">{{ $paymentMethodLabel }}</div>
                 </div>
+                <div class="col-md-4 mb-3">
+                    <div class="transaction-meta__label">{{ trans('common.transaction.tenant') }}</div>
+                    <div class="transaction-meta__value">{{ optional($selectedTransaction->tenant)->name ?? '-' }}</div>
+                </div>
                 @if (optional($selectedTransaction->cancelledBy)->username)
                     <div class="col-md-4 mb-3">
                         <div class="transaction-meta__label">{{ trans('common.transaction.cancelled_by') }}</div>
@@ -177,6 +181,10 @@
                         <tr>
                             <td>{{ trans('common.transaction.payment') }}</td>
                             <td style="text-align:right;">{{ $paymentMethodLabel }}</td>
+                        </tr>
+                        <tr>
+                            <td>{{ trans('common.transaction.tenant') }}</td>
+                            <td style="text-align:right;">{{ optional($selectedTransaction->tenant)->name ?? '-' }}</td>
                         </tr>
                     </table>
 

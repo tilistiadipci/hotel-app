@@ -4,6 +4,7 @@ namespace Database\Seeders;
 
 use App\Models\MenuCategory;
 use App\Models\MenuItem;
+use App\Models\MenuTenant;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -12,11 +13,22 @@ class MenuItemSeeder extends Seeder
 {
     public function run(): void
     {
+        $tenant = MenuTenant::query()->firstOrCreate(
+            ['slug' => 'main-pantry'],
+            [
+                'uuid' => Str::uuid()->toString(),
+                'name' => 'Main Pantry',
+                'description' => 'Default tenant for shopping items.',
+                'sort_order' => 1,
+                'is_active' => true,
+            ]
+        );
+
         // Ensure categories exist
-        $categories = MenuCategory::pluck('id', 'slug')->toArray();
+        $categories = MenuCategory::where('menu_tenant_id', $tenant->id)->pluck('id', 'slug')->toArray();
         if (empty($categories)) {
             $this->call(MenuCategorySeeder::class);
-            $categories = MenuCategory::pluck('id', 'slug')->toArray();
+            $categories = MenuCategory::where('menu_tenant_id', $tenant->id)->pluck('id', 'slug')->toArray();
         }
 
         $data = [
@@ -90,6 +102,7 @@ class MenuItemSeeder extends Seeder
             if (!$categoryId) {
                 $categoryId = MenuCategory::create([
                     'uuid' => Str::uuid()->toString(),
+                    'menu_tenant_id' => $tenant->id,
                     'name' => Str::title(str_replace('-', ' ', $categorySlug)),
                     'slug' => $categorySlug,
                     'is_active' => true,
@@ -117,9 +130,13 @@ class MenuItemSeeder extends Seeder
             ]);
 
             MenuItem::updateOrCreate(
-                ['name' => $item['name']],
+                [
+                    'menu_tenant_id' => $tenant->id,
+                    'name' => $item['name'],
+                ],
                 [
                     'uuid' => Str::uuid()->toString(),
+                    'menu_tenant_id' => $tenant->id,
                     'category_id' => $categoryId,
                     'price' => $item['price'],
                     'discount_price' => $item['discount_price'],

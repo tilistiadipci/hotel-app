@@ -12,7 +12,7 @@
         <div class="row">
             <div class="col-md-6">
                 <div class="position-relative row form-group">
-                    <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.title') }} <span class="text-danger">*</span></label>
+                    <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.title') }}</label>
                     <div class="col-sm-8">
                         @include('partials.forms.input', [
                             'elementId' => 'title',
@@ -24,7 +24,7 @@
                 </div>
 
                 <div class="position-relative row form-group">
-                    <label class="col-sm-4 col-form-label text-sm-right">Artist <span class="text-danger">*</span></label>
+                    <label class="col-sm-4 col-form-label text-sm-right">Artist</label>
                     <div class="col-sm-8">
                         <select name="artist_id" id="artist_id" class="form-control select2 song-select" required>
                             @php
@@ -40,11 +40,12 @@
                                 </option>
                             @endforeach
                         </select>
+                        <small class="text-primary" style="font-style: italic">* {{ trans('common.required') }}</small>
                     </div>
                 </div>
 
                 <div class="position-relative row form-group">
-                    <label class="col-sm-4 col-form-label text-sm-right">Album <span class="text-danger">*</span></label>
+                    <label class="col-sm-4 col-form-label text-sm-right">Album</label>
                     <div class="col-sm-8">
                         <select name="album_id" id="album_id" class="form-control select2 song-select" required>
                             @php
@@ -60,6 +61,7 @@
                                 </option>
                             @endforeach
                         </select>
+                        <small class="text-primary d-block mt-1" style="font-style: italic">* {{ trans('common.required') }}</small>
                         <small class="text-muted d-block mt-1">{{ trans('common.song.album_information') }}</small>
                     </div>
                 </div>
@@ -89,7 +91,7 @@
                 {{-- Durasi otomatis dihitung backend dari file audio --}}
 
                 <div class="position-relative row form-group">
-                    <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.sort_order') }} <span class="text-danger">*</span></label>
+                    <label class="col-sm-4 col-form-label text-sm-right">{{ trans('common.sort_order') }}</label>
                     <div class="col-sm-8">
                         @include('partials.forms.input', [
                             'elementId' => 'sort_order',

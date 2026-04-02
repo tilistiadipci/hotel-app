@@ -38,4 +38,9 @@ class MenuTransactionInvoice extends Model
     {
         return $this->belongsTo(MenuTransaction::class, 'menu_transaction_id');
     }
+
+    public function tenant()
+    {
+        return $this->belongsTo(MenuTenant::class, 'menu_tenant_id');
+    }
 }
