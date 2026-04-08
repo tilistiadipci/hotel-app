@@ -18,6 +18,7 @@ use App\Http\Controllers\MenuController;
 use App\Http\Controllers\MenuCategoryController;
 use App\Http\Controllers\GuideItemController;
 use App\Http\Controllers\GuideCategoryController;
+use App\Http\Controllers\LicenseController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\MenuTransactionController;
 use App\Http\Controllers\MenuTenantController;
@@ -106,6 +107,12 @@ Route::middleware(['auth'])->group(function () {
             Route::get('/edit', [ProfileController::class, 'changeProfile'])->name('edit');
             Route::put('/update', [ProfileController::class, 'update'])->name('update');
             Route::get('/change-password', [ProfileController::class, 'changePassword'])->name('change-password');
+        });
+
+    Route::prefix('license')
+        ->name('licenses.')
+        ->group(function () {
+            Route::get('/', [LicenseController::class, 'index'])->name('index');
         });
 
     // users (only admin & super admin/master)

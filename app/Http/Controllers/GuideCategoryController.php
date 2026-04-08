@@ -104,7 +104,7 @@ class GuideCategoryController extends Controller
             ]);
         }
 
-        return redirect()->route('guide_categories.index')->with('success', trans('common.success.create'));
+        return redirect()->route('guide-categories.index')->with('success', trans('common.success.create'));
     }
 
     public function update(Request $request, string $uid)
@@ -132,7 +132,7 @@ class GuideCategoryController extends Controller
 
         $this->categoryRepository->update($category->id, $data);
 
-        return redirect()->route('guide_categories.index')->with('success', trans('common.success.update'));
+        return redirect()->route('guide-categories.index')->with('success', trans('common.success.update'));
     }
 
     public function destroy(string $uid)

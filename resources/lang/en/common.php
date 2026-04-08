@@ -529,6 +529,11 @@ return [
         'change' => 'Change Profile',
     ],
 
+    'license' => [
+        'title' => 'License',
+        'title_singular' => 'License',
+    ],
+
     'settings_page' => [
         'title' => 'General Settings',
         'subtitle' => 'Manage your application programming interface keys and access status for hotel app settings.',

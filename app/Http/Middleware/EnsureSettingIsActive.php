@@ -15,7 +15,15 @@ class EnsureSettingIsActive
 
     public function handle(Request $request, Closure $next, string $key): Response
     {
-        $value = (string) session("settings.$key", $this->settingRepository->getValueByKey($key, 'active'));
+        // Always use the latest stored setting for access checks.
+        // Session can be stale when another user changes feature flags.
+        $value = (string) $this->settingRepository->getValueByKey($key, 'active');
+
+        $settings = session('settings', []);
+        if (($settings[$key] ?? null) !== $value) {
+            $settings[$key] = $value;
+            session(['settings' => $settings]);
+        }
 
         if ($value !== 'active') {
             abort(403);

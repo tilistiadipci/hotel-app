@@ -236,11 +236,13 @@
                     @endif
                 @endif
 
-                <li class="{{ $page == 'transactions' ? 'mm-active' : '' }}">
-                    <a href="{{ url('/transactions') }}" class="{{ $page == 'transactions' ? 'mm-active' : '' }}">
-                        <i class="metismenu-icon pe-7s-wallet"></i> {{ trans('common.transaction.title') }}
-                    </a>
-                </li>
+                @if ($isShoppingMenuActive)
+                    <li class="{{ $page == 'transactions' ? 'mm-active' : '' }}">
+                        <a href="{{ url('/transactions') }}" class="{{ $page == 'transactions' ? 'mm-active' : '' }}">
+                            <i class="metismenu-icon pe-7s-wallet"></i> {{ trans('common.transaction.title') }}
+                        </a>
+                    </li>
+                @endif
 
 
                 @if (in_array(auth()->user()->role_id ?? null, [1, 2], true))
@@ -265,6 +267,11 @@
                 <li class="{{ $page == 'account' ? 'mm-active' : '' }}">
                     <a href="{{ url('/profile') }}" class="{{ $page == 'account' ? 'mm-active' : '' }}">
                         <i class="metismenu-icon pe-7s-user"></i> {{ trans('common.account') }}
+                    </a>
+                </li>
+                <li class="{{ $page == 'license' ? 'mm-active' : '' }}">
+                    <a href="{{ route('licenses.index') }}" class="{{ $page == 'license' ? 'mm-active' : '' }}">
+                        <i class="metismenu-icon fa fa-key"></i> {{ trans('common.license.title') }}
                     </a>
                 </li>
             </ul>

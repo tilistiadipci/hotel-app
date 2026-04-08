@@ -517,6 +517,11 @@ return [
         'change' => 'Ganti Profil',
     ],
 
+    'license' => [
+        'title' => 'License',
+        'title_singular' => 'License',
+    ],
+
     'settings_page' => [
         'title' => 'Pengaturan Umum',
         'subtitle' => 'Kelola kunci application programming interface dan status akses untuk pengaturan aplikasi hotel.',
