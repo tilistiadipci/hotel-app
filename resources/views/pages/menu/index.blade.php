@@ -183,9 +183,6 @@
         var fixedColumns = false;
 
         $(function () {
-            const $tenant = $('#filterTenant');
-            const $category = $('#filterCategory');
-
             $('#filterTenant, #filterCategory, #filterStatus').select2({
                 theme: 'bootstrap4',
                 width: '100%',
@@ -193,29 +190,6 @@
                 placeholder: "{{ trans('common.all') }}",
                 dropdownParent: $('#filterSidebar')
             });
-
-            const allCategoryOptions = $category.find('option').clone();
-
-            function syncCategoryOptions() {
-                const tenantId = $tenant.val();
-                const currentValue = $category.val();
-
-                $category.empty().append(allCategoryOptions.clone().filter(function() {
-                    const optionTenantId = $(this).data('tenant-id');
-                    return !tenantId || !optionTenantId || String(optionTenantId) === String(tenantId);
-                }));
-
-                if ($category.find(`option[value="${currentValue}"]`).length) {
-                    $category.val(currentValue);
-                } else {
-                    $category.val(null);
-                }
-
-                $category.trigger('change.select2');
-            }
-
-            $tenant.on('change', syncCategoryOptions);
-            syncCategoryOptions();
 
             $('.clear-select').on('click', function () {
                 const target = $(this).data('target');

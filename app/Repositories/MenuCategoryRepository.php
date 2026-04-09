@@ -20,10 +20,9 @@ class MenuCategoryRepository extends BaseRepository
         return $this->model->create($attributes);
     }
 
-    public function findBySlug(string $slug, ?int $tenantId = null)
+    public function findBySlug(string $slug)
     {
         return $this->model
-            ->when($tenantId, fn ($query) => $query->where('menu_tenant_id', $tenantId))
             ->where('slug', $slug)
             ->whereNull('deleted_at')
             ->first();

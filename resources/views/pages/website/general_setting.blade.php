@@ -182,7 +182,7 @@
                         @enderror
                     </div>
 
-                    <div class="border rounded p-3">
+                    {{-- <div class="border rounded p-3">
                         <div class="d-flex justify-content-between align-items-center mb-3">
                             <div class="pr-3">
                                 <h5 class="mb-1">{{ trans('common.settings_page.service_charge_status') }}</h5>
@@ -213,7 +213,7 @@
                         @error('service_charge_fixed')
                             <div class="text-danger small mt-2">{{ $message }}</div>
                         @enderror
-                    </div>
+                    </div> --}}
                 </div>
 
                 <div class="card-footer text-right">

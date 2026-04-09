@@ -27,7 +27,7 @@
                     data-placeholder="{{ trans('common.all') }}">
                     <option value="">{{ trans('common.all') }}</option>
                     @foreach ($categories as $category)
-                        <option value="{{ $category->id }}" data-tenant-id="{{ $category->menu_tenant_id }}">
+                        <option value="{{ $category->id }}">
                             {{ $category->name }}
                         </option>
                     @endforeach

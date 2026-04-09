@@ -220,13 +220,12 @@ class MenuController extends Controller
 
         $category = $this->categoryRepository->query()
             ->where('id', $validated['category_id'])
-            ->where('menu_tenant_id', $validated['menu_tenant_id'])
             ->whereNull('deleted_at')
             ->first();
 
         if (!$category) {
             throw ValidationException::withMessages([
-                'category_id' => 'Kategori tidak sesuai dengan tenant yang dipilih.',
+                'category_id' => 'Kategori tidak valid.',
             ]);
         }
 
@@ -309,7 +308,6 @@ class MenuController extends Controller
         return $this->categoryRepository->query()
             ->where('is_active', 1)
             ->whereNull('deleted_at')
-            ->orderBy('menu_tenant_id')
             ->orderBy('sort_order')
             ->orderBy('name')
             ->get();

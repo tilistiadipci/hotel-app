@@ -164,40 +164,48 @@ class MenuTransactionDemoSeeder extends Seeder
 
     private function upsertTenant(string $slug, string $name, string $description, string $location, float $serviceCharge, int $sortOrder): MenuTenant
     {
-        return MenuTenant::query()->updateOrCreate(
-            ['slug' => $slug],
-            [
-                'uuid' => MenuTenant::query()->where('slug', $slug)->value('uuid') ?: (string) Str::uuid(),
-                'name' => $name,
-                'description' => $description,
-                'location' => $location,
-                'service_charge' => $serviceCharge,
-                'sort_order' => $sortOrder,
-                'is_active' => true,
-            ]
-        );
+        $tenant = MenuTenant::withTrashed()->firstOrNew([
+            'slug' => $slug,
+        ]);
+
+        if (!$tenant->exists) {
+            $tenant->uuid = (string) Str::uuid();
+        }
+
+        $tenant->name = $name;
+        $tenant->description = $description;
+        $tenant->location = $location;
+        $tenant->service_charge = $serviceCharge;
+        $tenant->sort_order = $sortOrder;
+        $tenant->is_active = true;
+        $tenant->deleted_at = null;
+        $tenant->deleted_by = null;
+        $tenant->save();
+
+        return $tenant;
     }
 
     private function upsertCategory(MenuTenant $tenant, string $name, int $sortOrder): MenuCategory
     {
         $slug = Str::slug($name);
 
-        return MenuCategory::query()->updateOrCreate(
-            [
-                'menu_tenant_id' => $tenant->id,
-                'slug' => $slug,
-            ],
-            [
-                'uuid' => MenuCategory::query()
-                    ->where('menu_tenant_id', $tenant->id)
-                    ->where('slug', $slug)
-                    ->value('uuid') ?: (string) Str::uuid(),
-                'name' => $name,
-                'description' => $name . ' category for ' . $tenant->name . '.',
-                'sort_order' => $sortOrder,
-                'is_active' => true,
-            ]
-        );
+        $category = MenuCategory::withTrashed()->firstOrNew([
+            'slug' => $slug,
+        ]);
+
+        if (!$category->exists) {
+            $category->uuid = (string) Str::uuid();
+        }
+
+        $category->name = $name;
+        $category->description = $category->description ?: ($name . ' category');
+        $category->sort_order = $sortOrder;
+        $category->is_active = true;
+        $category->deleted_at = null;
+        $category->deleted_by = null;
+        $category->save();
+
+        return $category;
     }
 
     private function upsertItem(

@@ -46,7 +46,6 @@
                                         </label>
                                     </th>
                                     <th style="width:60px">No</th>
-                                    <th>{{ trans('common.tenant') }}</th>
                                     <th>{{ trans('common.name') }}</th>
                                     <th>{{ trans('common.sort_order') }}</th>
                                     <th>{{ trans('common.status') }}</th>
@@ -85,11 +84,6 @@
                 render: function(data, type, row, meta) {
                     return meta.row + meta.settings._iDisplayStart + 1;
                 }
-            },
-            {
-                data: 'tenant',
-                name: 'tenant.name',
-                defaultContent: ''
             },
             {
                 data: 'name',

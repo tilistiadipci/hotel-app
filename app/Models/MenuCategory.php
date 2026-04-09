@@ -31,11 +31,6 @@ class MenuCategory extends Model
         return $this->hasMany(MenuItem::class, 'category_id');
     }
 
-    public function tenant()
-    {
-        return $this->belongsTo(MenuTenant::class, 'menu_tenant_id');
-    }
-
     public function scopeFilter($query, array $filters)
     {
         $query->when($filters['search']['value'] ?? false, function ($query, $search) {
@@ -54,10 +49,6 @@ class MenuCategory extends Model
             } elseif ($status === '0' || $status === 0) {
                 $q->where('is_active', 0);
             }
-        });
-
-        $query->when($filter['menu_tenant_id'] ?? false, function ($q, $tenantId) {
-            $q->where('menu_tenant_id', $tenantId);
         });
     }
 }

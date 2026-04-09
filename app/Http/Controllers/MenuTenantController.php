@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Repositories\MenuCategoryRepository;
 use App\Repositories\MenuItemRepository;
 use App\Repositories\MenuTenantRepository;
 use App\Repositories\MediaRepository;
@@ -20,7 +19,6 @@ class MenuTenantController extends Controller
 
     public function __construct(
         private readonly MenuTenantRepository $tenantRepository,
-        private readonly MenuCategoryRepository $categoryRepository,
         private readonly MenuItemRepository $itemRepository,
         private readonly MediaRepository $mediaRepository,
     ) {
@@ -139,13 +137,6 @@ class MenuTenantController extends Controller
                     'deleted_at' => now(),
                 ]);
 
-            $this->categoryRepository->query()
-                ->where('menu_tenant_id', $tenant->id)
-                ->update([
-                    'deleted_by' => auth()->id(),
-                    'deleted_at' => now(),
-                ]);
-
             $tenant->deleted_by = auth()->id();
             $tenant->save();
             $tenant->delete();
@@ -186,13 +177,6 @@ class MenuTenantController extends Controller
             $tenantIds = $tenants->pluck('id')->all();
 
             $this->itemRepository->query()
-                ->whereIn('menu_tenant_id', $tenantIds)
-                ->update([
-                    'deleted_by' => auth()->id(),
-                    'deleted_at' => now(),
-                ]);
-
-            $this->categoryRepository->query()
                 ->whereIn('menu_tenant_id', $tenantIds)
                 ->update([
                     'deleted_by' => auth()->id(),

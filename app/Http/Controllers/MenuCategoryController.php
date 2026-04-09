@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Repositories\MenuCategoryRepository;
 use App\Repositories\MenuItemRepository;
-use App\Repositories\MenuTenantRepository;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -16,30 +15,25 @@ class MenuCategoryController extends Controller
 {
     protected $categoryRepository;
     protected $itemRepository;
-    protected $tenantRepository;
     private $page = 'menu-categories';
     private $icon = 'fa fa-folder';
 
     public function __construct(
         MenuCategoryRepository $categoryRepository,
-        MenuItemRepository $itemRepository,
-        MenuTenantRepository $tenantRepository
+        MenuItemRepository $itemRepository
     ) {
         $this->categoryRepository = $categoryRepository;
         $this->itemRepository = $itemRepository;
-        $this->tenantRepository = $tenantRepository;
     }
 
     public function index(Request $request)
     {
         if ($request->ajax()) {
             $query = $this->categoryRepository->query()
-                ->with('tenant')
                 ->filter($request->only('search', 'filters'));
 
             return DataTables::of($this->categoryRepository->paginateDatatable($query))
                 ->addIndexColumn()
-                ->addColumn('tenant', fn ($row) => optional($row->tenant)->name)
                 ->addColumn('action', function ($row) {
                     return view('partials.datatable.action2', [
                         'row' => $row,
@@ -52,7 +46,6 @@ class MenuCategoryController extends Controller
         return view('pages.menu_categories.index', [
             'page' => $this->page,
             'icon' => $this->icon,
-            'tenants' => $this->tenantOptions(),
         ]);
     }
 
@@ -61,7 +54,6 @@ class MenuCategoryController extends Controller
         return view('pages.menu_categories.create', [
             'page' => $this->page,
             'icon' => $this->icon,
-            'tenants' => $this->tenantOptions(),
         ]);
     }
 
@@ -76,7 +68,6 @@ class MenuCategoryController extends Controller
             'page' => $this->page,
             'icon' => $this->icon,
             'category' => $category,
-            'tenants' => $this->tenantOptions(),
         ]);
     }
 
@@ -91,7 +82,6 @@ class MenuCategoryController extends Controller
                 'data' => [
                     'id' => $category->id,
                     'name' => $category->name,
-                    'menu_tenant_id' => $category->menu_tenant_id,
                 ],
                 'message' => trans('common.success.create'),
             ]);
@@ -209,7 +199,7 @@ class MenuCategoryController extends Controller
             return response()->json([
                 'status' => true,
                 'data' => view('pages.menu_categories.info', [
-                    'category' => $category->load('tenant'),
+                    'category' => $category,
                 ])->render(),
                 'return_type' => 'json',
             ]);
@@ -226,7 +216,6 @@ class MenuCategoryController extends Controller
     {
         $data = $request->validate([
             'name' => ['required', 'string', 'max:100'],
-            'menu_tenant_id' => ['required', 'integer', 'exists:menu_tenants,id'],
             'description' => 'nullable|string',
             'sort_order' => 'nullable|integer|min:0',
             'is_active' => 'nullable|boolean',
@@ -241,12 +230,11 @@ class MenuCategoryController extends Controller
             'name' => [
                 Rule::unique('menu_categories', 'name')
                     ->ignore($categoryId)
-                    ->where('menu_tenant_id', $data['menu_tenant_id'])
                     ->whereNull('deleted_at'),
             ],
         ]);
 
-        $existingSlug = $this->categoryRepository->findBySlug($data['slug'], (int) $data['menu_tenant_id']);
+        $existingSlug = $this->categoryRepository->findBySlug($data['slug']);
         if ($existingSlug && $existingSlug->id !== $categoryId) {
             throw ValidationException::withMessages([
                 'name' => 'Kategori dengan nama tersebut sudah ada.',
@@ -254,15 +242,5 @@ class MenuCategoryController extends Controller
         }
 
         return $data;
-    }
-
-    private function tenantOptions()
-    {
-        return $this->tenantRepository->query()
-            ->where('is_active', 1)
-            ->whereNull('deleted_at')
-            ->orderBy('sort_order')
-            ->orderBy('name')
-            ->get();
     }
 }

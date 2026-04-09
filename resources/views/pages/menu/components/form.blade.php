@@ -51,7 +51,7 @@
                             <select name="category_id" id="category_id" class="form-control select2" style="width: 100%;">
                                 <option value="">{{ trans('common.select_an_option') ?? 'Select an option' }}</option>
                                 @foreach ($categories as $category)
-                                    <option value="{{ $category->id }}" data-tenant-id="{{ $category->menu_tenant_id }}"
+                                    <option value="{{ $category->id }}"
                                         {{ old('category_id') == $category->id || ($item && $item->category_id == $category->id) ? 'selected' : '' }}>
                                         {{ $category->name }}
                                     </option>
@@ -163,9 +163,6 @@
         <form id="formAddMenuCategory">
             @csrf
             <div class="custom-modal__body">
-                <div class="alert alert-info py-2 px-3 mb-3">
-                    {{ trans('common.tenant') }}: <strong id="selectedTenantName">-</strong>
-                </div>
                 <div class="form-group">
                     <label for="newMenuCategoryName">{{ trans('common.name') }}</label>
                     <input type="text" name="name" id="newMenuCategoryName" class="form-control" required maxlength="100">
@@ -278,47 +275,10 @@
                     });
                 });
 
-                const $tenant = $('#menu_tenant_id');
                 const $category = $('#category_id');
-                let allCategoryOptions = $category.find('option').clone();
-
-                const syncCategoryOptions = () => {
-                    const tenantId = $tenant.val();
-                    const currentValue = $category.val();
-
-                    $category.empty().append(allCategoryOptions.clone().filter(function() {
-                        const optionTenantId = $(this).data('tenant-id');
-                        return !tenantId || !optionTenantId || String(optionTenantId) === String(tenantId);
-                    }));
-
-                    if ($category.find(`option[value="${currentValue}"]`).length) {
-                        $category.val(currentValue);
-                    } else {
-                        $category.val(null);
-                    }
-
-                    $category.trigger('change.select2');
-                };
-
-                $tenant.on('change', function() {
-                    const tenantText = $(this).find('option:selected').text() || '-';
-                    $('#selectedTenantName').text(tenantText);
-                    syncCategoryOptions();
-                });
-
-                $tenant.trigger('change');
 
                 const menuModal = $('#modalAddMenuCategory');
                 const openModal = () => {
-                    if (!$tenant.val()) {
-                        swal.fire({
-                            icon: 'warning',
-                            title: 'Tenant wajib dipilih',
-                            text: 'Pilih tenant terlebih dahulu sebelum menambahkan kategori.',
-                        });
-                        return;
-                    }
-
                     menuModal.addClass('is-open').attr('aria-hidden', 'false');
                     $('body').addClass('custom-modal-open');
                     $('#newMenuCategoryName').val('').focus();
@@ -361,14 +321,11 @@
                     $.ajax({
                         url: "{{ route('menu-categories.store') }}",
                         method: 'POST',
-                        data: $(this).serialize() + '&menu_tenant_id=' + encodeURIComponent($tenant.val() || ''),
+                        data: $(this).serialize(),
                         success: function(res) {
                             if (res.status) {
                                 const opt = new Option(res.data.name, res.data.id, true, true);
-                                const $opt = $(opt).attr('data-tenant-id', res.data.menu_tenant_id);
-                                allCategoryOptions = allCategoryOptions.add($opt.clone());
-                                $category.append($opt);
-                                syncCategoryOptions();
+                                $category.append(opt);
                                 $category.val(String(res.data.id)).trigger('change');
                                 closeModal();
                             }

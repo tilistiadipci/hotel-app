@@ -3,7 +3,6 @@
 namespace Database\Seeders;
 
 use App\Models\MenuCategory;
-use App\Models\MenuTenant;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Str;
 
@@ -11,17 +10,6 @@ class MenuCategorySeeder extends Seeder
 {
     public function run(): void
     {
-        $tenant = MenuTenant::query()->firstOrCreate(
-            ['slug' => 'main-pantry'],
-            [
-                'uuid' => Str::uuid()->toString(),
-                'name' => 'Main Pantry',
-                'description' => 'Default tenant for shopping categories.',
-                'sort_order' => 1,
-                'is_active' => true,
-            ]
-        );
-
         $items = [
             ['name' => 'Appetizers', 'sort_order' => 1],
             ['name' => 'Main Course', 'sort_order' => 2],
@@ -34,20 +22,21 @@ class MenuCategorySeeder extends Seeder
 
         foreach ($items as $item) {
             $slug = Str::slug($item['name']);
-            MenuCategory::updateOrCreate(
-                [
-                    'menu_tenant_id' => $tenant->id,
-                    'slug' => $slug,
-                ],
-                [
-                    'uuid' => Str::uuid()->toString(),
-                    'menu_tenant_id' => $tenant->id,
-                    'name' => $item['name'],
-                    'sort_order' => $item['sort_order'],
-                    'is_active' => true,
-                    'description' => null,
-                ]
-            );
+            $category = MenuCategory::withTrashed()->firstOrNew([
+                'slug' => $slug,
+            ]);
+
+            if (!$category->exists) {
+                $category->uuid = Str::uuid()->toString();
+            }
+
+            $category->name = $item['name'];
+            $category->sort_order = $item['sort_order'];
+            $category->is_active = true;
+            $category->description = null;
+            $category->deleted_at = null;
+            $category->deleted_by = null;
+            $category->save();
         }
     }
 }

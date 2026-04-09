@@ -3,32 +3,37 @@
 namespace Database\Seeders;
 
 use App\Models\MenuCategory;
+use App\Models\Media;
 use App\Models\MenuItem;
 use App\Models\MenuTenant;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class MenuItemSeeder extends Seeder
 {
     public function run(): void
     {
-        $tenant = MenuTenant::query()->firstOrCreate(
-            ['slug' => 'main-pantry'],
-            [
-                'uuid' => Str::uuid()->toString(),
-                'name' => 'Main Pantry',
-                'description' => 'Default tenant for shopping items.',
-                'sort_order' => 1,
-                'is_active' => true,
-            ]
-        );
+        $tenant = MenuTenant::withTrashed()->firstOrNew([
+            'slug' => 'main-pantry',
+        ]);
+
+        if (!$tenant->exists) {
+            $tenant->uuid = Str::uuid()->toString();
+        }
+
+        $tenant->name = 'Main Pantry';
+        $tenant->description = 'Default tenant for shopping items.';
+        $tenant->sort_order = 1;
+        $tenant->is_active = true;
+        $tenant->deleted_at = null;
+        $tenant->deleted_by = null;
+        $tenant->save();
 
         // Ensure categories exist
-        $categories = MenuCategory::where('menu_tenant_id', $tenant->id)->pluck('id', 'slug')->toArray();
+        $categories = MenuCategory::pluck('id', 'slug')->toArray();
         if (empty($categories)) {
             $this->call(MenuCategorySeeder::class);
-            $categories = MenuCategory::where('menu_tenant_id', $tenant->id)->pluck('id', 'slug')->toArray();
+            $categories = MenuCategory::pluck('id', 'slug')->toArray();
         }
 
         $data = [
@@ -100,53 +105,70 @@ class MenuItemSeeder extends Seeder
             $categorySlug = $item['category'];
             $categoryId = $categories[$categorySlug] ?? null;
             if (!$categoryId) {
-                $categoryId = MenuCategory::create([
-                    'uuid' => Str::uuid()->toString(),
-                    'menu_tenant_id' => $tenant->id,
-                    'name' => Str::title(str_replace('-', ' ', $categorySlug)),
+                $category = MenuCategory::withTrashed()->firstOrNew([
                     'slug' => $categorySlug,
-                    'is_active' => true,
-                ])->id;
+                ]);
+
+                if (!$category->exists) {
+                    $category->uuid = Str::uuid()->toString();
+                }
+
+                $category->name = Str::title(str_replace('-', ' ', $categorySlug));
+                $category->is_active = true;
+                $category->deleted_at = null;
+                $category->deleted_by = null;
+                $category->save();
+
+                $categoryId = $category->id;
                 $categories[$categorySlug] = $categoryId;
             }
 
             $storagePath = $item['image'] ?? 'default/no-image.png';
             $ext = pathinfo($storagePath, PATHINFO_EXTENSION) ?: 'png';
+            $mediaName = Str::title(str_replace(['-', '_'], ' ', pathinfo($storagePath, PATHINFO_FILENAME)));
 
-            $mediaId = DB::table('medias')->insertGetId([
-                'uuid' => Str::uuid()->toString(),
-                'name' => $item['name'] . ' Image',
-                'original_filename' => basename($storagePath),
+            $media = Media::withTrashed()->firstOrNew([
                 'type' => 'image',
-                'extension' => $ext,
                 'storage_path' => $storagePath,
-                'mime_type' => 'image/' . strtolower($ext),
-                'size' => null,
-                'duration' => null,
-                'width' => null,
-                'height' => null,
-                'created_at' => $now,
-                'updated_at' => $now,
             ]);
 
-            MenuItem::updateOrCreate(
-                [
-                    'menu_tenant_id' => $tenant->id,
-                    'name' => $item['name'],
-                ],
-                [
-                    'uuid' => Str::uuid()->toString(),
-                    'menu_tenant_id' => $tenant->id,
-                    'category_id' => $categoryId,
-                    'price' => $item['price'],
-                    'discount_price' => $item['discount_price'],
-                    'description' => $item['description'],
-                    'is_available' => $item['is_available'],
-                    'sort_order' => $item['sort_order'] ?? 0,
-                    'preparation_time' => $item['preparation_time'],
-                    'image_id' => $mediaId,
-                ]
-            );
+            if (!$media->exists) {
+                $media->uuid = Str::uuid()->toString();
+            }
+
+            $media->name = $mediaName;
+            $media->original_filename = basename($storagePath);
+            $media->extension = $ext;
+            $media->mime_type = 'image/' . strtolower($ext);
+            $media->size = null;
+            $media->duration = null;
+            $media->width = null;
+            $media->height = null;
+            $media->deleted_at = null;
+            $media->deleted_by = null;
+            $media->save();
+
+            $menuItem = MenuItem::withTrashed()->firstOrNew([
+                'menu_tenant_id' => $tenant->id,
+                'name' => $item['name'],
+            ]);
+
+            if (!$menuItem->exists) {
+                $menuItem->uuid = Str::uuid()->toString();
+            }
+
+            $menuItem->menu_tenant_id = $tenant->id;
+            $menuItem->category_id = $categoryId;
+            $menuItem->price = $item['price'];
+            $menuItem->discount_price = $item['discount_price'];
+            $menuItem->description = $item['description'];
+            $menuItem->is_available = $item['is_available'];
+            $menuItem->sort_order = $item['sort_order'] ?? 0;
+            $menuItem->preparation_time = $item['preparation_time'];
+            $menuItem->image_id = $media->id;
+            $menuItem->deleted_at = null;
+            $menuItem->deleted_by = null;
+            $menuItem->save();
         }
     }
 }

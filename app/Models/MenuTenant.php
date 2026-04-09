@@ -28,11 +28,6 @@ class MenuTenant extends Model
         });
     }
 
-    public function categories()
-    {
-        return $this->hasMany(MenuCategory::class, 'menu_tenant_id');
-    }
-
     public function items()
     {
         return $this->hasMany(MenuItem::class, 'menu_tenant_id');

@@ -10,16 +10,6 @@ return new class extends Migration
 {
     public function up(): void
     {
-        Schema::table('menu_categories', function (Blueprint $table) {
-            $table->dropUnique('menu_categories_slug_unique');
-            $table->foreignId('menu_tenant_id')
-                ->nullable()
-                ->after('uuid')
-                ->constrained('menu_tenants')
-                ->restrictOnDelete();
-            $table->index(['menu_tenant_id', 'slug'], 'idx_menu_categories_tenant_slug');
-        });
-
         Schema::table('menu_items', function (Blueprint $table) {
             $table->foreignId('menu_tenant_id')
                 ->nullable()
@@ -74,14 +64,9 @@ return new class extends Migration
             'updated_at' => now(),
         ]);
 
-        DB::table('menu_categories')
+        DB::table('menu_items')
             ->whereNull('menu_tenant_id')
             ->update(['menu_tenant_id' => $tenantId]);
-
-        DB::table('menu_items')
-            ->join('menu_categories', 'menu_categories.id', '=', 'menu_items.category_id')
-            ->whereNull('menu_items.menu_tenant_id')
-            ->update(['menu_items.menu_tenant_id' => DB::raw('menu_categories.menu_tenant_id')]);
 
         DB::table('menu_transactions')
             ->whereNull('menu_tenant_id')
@@ -129,10 +114,5 @@ return new class extends Migration
             $table->dropConstrainedForeignId('menu_tenant_id');
         });
 
-        Schema::table('menu_categories', function (Blueprint $table) {
-            $table->dropIndex('idx_menu_categories_tenant_slug');
-            $table->dropConstrainedForeignId('menu_tenant_id');
-            $table->unique('slug');
-        });
     }
 };

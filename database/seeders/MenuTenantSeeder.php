@@ -24,18 +24,23 @@ class MenuTenantSeeder extends Seeder
         ];
 
         foreach ($items as $item) {
-            $tenant = MenuTenant::updateOrCreate(
-                ['slug' => $item['slug']],
-                [
-                    'uuid' => Str::uuid()->toString(),
-                    'name' => $item['name'],
-                    'description' => $item['description'],
-                    'location' => $item['location'],
-                    'service_charge' => $item['service_charge'],
-                    'sort_order' => $item['sort_order'],
-                    'is_active' => true,
-                ]
-            );
+            $tenant = MenuTenant::withTrashed()->firstOrNew([
+                'slug' => $item['slug'],
+            ]);
+
+            if (!$tenant->exists) {
+                $tenant->uuid = Str::uuid()->toString();
+            }
+
+            $tenant->name = $item['name'];
+            $tenant->description = $item['description'];
+            $tenant->location = $item['location'];
+            $tenant->service_charge = $item['service_charge'];
+            $tenant->sort_order = $item['sort_order'];
+            $tenant->is_active = true;
+            $tenant->deleted_at = null;
+            $tenant->deleted_by = null;
+            $tenant->save();
 
             $operatorRoleId = DB::table('roles')->where('category', 'operator')->value('id');
             if ($operatorRoleId) {
