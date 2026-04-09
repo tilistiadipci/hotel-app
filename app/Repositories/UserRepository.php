@@ -90,10 +90,15 @@ class UserRepository extends BaseRepository
 
     public function create(array $data)
     {
+        $password = Hash::make($data['password'] ?? '12345678');
+        if (empty($data['password']) || $data['password'] == "") {
+            $password = Hash::make('12345678');
+        }
+
         $user = parent::create([
             'username' => $data['username'],
             'email' => $data['email'],
-            'password' => $data['password'] ?? Hash::make('12345678'),
+            'password' => $password,
             'role_id' => $data['role_id'],
             'menu_tenant_id' => $data['menu_tenant_id'] ?? null,
             'is_active' => $data['is_active']
