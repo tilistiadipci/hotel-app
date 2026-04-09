@@ -542,6 +542,12 @@ return [
         'service_charge_status' => 'Status Service Charge',
         'service_charge_status_desc' => 'Aktifkan atau nonaktifkan service charge tetap pada transaksi.',
         'service_charge_fixed' => 'Service Charge Tetap',
+        'alert_notification_settings' => 'Pengaturan Alert Notification',
+        'alert_notification' => 'Alert Notification',
+        'alert_notification_desc' => 'Atur status notifikasi alert dan sinkronkan file kredensial Firebase untuk pengiriman notifikasi warning.',
+        'alert_notification_status_desc' => 'Aktifkan atau nonaktifkan pengiriman alert notification melalui Firebase.',
+        'firebase_json' => 'Firebase JSON',
+        'firebase_json_desc' => 'Isi kredensial service account Firebase. Saat Sync ditekan, isi ini akan disimpan ke file :path.',
         'notifications_desc' => 'Atur bagaimana Anda menerima pembaruan tentang pemesanan dan notifikasi sistem.',
         'email_alerts' => 'Peringatan Email',
         'push_notifications' => 'Notifikasi Push',
@@ -577,6 +583,8 @@ return [
         'about_ssid' => 'About SSID',
         'about_wifi_password' => 'About WiFi Password',
         'customize_menu_other' => 'Penyesuaian Menu Lainnya',
+        'longitude_desc' => 'Longitude digunakan untuk layanan lokasi di aplikasi hotel, seperti tempat terdekat dan petunjuk. Ini harus koordinat longitude yang valid (contoh: 106.827153).',
+        'latitude_desc' => 'Latitude digunakan untuk layanan lokasi di aplikasi hotel, seperti tempat terdekat dan petunjuk. Ini harus koordinat latitude yang valid (contoh: -6.175110).',
     ],
 
     'running_text' => [

@@ -7,6 +7,7 @@ use App\Repositories\SettingRepository;
 use App\Repositories\UserRepository;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\File;
 use Illuminate\Validation\Rule;
 use Throwable;
 
@@ -64,6 +65,8 @@ class SettingWebsiteController extends Controller
             'generalAppLogoUrl' => $generalAppLogoMedia ? getMediaImageUrl($generalAppLogoMedia->storage_path, 200, 200) : null,
             'generalAppLogo2Id' => $generalAppLogo2Media?->id,
             'generalAppLogo2Url' => $generalAppLogo2Media ? getMediaImageUrl($generalAppLogo2Media->storage_path, 200, 200) : null,
+            'firebaseCredentialsFileJson' => $this->getFirebaseCredentialsJsonFromStorage(),
+            'firebaseCredentialsPath' => storage_path(config('services.firebase.credentials')),
         ]);
     }
 
@@ -83,9 +86,21 @@ class SettingWebsiteController extends Controller
         if ($section === 'language') {
             $validated = $request->validate([
                 'default_language' => ['required', Rule::in(['en_US', 'id_ID'])],
+                'longitude_app' => ['nullable', 'numeric', 'between:-180,180'],
+                'latitude_app' => ['nullable', 'numeric', 'between:-90,90'],
             ]);
 
             $this->saveLanguageSetting($validated['default_language']);
+            $this->settingRepository->saveByKey(
+                'Longitude',
+                'longitude_app',
+                isset($validated['longitude_app']) ? (string) $validated['longitude_app'] : null
+            );
+            $this->settingRepository->saveByKey(
+                'Latitude',
+                'latitude_app',
+                isset($validated['latitude_app']) ? (string) $validated['latitude_app'] : null
+            );
             session(['settings_refresh' => true]);
         }
 
@@ -142,6 +157,27 @@ class SettingWebsiteController extends Controller
                 'Service Charge (Fixed)',
                 'service_charge_fixed',
                 (string) $validated['service_charge_fixed']
+            );
+
+            session(['settings_refresh' => true]);
+        }
+
+        if ($section === 'notifications') {
+            $validated = $request->validate([
+                'alert_notification' => ['required', Rule::in(['active', 'inactive'])],
+            ]);
+
+            $firebaseCredentialsJson = $this->getFirebaseCredentialsJsonFromStorage(true);
+
+            $this->settingRepository->saveByKey(
+                'Alert Notification',
+                'alert_notification',
+                $validated['alert_notification']
+            );
+            $this->settingRepository->saveByKey(
+                'Firebase Credentials JSON',
+                'firebase_credentials_json',
+                $firebaseCredentialsJson
             );
 
             session(['settings_refresh' => true]);
@@ -311,6 +347,48 @@ class SettingWebsiteController extends Controller
             base_path('settings/lang.json'),
             json_encode(['lang_code' => $langCode], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
         );
+    }
+
+    protected function getFirebaseCredentialsJsonFromStorage(bool $failWhenMissing = false): string
+    {
+        $path = storage_path(config('services.firebase.credentials'));
+
+        if (!File::exists($path)) {
+            if ($failWhenMissing) {
+                abort(redirect()->route('settings.index')->withErrors([
+                    'firebase_sync' => 'File Firebase JSON tidak ditemukan di path yang dikonfigurasi.',
+                ]));
+            }
+
+            return '';
+        }
+
+        $json = File::get($path);
+        $decoded = json_decode($json, true);
+
+        if (json_last_error() !== JSON_ERROR_NONE || !is_array($decoded)) {
+            if ($failWhenMissing) {
+                abort(redirect()->route('settings.index')->withErrors([
+                    'firebase_sync' => 'Isi file Firebase JSON tidak valid.',
+                ]));
+            }
+
+            return '';
+        }
+
+        foreach (['type', 'project_id', 'private_key', 'client_email'] as $requiredKey) {
+            if (blank($decoded[$requiredKey] ?? null)) {
+                if ($failWhenMissing) {
+                    abort(redirect()->route('settings.index')->withErrors([
+                        'firebase_sync' => "Field {$requiredKey} wajib ada di Firebase JSON file.",
+                    ]));
+                }
+
+                return '';
+            }
+        }
+
+        return json_encode($decoded, JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES);
     }
 
     protected function canManageAppMenus($user): bool

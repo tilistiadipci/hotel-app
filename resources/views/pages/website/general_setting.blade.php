@@ -2,7 +2,7 @@
     <div class="col-lg-6">
         <div class="card mb-3">
             <div class="card-header">
-                <i class="fa fa-language mr-2"></i> {{ trans('common.settings_page.language_settings') }}
+                <i class="fa fa-cog mr-2"></i> Global Setting
             </div>
             <form method="POST" action="{{ route('settings.update') }}">
                 @csrf
@@ -11,7 +11,7 @@
                 <div class="card-body">
                     <p class="text-muted">{{ trans('common.settings_page.language_desc') }}</p>
 
-                    <div class="form-group mb-0">
+                    <div class="form-group">
                         <select name="default_language"
                             class="form-control @error('default_language') is-invalid @enderror">
                             <option value="en_US"
@@ -28,6 +28,30 @@
                     @error('default_language')
                         <div class="text-danger small mt-2">{{ $message }}</div>
                     @enderror
+
+                    <div class="form-group mt-3">
+                        <label for="longitude_app">Longitude</label> <i class="fa fa-info mr-1 blue"
+                            data-toggle="tooltip" data-placement="top"
+                            title="{{ trans('common.settings_page.longitude_desc') }}" style="cursor: pointer"></i>
+                        <input type="number" step="any"
+                            class="form-control @error('longitude_app') is-invalid @enderror" id="longitude_app"
+                            name="longitude_app" value="{{ old('longitude_app', $settings['longitude_app'] ?? '') }}">
+                        @error('longitude_app')
+                            <div class="text-danger small mt-2">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="form-group mb-0">
+                        <label for="latitude_app">Latitude</label> <i class="fa fa-info mr-1 blue" data-toggle="tooltip"
+                            data-placement="top" title="{{ trans('common.settings_page.latitude_desc') }}"
+                            style="cursor: pointer"></i>
+                        <input type="number" step="any"
+                            class="form-control @error('latitude_app') is-invalid @enderror" id="latitude_app"
+                            name="latitude_app" value="{{ old('latitude_app', $settings['latitude_app'] ?? '') }}">
+                        @error('latitude_app')
+                            <div class="text-danger small mt-2">{{ $message }}</div>
+                        @enderror
+                    </div>
                 </div>
 
                 <div class="card-footer text-right">
@@ -223,5 +247,64 @@
                 </div>
             </form>
         </div>
+
+        @if (auth()->user()->role_id == 1)
+            <div class="card mb-3">
+                <div class="card-header">
+                    <i class="fa fa-bell mr-2"></i>
+                    {{ trans('common.settings_page.alert_notification_settings') }}
+                </div>
+                <form method="POST" action="{{ route('settings.update') }}">
+                    @csrf
+                    <input type="hidden" name="section" value="notifications">
+                    <input type="hidden" name="alert_notification" value="inactive">
+
+                    <div class="card-body">
+                        <p class="text-muted">{{ trans('common.settings_page.alert_notification_desc') }}</p>
+
+                        <div class="border rounded p-3 mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-0">
+                                <div class="pr-3">
+                                    <h5 class="mb-1">{{ trans('common.settings_page.alert_notification') }}</h5>
+                                    <p class="mb-0 text-muted">
+                                        {{ trans('common.settings_page.alert_notification_status_desc') }}</p>
+                                </div>
+
+                                <div class="custom-control custom-switch mb-0">
+                                    <input type="checkbox" class="custom-control-input alert-notification-toggle"
+                                        id="alert_notification" name="alert_notification" value="active"
+                                        {{ old('alert_notification', $settings['alert_notification'] ?? '') === 'active' ? 'checked' : '' }}>
+                                    <label class="custom-control-label" for="alert_notification"></label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="form-group mb-0">
+                            <label for="firebase_credentials_json">
+                                {{ trans('common.settings_page.firebase_json') }}
+                            </label>
+                            <textarea class="form-control @error('firebase_credentials_json') is-invalid @enderror" id="firebase_credentials_json"
+                                name="firebase_credentials_json" rows="4" spellcheck="false" style="resize: none;" readonly>{{ old('firebase_credentials_json', $firebaseCredentialsFileJson ?? '') }}</textarea>
+                            <small class="text-muted d-block mt-2">
+                                {{ trans('common.settings_page.firebase_json_desc', ['path' => $firebaseCredentialsPath ?? '-']) }}
+                            </small>
+                        </div>
+
+                        @error('alert_notification')
+                            <div class="text-danger small mt-2">{{ $message }}</div>
+                        @enderror
+                        @error('firebase_credentials_json')
+                            <div class="text-danger small mt-2">{{ $message }}</div>
+                        @enderror
+                    </div>
+
+                    <div class="card-footer text-right">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa fa-refresh mr-1"></i> {{ trans('common.sync') }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        @endif
     </div>
 </div>

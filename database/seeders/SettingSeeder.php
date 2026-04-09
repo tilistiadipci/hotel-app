@@ -49,6 +49,22 @@ class SettingSeeder extends Seeder
             ],
             [
                 'uuid'       => (string) Str::uuid(),
+                'name'       => 'Longitude',
+                'key'        => 'longitude_app',
+                'value'      => '',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'uuid'       => (string) Str::uuid(),
+                'name'       => 'Latitude',
+                'key'        => 'latitude_app',
+                'value'      => '',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'uuid'       => (string) Str::uuid(),
                 'name'       => 'Tax Percentage Grand Total Status',
                 'key'        => 'tax_percentage_grand_total_status',
                 'value'      => 'inactive', // active or inactive
@@ -76,6 +92,14 @@ class SettingSeeder extends Seeder
                 'name'       => 'Service Charge (Fixed)',
                 'key'        => 'service_charge_fixed',
                 'value'      => 10000,
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'uuid'       => (string) Str::uuid(),
+                'name'       => 'Alert Notification',
+                'key'        => 'alert_notification',
+                'value'      => 'inactive',
                 'created_at' => $now,
                 'updated_at' => $now,
             ],
@@ -347,14 +371,24 @@ class SettingSeeder extends Seeder
             ],
         ];
 
-        DB::table('settings')->upsert(
-            $settings,
-            ['key'],
-            [
-                'name',
-                'value',
-                'updated_at',
-            ]
-        );
+        foreach ($settings as $setting) {
+            $dataStore = DB::table('settings')->where('key', $setting['key'])->first();
+            if ($dataStore) {
+                DB::table('settings')->where('key', $setting['key'])->update([
+                    'name' => $setting['name'],
+                    'value' => $setting['value'],
+                    'updated_at' => now(),
+                ]);
+            } else {
+                DB::table('settings')->insert([
+                    'uuid' => $setting['uuid'],
+                    'name' => $setting['name'],
+                    'key' => $setting['key'],
+                    'value' => $setting['value'],
+                    'created_at' => $setting['created_at'],
+                    'updated_at' => $setting['updated_at'],
+                ]);
+            }
+        }
     }
 }

@@ -124,6 +124,14 @@
                 toggle.value = toggle.checked ? 'active' : 'inactive';
             });
 
+            document.querySelectorAll('.alert-notification-toggle').forEach(function(toggle) {
+                toggle.addEventListener('change', function() {
+                    this.value = this.checked ? 'active' : 'inactive';
+                });
+
+                toggle.value = toggle.checked ? 'active' : 'inactive';
+            });
+
             document.querySelectorAll('.customize-menu-toggle, .other-app-toggle, .menu-item-toggle, .mobile-menu-toggle').forEach(function(toggle) {
                 toggle.addEventListener('change', function() {
                     this.value = this.checked ? 'active' : 'inactive';

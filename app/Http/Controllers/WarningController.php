@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Warning as WarningModel;
 use App\Repositories\PlayerGroupRepository;
 use App\Repositories\PlayerRepository;
+use App\Repositories\SettingRepository;
 use App\Repositories\WarningRepository;
 use App\Services\FirebaseService;
 use Illuminate\Http\Request;
@@ -17,17 +18,20 @@ class WarningController extends Controller
     protected WarningRepository $warningRepository;
     protected PlayerRepository $playerRepository;
     protected PlayerGroupRepository $playerGroupRepository;
+    protected SettingRepository $settingRepository;
     private string $page = 'warnings';
     private string $icon = 'fa fa-exclamation-triangle';
 
     public function __construct(
         WarningRepository $warningRepository,
         PlayerRepository $playerRepository,
-        PlayerGroupRepository $playerGroupRepository
+        PlayerGroupRepository $playerGroupRepository,
+        SettingRepository $settingRepository
     ) {
         $this->warningRepository = $warningRepository;
         $this->playerRepository = $playerRepository;
         $this->playerGroupRepository = $playerGroupRepository;
+        $this->settingRepository = $settingRepository;
     }
 
     public function index()
@@ -58,23 +62,24 @@ class WarningController extends Controller
 
             $this->publishWarningPayload($warnings);
 
-            $firebase = new FirebaseService();
-            foreach ($warnings as $warning) {
+            if ($this->settingRepository->getValueByKey('alert_notification', 'inactive') === 'active') {
+                $firebase = new FirebaseService();
+                foreach ($warnings as $warning) {
+                    $topic = 'warning_player_' . $warning->player->serial;
 
-                $topic = 'warning_player_' . $warning->player->serial;
+                    try {
+                        $result = $firebase->sendToTopic($topic, [
+                            'type' => $request->type == 'other' ? $request->other_type : $request->type,
+                            'priority' => $request->priority,
+                            'message' => $request->message,
+                            'schedule_mode' => $request->schedule_mode,
+                            'triggered_at' => now()->toISOString(),
+                        ]);
 
-                try {
-                    $result = $firebase->sendToTopic($topic, [
-                        'type' => $request->type == 'other' ? $request->other_type : $request->type,
-                        'priority' => $request->priority,
-                        'message' => $request->message,
-                        'schedule_mode' => $request->schedule_mode,
-                        'triggered_at' => now()->toISOString(),
-                    ]);
-
-                    Log::info("FCM sent to topic {$topic}", ['result' => $result]);
-                } catch (\Exception $e) {
-                    Log::error("FCM ERROR: " . $e->getMessage());
+                        Log::info("FCM sent to topic {$topic}", ['result' => $result]);
+                    } catch (\Exception $e) {
+                        Log::error("FCM ERROR: " . $e->getMessage());
+                    }
                 }
             }
 

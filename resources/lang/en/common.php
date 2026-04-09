@@ -554,6 +554,12 @@ return [
         'service_charge_status' => 'Service Charge Status',
         'service_charge_status_desc' => 'Enable or disable fixed service charge for transactions.',
         'service_charge_fixed' => 'Fixed Service Charge',
+        'alert_notification_settings' => 'Alert Notification Settings',
+        'alert_notification' => 'Alert Notification',
+        'alert_notification_desc' => 'Manage alert notification status and sync the Firebase credential file used for warning notifications.',
+        'alert_notification_status_desc' => 'Enable or disable sending alert notifications through Firebase.',
+        'firebase_json' => 'Firebase JSON',
+        'firebase_json_desc' => 'Enter the Firebase service account credentials. When Sync is clicked, this content will be saved to :path.',
         'notifications_desc' => 'Manage how you receive updates about booking and system alerts.',
         'email_alerts' => 'Email Alerts',
         'push_notifications' => 'Push Notifications',
@@ -589,6 +595,8 @@ return [
         'about_ssid' => 'About SSID',
         'about_wifi_password' => 'About WiFi Password',
         'customize_menu_other' => 'Customize Menu Others',
+        'longitude_desc' => 'Longitude is used for location-based services in the hotel app, such as nearby places and guides. It should be a valid longitude coordinate (e.g., 106.827153).',
+        'latitude_desc' => 'Latitude is used for location-based services in the hotel app, such as nearby places and guides. It should be a valid latitude coordinate (e.g., -6.175110).',
     ],
 
     'running_text' => [

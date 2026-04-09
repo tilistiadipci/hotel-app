@@ -6,10 +6,26 @@ use Illuminate\Support\Facades\Http;
 
 class FirebaseService
 {
-    protected function getAccessToken()
+    protected function getCredentials(): array
     {
         $path = storage_path(config('services.firebase.credentials'));
+
+        if (!is_file($path)) {
+            throw new \RuntimeException('Firebase credentials file not found.');
+        }
+
         $credentials = json_decode(file_get_contents($path), true);
+
+        if (!is_array($credentials)) {
+            throw new \RuntimeException('Firebase credentials JSON is invalid.');
+        }
+
+        return $credentials;
+    }
+
+    protected function getAccessToken()
+    {
+        $credentials = $this->getCredentials();
 
         $header = [
             'alg' => 'RS256',
@@ -61,7 +77,7 @@ class FirebaseService
             throw new \Exception("Failed to get Firebase access token");
         }
 
-        $projectId = config('services.firebase.project_id');
+        $projectId = $this->resolveProjectId();
 
         $response = Http::withToken($accessToken)
             ->post("https://fcm.googleapis.com/v1/projects/{$projectId}/messages:send", [
@@ -82,7 +98,7 @@ class FirebaseService
             throw new \Exception("Failed to get Firebase access token");
         }
 
-        $projectId = config('services.firebase.project_id');
+        $projectId = $this->resolveProjectId();
 
         $response = Http::withToken($accessToken)
             ->post("https://fcm.googleapis.com/v1/projects/{$projectId}/messages:send", [
@@ -93,5 +109,12 @@ class FirebaseService
             ]);
 
         return $response->json();
+    }
+
+    protected function resolveProjectId(): ?string
+    {
+        $credentials = $this->getCredentials();
+
+        return $credentials['project_id'] ?? config('services.firebase.project_id');
     }
 }
