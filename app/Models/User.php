@@ -101,4 +101,33 @@ class User extends Authenticatable
         return $this->belongsToMany(MenuTenant::class, 'menu_tenant_user', 'user_id', 'menu_tenant_id')
             ->withTimestamps();
     }
+
+    public function normalizedRoleCategory(): string
+    {
+        return Str::of((string) ($this->role->category ?? ''))
+            ->trim()
+            ->lower()
+            ->toString();
+    }
+
+    public function hasRoleCategory(string ...$categories): bool
+    {
+        if (empty($categories)) {
+            return false;
+        }
+
+        $currentCategory = $this->normalizedRoleCategory();
+
+        if ($currentCategory === '') {
+            return false;
+        }
+
+        $normalizedCategories = collect($categories)
+            ->map(fn (string $category) => Str::of($category)->trim()->lower()->toString())
+            ->filter()
+            ->values()
+            ->all();
+
+        return in_array($currentCategory, $normalizedCategories, true);
+    }
 }

@@ -1,11 +1,13 @@
 <div class="app-sidebar sidebar-shadow">
     @php
+        $authUser = auth()->user();
         $settings = session('settings', []);
         $isMusicMenuActive = ($settings['menu_music_status'] ?? 'active') === 'active';
         $isVodMenuActive = ($settings['menu_vod_status'] ?? 'active') === 'active';
         $isGuideMenuActive = ($settings['menu_guide_status'] ?? 'active') === 'active';
         $isNearbyMenuActive = ($settings['menu_nearby_status'] ?? 'active') === 'active';
         $isShoppingMenuActive = ($settings['menu_shopping_status'] ?? 'active') === 'active';
+        $canAccessAdminArea = $authUser?->hasRoleCategory('master', 'superadmin', 'admin') ?? false;
     @endphp
 
     <div class="app-header__logo text-center">
@@ -63,7 +65,7 @@
                         Warning Broadcast
                     </a>
                 </li>
-                @if (in_array(auth()->user()->role_id ?? null, [1, 2], true))
+                @if ($canAccessAdminArea)
 
                     {{-- media --}}
                     <li class="{{ $page == 'media-library' ? 'mm-active' : '' }}">
@@ -245,7 +247,7 @@
                 @endif
 
 
-                @if (in_array(auth()->user()->role_id ?? null, [1, 2], true))
+                @if ($canAccessAdminArea)
                     <li class="app-sidebar__heading">{{ trans('common.settings') }}</li>
                     {{-- settings --}}
                     <li class="{{ $page == 'users' ? 'mm-active' : '' }}">

@@ -248,7 +248,7 @@
             </form>
         </div>
 
-        @if (auth()->user()->role_id == 1)
+        @if (auth()->user()?->hasRoleCategory('master', 'superadmin'))
             <div class="card mb-3">
                 <div class="card-header">
                     <i class="fa fa-bell mr-2"></i>

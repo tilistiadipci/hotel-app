@@ -393,8 +393,6 @@ class SettingWebsiteController extends Controller
 
     protected function canManageAppMenus($user): bool
     {
-        $roleCategory = strtolower((string) ($user->role->category ?? ''));
-
-        return (int) ($user->role_id ?? 0) === 1 || in_array($roleCategory, ['master', 'superadmin'], true);
+        return $user?->hasRoleCategory('master', 'superadmin') ?? false;
     }
 }

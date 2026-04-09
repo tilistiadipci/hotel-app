@@ -23,7 +23,7 @@ class EnsureRoleCategory
             abort(403);
         }
 
-        if (!in_array($user->role->category, $categories, true)) {
+        if (!$user->hasRoleCategory(...$categories)) {
             abort(403);
         }
 
