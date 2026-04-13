@@ -55,6 +55,7 @@
         let pickerNext = null;
         let pickerBusy = false;
         let currentImageTarget = 1;
+        let pickerContext = null;
 
         function resolveImageTarget() {
             if (currentImageTarget === 2) {
@@ -73,6 +74,16 @@
                 previewWrap: document.getElementById('imagePreviewWrap'),
                 previewImage: document.getElementById('imagePreview'),
                 currentCover: document.getElementById('currentCoverPreview'),
+            };
+        }
+
+        function normalizePickerOptions(typeOrOptions) {
+            if (typeOrOptions && typeof typeOrOptions === 'object') {
+                return typeOrOptions;
+            }
+
+            return {
+                type: typeOrOptions,
             };
         }
 
@@ -355,7 +366,7 @@
                     'fa-image');
                 pickerList.append(`
                             <div class="media-picker-item" data-uuid="${it.uuid}" data-id="${it.id}" data-type="${it.type}"
-                                 data-name="${it.name}" data-original="${it.original_filename}" data-path="${it.storage_path}" data-thumb="${thumb}">
+                                 data-name="${it.name}" data-original="${it.original_filename}" data-path="${it.storage_path}" data-thumb="${thumb}" data-duration="${it.duration || ''}">
                                 <div class="media-picker-thumb">
                                     ${thumb ? `<img src="${thumb}" alt="${it.name}" style="width:100%;height:100%;object-fit:cover;border-radius:4px;">` : `<i class="fa ${icon} fa-2x"></i>`}
                                 </div>
@@ -409,8 +420,17 @@
             });
         }
 
-        function openPicker(type) {
+        function openPicker(typeOrOptions) {
+            const options = normalizePickerOptions(typeOrOptions);
+            const type = options.type || 'image';
+
             pickerType = type;
+            pickerContext = typeof options.onSelect === 'function'
+                ? {
+                    onSelect: options.onSelect
+                }
+                : null;
+
             $('#modalMediaPickerTitle').text('Pilih ' + type.charAt(0).toUpperCase() + type.slice(1));
             modalPicker.attr('data-type', type).addClass('is-open').attr('aria-hidden', 'false');
             $('body').addClass('custom-modal-open');
@@ -443,6 +463,18 @@
         function closePicker() {
             modalPicker.removeClass('is-open').attr('aria-hidden', 'true');
             $('body').removeClass('custom-modal-open');
+            pickerContext = null;
+        }
+
+        function handlePickerSelection(media) {
+            if (!pickerContext || typeof pickerContext.onSelect !== 'function') {
+                return false;
+            }
+
+            pickerContext.onSelect(media);
+            closePicker();
+
+            return true;
         }
 
         modalPicker.find('[data-modal-close]').on('click', closePicker);
@@ -465,6 +497,21 @@
             const name = $(this).data('name');
             const type = $(this).data('type');
             const thumb = $(this).data('thumb') || '';
+            const media = {
+                id: id,
+                name: name,
+                type: type,
+                thumb_url: thumb,
+                duration: $(this).data('duration') || '',
+                original_filename: $(this).data('original') || '',
+                storage_path: $(this).data('path') || '',
+                uuid: $(this).data('uuid') || '',
+            };
+
+            if (handlePickerSelection(media)) {
+                return;
+            }
+
             if (type === 'image') {
                 const imageTarget = resolveImageTarget();
                 imageTarget.input && (imageTarget.input.value = id);
@@ -566,6 +613,9 @@
 
                         if (res.status && res.media) {
                             const m = res.media;
+                            if (handlePickerSelection(m)) {
+                                return;
+                            }
                             hiddenVideoMediaId && (hiddenVideoMediaId.value = m.id);
                             videoLabel && (videoLabel.textContent = m.name || m.original_filename);
                             durationInput && (durationInput.value = m.duration || durationInput.value);
@@ -677,6 +727,9 @@
             }).done(function(res) {
                 if (res.status && res.media) {
                     const m = res.media;
+                    if (handlePickerSelection(m)) {
+                        return;
+                    }
                     if (pickerType === 'image') {
                         const imageTarget = resolveImageTarget();
                         imageTarget.input && (imageTarget.input.value = m.id);
@@ -717,6 +770,11 @@
         });
         btnPickVideo && btnPickVideo.addEventListener('click', () => openPicker('video'));
         btnPickAudio && btnPickAudio.addEventListener('click', () => openPicker('audio'));
+
+        window.hotelMediaPicker = {
+            open: openPicker,
+            close: closePicker,
+        };
 
         const imageInput = document.getElementById('image');
         const imagePreviewWrap = document.getElementById('imagePreviewWrap');

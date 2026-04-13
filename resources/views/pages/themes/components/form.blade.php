@@ -1396,6 +1396,21 @@
                 renderDetailImagePreview(row, normalizedItems);
             }
 
+            function applyPickedImageMediaToRow(row, media) {
+                if (!row || !media) {
+                    return;
+                }
+
+                const nextItems = allowsMultipleImages(row) ? getImageItems(row) : [];
+                nextItems.push({
+                    id: String(media.id || '').trim(),
+                    url: media.thumb_url || media.url || media.storage_path || '',
+                });
+
+                setImageItems(row, nextItems);
+                applyPreviewState();
+            }
+
             function collectThemeDetails() {
                 const details = {};
 
@@ -1717,7 +1732,16 @@
                 const uploadButton = event.target.closest('.btn-detail-image-upload');
                 if (uploadButton) {
                     const row = uploadButton.closest('.theme-detail-row');
-                    row?.querySelector('.theme-detail-image-file')?.click();
+                    if (window.hotelMediaPicker?.open) {
+                        window.hotelMediaPicker.open({
+                            type: 'image',
+                            onSelect(media) {
+                                applyPickedImageMediaToRow(row, media);
+                            }
+                        });
+                    } else {
+                        row?.querySelector('.theme-detail-image-file')?.click();
+                    }
                     return;
                 }
 
