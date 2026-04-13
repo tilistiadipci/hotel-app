@@ -12,18 +12,77 @@
             ->all()
         : $theme->details->map(fn($detail) => ['key' => $detail->key, 'value' => $detail->value])->values()->all();
 
-    if (empty($detailRows)) {
-        $detailRows = [['key' => '', 'value' => '']];
-    }
+    $defaultImageDetailKeys = strcasecmp((string) $theme->name, 'Default Theme') === 0
+        ? ['image_id_1', 'image_id_2', 'image_id_3']
+        : [];
+
+    $extractDetailImageIds = function ($value) {
+        $normalizedValue = trim((string) $value);
+
+        if ($normalizedValue === '') {
+            return [];
+        }
+
+        if (ctype_digit($normalizedValue)) {
+            return [$normalizedValue];
+        }
+
+        $decoded = json_decode($normalizedValue, true);
+        if (!is_array($decoded)) {
+            return [];
+        }
+
+        return collect($decoded)
+            ->map(fn($item) => trim((string) $item))
+            ->filter(fn($item) => $item !== '' && ctype_digit($item))
+            ->unique()
+            ->values()
+            ->all();
+    };
 
     $detailRows = collect($detailRows)
         ->reject(fn ($row) => ($row['key'] ?? '') === 'background_theme_color')
         ->values()
+        ->map(fn($row, $index) => [
+            'key' => $row['key'] ?? '',
+            'value' => $row['value'] ?? '',
+            '_order' => $index,
+        ])
+        ->values()
         ->all();
 
-    if (empty($detailRows)) {
-        $detailRows = [['key' => '', 'value' => '']];
+    $existingDetailKeys = collect($detailRows)->pluck('key')->filter()->all();
+    foreach ($defaultImageDetailKeys as $position => $detailKey) {
+        if (!in_array($detailKey, $existingDetailKeys, true)) {
+            $detailRows[] = [
+                'key' => $detailKey,
+                'value' => '',
+                '_order' => 500 + $position,
+            ];
+        }
     }
+
+    if (empty($detailRows)) {
+        $detailRows = [['key' => '', 'value' => '', '_order' => 0]];
+    }
+
+    $detailRows = collect($detailRows)
+        ->sortBy(function ($row) use ($defaultImageDetailKeys) {
+            $detailKey = (string) ($row['key'] ?? '');
+            $fixedPosition = array_search($detailKey, $defaultImageDetailKeys, true);
+
+            if ($fixedPosition !== false) {
+                return $fixedPosition;
+            }
+
+            return 1000 + (int) ($row['_order'] ?? 0);
+        })
+        ->map(fn($row) => [
+            'key' => $row['key'] ?? '',
+            'value' => $row['value'] ?? '',
+        ])
+        ->values()
+        ->all();
 
     $normalizeBooleanValue = function ($value) {
         return in_array((string) $value, ['1', 'true', 'yes', 'on'], true) ? '1' : '0';
@@ -50,6 +109,34 @@
         }
 
         return $fallback;
+    };
+
+    $resolveDetailImageUrls = function ($value, $fallback = []) use ($extractDetailImageIds, $resolveDetailImageUrl) {
+        $mediaUrls = collect($extractDetailImageIds($value))
+            ->map(fn($mediaId) => $resolveDetailImageUrl($mediaId))
+            ->filter()
+            ->values()
+            ->all();
+
+        if (!empty($mediaUrls)) {
+            return $mediaUrls;
+        }
+
+        $normalizedValue = trim((string) $value);
+        if ($normalizedValue !== '' && !ctype_digit($normalizedValue) && !str_starts_with($normalizedValue, '[')) {
+            return [$normalizedValue];
+        }
+
+        return collect(is_array($fallback) ? $fallback : [$fallback])
+            ->filter()
+            ->values()
+            ->all();
+    };
+
+    $allowsMultipleImagesForKey = function ($key) {
+        $normalizedKey = \Illuminate\Support\Str::of((string) $key)->trim()->lower()->toString();
+
+        return preg_match('/^image(_id)?_3$/', $normalizedKey) !== 1;
     };
 
     $resolveDetailControlType = function ($key) {
@@ -84,15 +171,19 @@
         : ($theme->imageMedia
             ? getMediaImageUrl($theme->imageMedia->storage_path, 1280, 720)
             : null);
-    $initialPreviewImage = $resolveDetailImageUrl(
+    $initialPreviewImages = $resolveDetailImageUrls(
         $detailMap->get('image_id_1', $detailMap->get('image_1')),
-        $defaultPreviewImage
+        $defaultPreviewImage ? [$defaultPreviewImage] : []
     );
     $previewSecondaryImage = asset('template/assets/images/originals/water.jpg');
-    $initialOfferPreviewImage = $resolveDetailImageUrl(
+    $initialOfferPreviewImages = $resolveDetailImageUrls(
         $detailMap->get('image_id_2', $detailMap->get('image_2')),
-        $previewSecondaryImage
+        [$previewSecondaryImage]
     );
+    $initialExtraPreviewImages = collect($resolveDetailImageUrls(
+        $detailMap->get('image_id_3', $detailMap->get('image_3')),
+        [$initialOfferPreviewImages[0] ?? $previewSecondaryImage]
+    ))->take(1)->values()->all();
     $initialRunningText = (string) $detailMap->get('running_text', 'Our well trained staff eagerly await to serve and provide you with a truly memorable stay at our hotel');
     $initialRunningTextParts = collect(preg_split('/<br\s*\/?>/i', $initialRunningText))
         ->map(fn ($part) => trim((string) $part))
@@ -166,6 +257,26 @@
                                     @php
                                         $controlType = $resolveDetailControlType($row['key'] ?? '');
                                         $detailKeyLabel = $row['key'] ?? '';
+                                        $allowsMultipleImages = $controlType === 'image-picker' ? $allowsMultipleImagesForKey($row['key'] ?? '') : false;
+                                        $detailImageIds = $controlType === 'image-picker'
+                                            ? collect($extractDetailImageIds($row['value'] ?? ''))
+                                                ->when(!$allowsMultipleImages, fn($items) => $items->take(1))
+                                                ->values()
+                                                ->all()
+                                            : [];
+                                        $detailImageItems = $controlType === 'image-picker'
+                                            ? collect($detailImageIds)
+                                                ->map(fn($mediaId) => [
+                                                    'id' => (string) $mediaId,
+                                                    'url' => $resolveDetailImageUrl($mediaId),
+                                                ])
+                                                ->values()
+                                                ->all()
+                                            : [];
+                                        $detailPreviewItems = collect($detailImageItems)
+                                            ->filter(fn($item) => filled($item['url'] ?? null))
+                                            ->values()
+                                            ->all();
                                     @endphp
                                     <div class="border rounded p-3 mb-2 theme-detail-row">
                                         <div class="theme-detail-row__header">
@@ -194,19 +305,32 @@
                                                 style="{{ $controlType === 'textarea' ? 'display:block;' : 'display:none;' }}">{{ $prepareTextareaValue($row['value'] ?? '') }}</textarea>
 
                                             <div class="theme-detail-image-wrap"
+                                                data-image-items='@json($detailImageItems)'
+                                                data-allow-multiple="{{ $allowsMultipleImages ? '1' : '0' }}"
                                                 style="{{ $controlType === 'image-picker' ? 'display:block;' : 'display:none;' }}">
                                                 <button type="button" class="btn btn-outline-primary btn-sm btn-detail-image-upload">
                                                     <i class="fa fa-image mr-1"></i> Pick / Upload Image
                                                 </button>
-                                                <input type="file" class="d-none theme-detail-image-file" accept="image/*">
+                                                <input type="file" class="d-none theme-detail-image-file" accept="image/*" {{ $allowsMultipleImages ? 'multiple' : '' }}>
                                                 <small class="d-block text-muted mt-2">
                                                     Media ID:
-                                                    <span class="theme-detail-image-id-label">{{ $row['value'] ?: '-' }}</span>
+                                                    <span class="theme-detail-image-id-label">{{ !empty($detailImageIds) ? implode(', ', $detailImageIds) : '-' }}</span>
                                                 </small>
-                                                <div class="theme-detail-image-preview mt-2 {{ $row['value'] ? '' : 'd-none' }}">
-                                                    <img class="img-thumbnail theme-detail-image-preview-img"
-                                                        src="{{ $resolveDetailImageUrl($row['value']) }}"
-                                                        alt="Theme detail image preview">
+                                                <small class="d-block text-muted theme-detail-image-help">
+                                                    {{ $allowsMultipleImages ? 'Multi Image Guest Home' : 'Image Background Home' }}
+                                                </small>
+                                                <div class="theme-detail-image-preview-list mt-2 {{ !empty($detailPreviewItems) ? '' : 'd-none' }}">
+                                                    @foreach ($detailPreviewItems as $imageIndex => $imageItem)
+                                                        <div class="theme-detail-image-preview-item" data-index="{{ $imageIndex }}">
+                                                            <img class="img-thumbnail theme-detail-image-preview-img"
+                                                                src="{{ $imageItem['url'] }}"
+                                                                alt="Theme detail image preview">
+                                                            <button type="button" class="btn btn-danger btn-sm btn-detail-image-remove"
+                                                                data-index="{{ $imageIndex }}">
+                                                                <i class="fa fa-times"></i>
+                                                            </button>
+                                                        </div>
+                                                    @endforeach
                                                 </div>
                                             </div>
 
@@ -283,8 +407,9 @@
                         <small class="text-muted">Example theme preview</small>
                     </div>
                     <div id="themeLivePreview" class="theme-live-preview"
-                        data-image-url="{{ $initialPreviewImage ?? '' }}"
-                        data-offer-image-url="{{ $initialOfferPreviewImage }}">
+                        data-image-carousel='@json($initialPreviewImages)'
+                        data-offer-image-carousel='@json($initialOfferPreviewImages)'
+                        data-extra-image-carousel='@json($initialExtraPreviewImages)'>
                         <div class="theme-live-preview__overlay"></div>
                         <div class="theme-live-preview__content">
                             <div class="theme-live-preview__topbar">
@@ -317,13 +442,27 @@
 
                             <div class="theme-live-preview__grid">
                                 <div class="theme-preview-card theme-preview-card--image">
+                                    <div class="theme-preview-card__slides"></div>
                                     <div class="theme-preview-card__label">Stay Longer At The Hotel</div>
+                                    <div class="theme-preview-card__indicators"></div>
                                 </div>
-                                <div class="theme-preview-card theme-preview-card--offer">
-                                    <div class="theme-preview-card__label">Save Your Money</div>
-                                    <div class="theme-preview-cta">
-                                        <span class="theme-preview-marquee-text">Special Offers for You</span>
-                                        <span class="theme-preview-cta-button">Click Here!</span>
+                                <div class="theme-preview-card-stack">
+                                    <div class="theme-preview-card theme-preview-card--offer">
+                                        <div class="theme-preview-card__slides"></div>
+                                        <div class="theme-preview-card__label">Save Your Money</div>
+                                        <div class="theme-preview-cta">
+                                            <span class="theme-preview-marquee-text">Special Offers for You</span>
+                                            <span class="theme-preview-cta-button">Click Here!</span>
+                                        </div>
+                                        <div class="theme-preview-card__indicators"></div>
+                                    </div>
+                                    <div class="theme-preview-card theme-preview-card--extra">
+                                        <div class="theme-preview-card__slides"></div>
+                                        <div class="theme-preview-card__label">Hotel Highlights</div>
+                                        <div class="theme-preview-card__body">
+                                            <div class="theme-preview-card__caption">Additional default theme image area</div>
+                                        </div>
+                                        <div class="theme-preview-card__indicators"></div>
                                     </div>
                                 </div>
                             </div>
@@ -445,10 +584,28 @@
             word-break: break-word;
         }
 
+        .theme-detail-image-preview-list {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(108px, 1fr));
+            gap: 10px;
+        }
+
+        .theme-detail-image-preview-item {
+            position: relative;
+        }
+
         .theme-detail-image-preview-img {
             width: 100%;
-            max-height: 180px;
+            height: 92px;
             object-fit: cover;
+        }
+
+        .btn-detail-image-remove {
+            position: absolute;
+            top: 6px;
+            right: 6px;
+            line-height: 1;
+            padding: 0.2rem 0.35rem;
         }
 
         .theme-live-preview {
@@ -605,10 +762,13 @@
 
         .theme-live-preview__grid {
             gap: 20px;
+            align-items: stretch;
         }
 
         .theme-preview-card {
             position: relative;
+            display: flex;
+            flex-direction: column;
             border-radius: 4px;
             overflow: hidden;
             box-shadow: none;
@@ -617,27 +777,65 @@
         .theme-preview-card--image {
             width: 50%;
             min-height: 500px;
-            background:
-                linear-gradient(180deg, rgba(0, 0, 0, 0.12), rgba(0, 0, 0, 0.38)),
-                var(--preview-image-card, linear-gradient(135deg, rgba(83, 50, 16, 0.96), rgba(22, 20, 18, 0.85)));
-            background-size: cover;
-            background-position: center;
+        }
+
+        .theme-preview-card-stack {
+            display: flex;
+            flex: 1;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .theme-preview-card--offer,
+        .theme-preview-card--extra {
+            min-height: 0;
         }
 
         .theme-preview-card--offer {
             display: flex;
             flex: 1;
-            min-height: 500px;
+            min-height: 300px;
             flex-direction: column;
             justify-content: space-between;
-            background:
-                linear-gradient(180deg, rgba(0, 0, 0, 0.08), rgba(0, 0, 0, 0.24)),
-                var(--preview-offer-image-card, linear-gradient(135deg, rgba(28, 31, 39, 0.96), rgba(40, 52, 84, 0.94)));
+        }
+
+        .theme-preview-card--extra {
+            flex: 0 0 34%;
+            min-height: 180px;
+            justify-content: space-between;
+        }
+
+        .theme-preview-card__slides {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
+        }
+
+        .theme-preview-card__slide {
+            position: absolute;
+            inset: 0;
             background-size: cover;
             background-position: center;
+            opacity: 0;
+            transform: scale(1.04);
+            transition: opacity 0.6s ease, transform 4.2s ease;
+        }
+
+        .theme-preview-card__slide.is-active {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .theme-preview-card__slide::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: linear-gradient(180deg, rgba(0, 0, 0, 0.14), rgba(0, 0, 0, 0.42));
         }
 
         .theme-preview-card__label {
+            position: relative;
+            z-index: 1;
             padding: 30px 24px 0;
             font-size: calc(var(--preview-title-size) * 0.7 * var(--preview-header-scale));
             text-transform: uppercase;
@@ -650,6 +848,19 @@
             align-items: center;
             justify-content: center;
             flex: 1 1 auto;
+            position: relative;
+            z-index: 1;
+            padding: 18px 24px 30px;
+            text-align: center;
+        }
+
+        .theme-preview-card__caption {
+            display: inline-flex;
+            padding: 10px 16px;
+            background: rgba(0, 0, 0, 0.55);
+            color: rgba(255, 255, 255, 0.92);
+            font-size: calc(var(--preview-body-size) * 1.02);
+            letter-spacing: 0.02em;
         }
 
         .theme-preview-cta {
@@ -660,6 +871,8 @@
             background: #c2a160;
             color: #20170a;
             font-weight: 700;
+            position: relative;
+            z-index: 1;
         }
 
         .theme-preview-marquee-text,
@@ -672,6 +885,31 @@
             background: rgba(31, 33, 41, 0.92);
             color: #d6b065;
             text-transform: uppercase;
+        }
+
+        .theme-preview-card__indicators {
+            position: absolute;
+            left: 0;
+            right: 0;
+            bottom: 16px;
+            z-index: 1;
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            pointer-events: none;
+        }
+
+        .theme-preview-card__indicator {
+            width: 7px;
+            height: 7px;
+            border-radius: 999px;
+            background: rgba(255, 255, 255, 0.38);
+            transition: background-color 0.3s ease, transform 0.3s ease;
+        }
+
+        .theme-preview-card__indicator.is-active {
+            background: var(--preview-accent);
+            transform: scale(1.16);
         }
 
         .theme-live-preview__menu {
@@ -785,8 +1023,14 @@
                 flex-direction: column;
             }
 
+            .theme-preview-card-stack {
+                width: 100%;
+                gap: 16px;
+            }
+
             .theme-preview-card--image,
-            .theme-preview-card--offer {
+            .theme-preview-card--offer,
+            .theme-preview-card--extra {
                 width: 100%;
                 min-height: 320px;
             }
@@ -847,14 +1091,15 @@
             const previewGuest = preview.find('.theme-live-preview__guest');
             const previewRoomName = preview.find('.theme-preview-room-name');
             const previewBrand = preview.find('.theme-live-preview__brand');
-            const previewMarquee = preview.find('.theme-live-preview__ticker-text');
             const previewTickerTrack = preview.find('.theme-live-preview__ticker-track');
             const previewCardMarquee = preview.find('.theme-preview-marquee-text');
             const previewImageCard = preview.find('.theme-preview-card--image');
             const previewOfferCard = preview.find('.theme-preview-card--offer');
+            const previewExtraCard = preview.find('.theme-preview-card--extra');
             const nameInput = $('#name');
             const appBaseUrl = @json(url('/'));
             let tickerRotationTimer = null;
+            const previewCardTimers = {};
 
             function normalizeBoolean(value) {
                 return ['1', 'true', 'yes', 'on'].includes(String(value || '').toLowerCase()) ? '1' : '0';
@@ -903,16 +1148,16 @@
                 const textareaInput = row.querySelector('.theme-detail-value-textarea');
                 const imageWrap = row.querySelector('.theme-detail-image-wrap');
                 const imageIdLabel = row.querySelector('.theme-detail-image-id-label');
-                const imagePreviewWrap = row.querySelector('.theme-detail-image-preview');
-                const imagePreviewImg = row.querySelector('.theme-detail-image-preview-img');
+                const imagePreviewList = row.querySelector('.theme-detail-image-preview-list');
                 const imageFileInput = row.querySelector('.theme-detail-image-file');
+                const imageHelp = row.querySelector('.theme-detail-image-help');
                 const booleanSelect = row.querySelector('.theme-detail-boolean-select');
                 const scaleSelect = row.querySelector('.theme-detail-scale-select');
                 const colorWrap = row.querySelector('.theme-detail-color-wrap');
                 const colorInput = row.querySelector('.theme-detail-color-input');
                 const controlType = getDetailControlType(keyInput?.value || '');
 
-                if (!hiddenInput || !textInput || !textareaInput || !imageWrap || !imageIdLabel || !imagePreviewWrap || !imagePreviewImg || !imageFileInput || !booleanSelect || !scaleSelect || !colorWrap || !colorInput) {
+                if (!hiddenInput || !textInput || !textareaInput || !imageWrap || !imageIdLabel || !imagePreviewList || !imageFileInput || !imageHelp || !booleanSelect || !scaleSelect || !colorWrap || !colorInput) {
                     return;
                 }
 
@@ -924,14 +1169,22 @@
                 colorWrap.style.display = controlType === 'color' ? 'block' : 'none';
 
                 if (controlType === 'image-picker') {
-                    const previewUrl = resolvePreviewImageUrl(imagePreviewImg.getAttribute('src') || hiddenInput.value || '', '');
-                    imageIdLabel.textContent = hiddenInput.value || '-';
-                    if (previewUrl) {
-                        imagePreviewImg.src = previewUrl;
-                        imagePreviewWrap.classList.remove('d-none');
-                    } else {
-                        imagePreviewWrap.classList.add('d-none');
-                    }
+                    const canUploadMultiple = !/^image(_id)?_3$/i.test(keyInput?.value || '');
+                    const existingItems = getImageItems(row);
+                    const hiddenIds = parseImageIds(hiddenInput.value);
+                    const syncedItems = hiddenIds.map(function(id) {
+                        return existingItems.find(item => item.id === id) || {
+                            id: id,
+                            url: '',
+                        };
+                    }).slice(0, canUploadMultiple ? undefined : 1);
+
+                    imageWrap.dataset.allowMultiple = canUploadMultiple ? '1' : '0';
+                    imageFileInput.toggleAttribute('multiple', canUploadMultiple);
+                    imageHelp.textContent = canUploadMultiple
+                        ? 'Multi Image Guest Home'
+                        : 'Image Background Home (1290x1080px suggested)';
+                    setImageItems(row, syncedItems);
                 } else if (controlType === 'boolean') {
                     booleanSelect.value = normalizeBoolean(hiddenInput.value);
                     hiddenInput.value = booleanSelect.value;
@@ -1002,6 +1255,147 @@
                 return `${appBaseUrl}/${normalized.replace(/^\/+/, '')}`;
             }
 
+            function parsePreviewDataList(attributeName) {
+                const rawValue = preview.attr(attributeName) || '[]';
+
+                try {
+                    const parsed = JSON.parse(rawValue);
+                    if (!Array.isArray(parsed)) {
+                        return [];
+                    }
+
+                    return parsed
+                        .map(item => resolvePreviewImageUrl(item, ''))
+                        .filter(Boolean);
+                } catch (error) {
+                    return [];
+                }
+            }
+
+            function parseImageIds(value) {
+                const normalized = String(value || '').trim();
+                if (!normalized) {
+                    return [];
+                }
+
+                if (/^\d+$/.test(normalized)) {
+                    return [normalized];
+                }
+
+                try {
+                    const parsed = JSON.parse(normalized);
+                    if (!Array.isArray(parsed)) {
+                        return [];
+                    }
+
+                    return parsed
+                        .map(item => String(item || '').trim())
+                        .filter(item => /^\d+$/.test(item));
+                } catch (error) {
+                    return [];
+                }
+            }
+
+            function allowsMultipleImages(row) {
+                const imageWrap = row?.querySelector('.theme-detail-image-wrap');
+                if (!imageWrap) {
+                    return true;
+                }
+
+                return String(imageWrap.dataset.allowMultiple || '1') === '1';
+            }
+
+            function serializeImageValue(imageIds) {
+                const normalizedIds = Array.from(new Set(
+                    (Array.isArray(imageIds) ? imageIds : [])
+                    .map(item => String(item || '').trim())
+                    .filter(item => /^\d+$/.test(item))
+                ));
+
+                if (!normalizedIds.length) {
+                    return '';
+                }
+
+                if (normalizedIds.length === 1) {
+                    return normalizedIds[0];
+                }
+
+                return JSON.stringify(normalizedIds);
+            }
+
+            function getImageItems(row) {
+                const imageWrap = row?.querySelector('.theme-detail-image-wrap');
+                if (!imageWrap) {
+                    return [];
+                }
+
+                try {
+                    const parsed = JSON.parse(imageWrap.dataset.imageItems || '[]');
+                    if (!Array.isArray(parsed)) {
+                        return [];
+                    }
+
+                    return parsed
+                        .map(item => ({
+                            id: String(item?.id || '').trim(),
+                            url: resolvePreviewImageUrl(item?.url || '', ''),
+                        }))
+                        .filter(item => /^\d+$/.test(item.id));
+                } catch (error) {
+                    return [];
+                }
+            }
+
+            function renderDetailImagePreview(row, items) {
+                const previewList = row?.querySelector('.theme-detail-image-preview-list');
+                if (!previewList) {
+                    return;
+                }
+
+                const previewableItems = (Array.isArray(items) ? items : []).filter(item => item?.url);
+                previewList.innerHTML = previewableItems.map((item, index) => `
+                    <div class="theme-detail-image-preview-item" data-index="${index}">
+                        <img class="img-thumbnail theme-detail-image-preview-img" src="${item.url}" alt="Theme detail image preview">
+                        <button type="button" class="btn btn-danger btn-sm btn-detail-image-remove" data-index="${index}">
+                            <i class="fa fa-times"></i>
+                        </button>
+                    </div>
+                `).join('');
+                previewList.classList.toggle('d-none', previewableItems.length === 0);
+            }
+
+            function setImageItems(row, items) {
+                const imageWrap = row?.querySelector('.theme-detail-image-wrap');
+                const hiddenInput = row?.querySelector('.theme-detail-value-hidden');
+                const imageIdLabel = row?.querySelector('.theme-detail-image-id-label');
+
+                if (!imageWrap || !hiddenInput || !imageIdLabel) {
+                    return;
+                }
+
+                const normalizedItems = [];
+                const seenIds = new Set();
+                const canUploadMultiple = allowsMultipleImages(row);
+
+                (Array.isArray(items) ? items : []).forEach(function(item) {
+                    const id = String(item?.id || '').trim();
+                    if (!/^\d+$/.test(id) || seenIds.has(id) || (!canUploadMultiple && normalizedItems.length >= 1)) {
+                        return;
+                    }
+
+                    seenIds.add(id);
+                    normalizedItems.push({
+                        id: id,
+                        url: resolvePreviewImageUrl(item?.url || '', ''),
+                    });
+                });
+
+                imageWrap.dataset.imageItems = JSON.stringify(normalizedItems);
+                hiddenInput.value = serializeImageValue(normalizedItems.map(item => item.id));
+                imageIdLabel.textContent = normalizedItems.length ? normalizedItems.map(item => item.id).join(', ') : '-';
+                renderDetailImagePreview(row, normalizedItems);
+            }
+
             function collectThemeDetails() {
                 const details = {};
 
@@ -1017,6 +1411,12 @@
                 return details;
             }
 
+            function findDetailRowByKey(detailKey) {
+                return Array.from(rows?.querySelectorAll('.theme-detail-row') || []).find(function(currentRow) {
+                    return currentRow.querySelector('input[name="detail_keys[]"]')?.value?.trim() === detailKey;
+                });
+            }
+
             function getDetailValue(details, ...keys) {
                 for (const key of keys) {
                     if (Object.prototype.hasOwnProperty.call(details, key)) {
@@ -1027,19 +1427,104 @@
                 return '';
             }
 
-            function getDetailImagePreviewUrl(...detailKeys) {
+            function getDetailImagePreviewUrls(...detailKeys) {
                 for (const detailKey of detailKeys) {
-                    const row = Array.from(rows?.querySelectorAll('.theme-detail-row') || []).find(function(currentRow) {
-                        return currentRow.querySelector('input[name="detail_keys[]"]')?.value?.trim() === detailKey;
-                    });
+                    const row = findDetailRowByKey(detailKey);
+                    const imageItems = getImageItems(row);
+                    const urls = imageItems
+                        .map(item => resolvePreviewImageUrl(item.url || '', ''))
+                        .filter(Boolean);
 
-                    const src = row?.querySelector('.theme-detail-image-preview-img')?.getAttribute('src') || '';
-                    if (src) {
-                        return src;
+                    if (urls.length) {
+                        return urls;
+                    }
+
+                    const rawValue = row?.querySelector('.theme-detail-value-hidden')?.value || '';
+                    if (!parseImageIds(rawValue).length) {
+                        const directUrl = resolvePreviewImageUrl(rawValue, '');
+                        if (directUrl) {
+                            return [directUrl];
+                        }
                     }
                 }
 
-                return '';
+                return [];
+            }
+
+            function clearPreviewCardTimer(timerKey) {
+                if (previewCardTimers[timerKey]) {
+                    window.clearInterval(previewCardTimers[timerKey]);
+                    previewCardTimers[timerKey] = null;
+                }
+            }
+
+            function renderPreviewCardSlides(card, imageUrls, fallbackBackground, timerKey) {
+                const slidesWrapper = card.find('.theme-preview-card__slides');
+                const indicatorsWrapper = card.find('.theme-preview-card__indicators');
+                if (!slidesWrapper.length || !indicatorsWrapper.length) {
+                    return;
+                }
+
+                clearPreviewCardTimer(timerKey);
+
+                const normalizedUrls = (Array.isArray(imageUrls) ? imageUrls : []).filter(Boolean);
+                const slideBackgrounds = normalizedUrls.length ? normalizedUrls.map(url => `url("${url}")`) : [fallbackBackground];
+
+                slidesWrapper.html(slideBackgrounds.map((background, index) =>
+                    `<span class="theme-preview-card__slide ${index === 0 ? 'is-active' : ''}" style="background-image: ${background};"></span>`
+                ).join(''));
+
+                indicatorsWrapper.html(slideBackgrounds.length > 1
+                    ? slideBackgrounds.map((_, index) =>
+                        `<span class="theme-preview-card__indicator ${index === 0 ? 'is-active' : ''}"></span>`
+                    ).join('')
+                    : '');
+
+                if (slideBackgrounds.length <= 1) {
+                    return;
+                }
+
+                let activeIndex = 0;
+                previewCardTimers[timerKey] = window.setInterval(function() {
+                    const slides = slidesWrapper.find('.theme-preview-card__slide');
+                    const indicators = indicatorsWrapper.find('.theme-preview-card__indicator');
+                    if (!slides.length) {
+                        return;
+                    }
+
+                    activeIndex = (activeIndex + 1) % slides.length;
+                    slides.removeClass('is-active');
+                    slides.eq(activeIndex).addClass('is-active');
+                    indicators.removeClass('is-active');
+                    indicators.eq(activeIndex).addClass('is-active');
+                }, 3200);
+            }
+
+            function uploadImageMedia(file) {
+                return new Promise(function(resolve, reject) {
+                    const formData = new FormData();
+                    formData.append('_token', "{{ csrf_token() }}");
+                    formData.append('file', file);
+                    formData.append('type', 'image');
+                    formData.append('name', file.name);
+
+                    $.ajax({
+                        url: "{{ route('media.store') }}",
+                        method: 'POST',
+                        data: formData,
+                        processData: false,
+                        contentType: false,
+                    }).done(function(res) {
+                        if (!res.status || !res.media) {
+                            reject(new Error('Upload image gagal.'));
+                            return;
+                        }
+
+                        resolve(res.media);
+                    }).fail(function() {
+                        reject(new Error('Upload image gagal.'));
+                    });
+                });
             }
 
             function applyPreviewState() {
@@ -1065,14 +1550,15 @@
                 const showName = details.header_show_name === undefined ? true : normalizeBoolean(details.header_show_name) === '1';
                 const showRoomName = details.header_show_room_name === undefined ? true : normalizeBoolean(details.header_show_room_name) === '1';
                 const showTitle = normalizeBoolean(details.header_show_title) === '1';
-                const imageUrl = getDetailImagePreviewUrl('image_id_1', 'image_1') ||
-                    resolvePreviewImageUrl(getDetailValue(details, 'image_id_1', 'image_1') || preview.attr('data-image-url') || '', '');
-                const offerImageUrl = getDetailImagePreviewUrl('image_id_2', 'image_2') ||
-                    resolvePreviewImageUrl(getDetailValue(details, 'image_id_2', 'image_2') || preview.attr('data-offer-image-url') || imageUrl, imageUrl);
-                const cardImage = imageUrl ? `url("${imageUrl}")` :
-                    'linear-gradient(135deg, rgba(83, 50, 16, 0.96), rgba(22, 20, 18, 0.85))';
-                const offerCardImage = offerImageUrl ? `url("${offerImageUrl}")` :
-                    'linear-gradient(135deg, rgba(28, 31, 39, 0.96), rgba(40, 52, 84, 0.94))';
+                const fallbackPrimaryImages = parsePreviewDataList('data-image-carousel');
+                const fallbackOfferImages = parsePreviewDataList('data-offer-image-carousel');
+                const fallbackExtraImages = parsePreviewDataList('data-extra-image-carousel');
+                const imageUrls = getDetailImagePreviewUrls('image_id_1', 'image_1');
+                const offerImageUrls = getDetailImagePreviewUrls('image_id_2', 'image_2');
+                const extraImageUrls = getDetailImagePreviewUrls('image_id_3', 'image_3');
+                const primarySlides = imageUrls.length ? imageUrls : fallbackPrimaryImages;
+                const offerSlides = offerImageUrls.length ? offerImageUrls : (fallbackOfferImages.length ? fallbackOfferImages : primarySlides);
+                const extraSlides = extraImageUrls.length ? extraImageUrls : (fallbackExtraImages.length ? fallbackExtraImages : offerSlides);
                 const runningText = normalizeRunningText(details.running_text,
                     'Our well trained staffs eagerly await to serve and provide you with a truly memorable stay at our hotel');
                 const runningTextParts = splitRunningTextParts(details.running_text,
@@ -1099,8 +1585,24 @@
                     'background-color': backgroundColor
                 });
 
-                previewImageCard.css('--preview-image-card', cardImage);
-                previewOfferCard.css('--preview-offer-image-card', offerCardImage);
+                renderPreviewCardSlides(
+                    previewImageCard,
+                    primarySlides,
+                    'linear-gradient(135deg, rgba(83, 50, 16, 0.96), rgba(22, 20, 18, 0.85))',
+                    'primary-card'
+                );
+                renderPreviewCardSlides(
+                    previewOfferCard,
+                    offerSlides,
+                    'linear-gradient(135deg, rgba(28, 31, 39, 0.96), rgba(40, 52, 84, 0.94))',
+                    'offer-card'
+                );
+                renderPreviewCardSlides(
+                    previewExtraCard,
+                    extraSlides,
+                    'linear-gradient(135deg, rgba(30, 48, 66, 0.96), rgba(17, 23, 34, 0.92))',
+                    'extra-card'
+                );
                 previewDate.toggle(showDate);
                 previewGuest.toggle(showName || showRoomName);
                 previewTitle.toggle(showName);
@@ -1213,68 +1715,64 @@
 
             rows?.addEventListener('click', function(event) {
                 const uploadButton = event.target.closest('.btn-detail-image-upload');
-                if (!uploadButton) {
+                if (uploadButton) {
+                    const row = uploadButton.closest('.theme-detail-row');
+                    row?.querySelector('.theme-detail-image-file')?.click();
                     return;
                 }
 
-                const row = uploadButton.closest('.theme-detail-row');
-                row?.querySelector('.theme-detail-image-file')?.click();
+                const removeImageButton = event.target.closest('.btn-detail-image-remove');
+                if (!removeImageButton) {
+                    return;
+                }
+
+                const row = removeImageButton.closest('.theme-detail-row');
+                const imageItems = getImageItems(row);
+                const removeIndex = Number(removeImageButton.dataset.index);
+                const nextItems = imageItems.filter((_, index) => index !== removeIndex);
+
+                setImageItems(row, nextItems);
+                applyPreviewState();
             });
 
-            rows?.addEventListener('change', function(event) {
+            rows?.addEventListener('change', async function(event) {
                 if (!event.target.matches('.theme-detail-image-file')) {
                     return;
                 }
 
                 const row = event.target.closest('.theme-detail-row');
-                const hiddenInput = row?.querySelector('.theme-detail-value-hidden');
-                const imageIdLabel = row?.querySelector('.theme-detail-image-id-label');
-                const imagePreviewWrap = row?.querySelector('.theme-detail-image-preview');
-                const imagePreviewImg = row?.querySelector('.theme-detail-image-preview-img');
-                const file = event.target.files && event.target.files[0];
+                const uploadButton = row?.querySelector('.btn-detail-image-upload');
+                const files = Array.from(event.target.files || []);
 
-                if (!row || !hiddenInput || !imageIdLabel || !imagePreviewWrap || !imagePreviewImg || !file) {
+                if (!row || !files.length) {
                     return;
                 }
 
-                const formData = new FormData();
-                formData.append('_token', "{{ csrf_token() }}");
-                formData.append('file', file);
-                formData.append('type', 'image');
-                formData.append('name', file.name);
-
-                const uploadButton = row.querySelector('.btn-detail-image-upload');
                 if (uploadButton) {
                     uploadButton.disabled = true;
                 }
 
-                $.ajax({
-                    url: "{{ route('media.store') }}",
-                    method: 'POST',
-                    data: formData,
-                    processData: false,
-                    contentType: false,
-                }).done(function(res) {
-                    if (!res.status || !res.media) {
-                        alert('Upload image gagal.');
-                        return;
+                try {
+                    const nextItems = allowsMultipleImages(row) ? getImageItems(row) : [];
+
+                    for (const file of files) {
+                        const media = await uploadImageMedia(file);
+                        nextItems.push({
+                            id: String(media.id || '').trim(),
+                            url: media.thumb_url || '',
+                        });
                     }
 
-                    hiddenInput.value = res.media.id || '';
-                    imageIdLabel.textContent = hiddenInput.value || '-';
-                    if (res.media.thumb_url) {
-                        imagePreviewImg.src = res.media.thumb_url;
-                        imagePreviewWrap.classList.remove('d-none');
-                    }
+                    setImageItems(row, nextItems);
                     applyPreviewState();
-                }).fail(function() {
+                } catch (error) {
                     alert('Upload image gagal.');
-                }).always(function() {
+                } finally {
                     if (uploadButton) {
                         uploadButton.disabled = false;
                     }
                     event.target.value = '';
-                });
+                }
             });
 
             const template = () => `
@@ -1286,15 +1784,14 @@
                         <input type="hidden" name="detail_values[]" class="theme-detail-value-hidden" value="">
                         <input type="text" class="form-control theme-detail-value-input" placeholder="true">
                         <textarea class="form-control theme-detail-value-textarea" rows="2" placeholder="Special offers for you"></textarea>
-                        <div class="theme-detail-image-wrap">
+                        <div class="theme-detail-image-wrap" data-image-items="[]" data-allow-multiple="1">
                             <button type="button" class="btn btn-outline-primary btn-sm btn-detail-image-upload">
                                 <i class="fa fa-image mr-1"></i> Pick / Upload Image
                             </button>
-                            <input type="file" class="d-none theme-detail-image-file" accept="image/*">
+                            <input type="file" class="d-none theme-detail-image-file" accept="image/*" multiple>
                             <small class="d-block text-muted mt-2">Media ID: <span class="theme-detail-image-id-label">-</span></small>
-                            <div class="theme-detail-image-preview mt-2 d-none">
-                                <img class="img-thumbnail theme-detail-image-preview-img" src="" alt="Theme detail image preview">
-                            </div>
+                            <small class="d-block text-muted theme-detail-image-help">Multi Image Guest Home</small>
+                            <div class="theme-detail-image-preview-list mt-2 d-none"></div>
                         </div>
                         <select class="form-control theme-detail-value-select theme-detail-boolean-select" style="width: 100%;">
                             <option value="1">Yes</option>
@@ -1347,13 +1844,13 @@
             }
 
             $('#imagePreview').on('load', function() {
-                preview.attr('data-image-url', this.src || '');
+                preview.attr('data-image-carousel', JSON.stringify(this.src ? [this.src] : []));
                 applyPreviewState();
             });
 
             $('#mediaPickerList').on('click', '.media-picker-item[data-type="image"]', function() {
                 const thumb = $(this).data('thumb') || '';
-                preview.attr('data-image-url', thumb);
+                preview.attr('data-image-carousel', JSON.stringify(thumb ? [thumb] : []));
                 applyPreviewState();
             });
 

@@ -21,6 +21,7 @@ class ThemeDetailSeeder extends Seeder
                 'font_scale' => '1',
                 'image_id_1' => '1',
                 'image_id_2' => '2',
+                'image_id_3' => '1',
             ],
             'Executive Theme' => [],
         ];

@@ -143,6 +143,7 @@ class ThemeController extends Controller
             ->reject(fn ($key) => $this->isDeprecatedDetailKey((string) $key))
             ->values()
             ->all();
+        $allowedReadonlyKeys = $this->getReadonlyAllowedDetailKeys($theme, $existingKeys);
         $canManageKeys = $this->canManageDetailKeys();
 
         foreach ($keys as $index => $key) {
@@ -170,17 +171,27 @@ class ThemeController extends Controller
             }
 
             if ($this->isImageDetailKey($normalizedKey) && $value !== null && $value !== '') {
-                if (!ctype_digit($value)) {
+                $imageMediaIds = $this->extractImageMediaIds($value);
+
+                if (empty($imageMediaIds)) {
                     throw ValidationException::withMessages([
-                        "detail_values.$index" => "Value {$normalizedKey} harus berupa image media id.",
+                        "detail_values.$index" => "Value {$normalizedKey} harus berupa image media id atau daftar image media id yang valid.",
                     ]);
                 }
 
-                $media = $this->mediaRepository->find((int) $value);
-                if (!$media || $media->type !== 'image') {
+                if ($this->isSingleImageDetailKey($normalizedKey) && count($imageMediaIds) > 1) {
                     throw ValidationException::withMessages([
-                        "detail_values.$index" => "Value {$normalizedKey} harus berupa media image yang valid.",
+                        "detail_values.$index" => "Value {$normalizedKey} hanya boleh berisi satu image media id.",
                     ]);
+                }
+
+                foreach ($imageMediaIds as $mediaId) {
+                    $media = $this->mediaRepository->find($mediaId);
+                    if (!$media || $media->type !== 'image') {
+                        throw ValidationException::withMessages([
+                            "detail_values.$index" => "Value {$normalizedKey} harus berupa media image yang valid.",
+                        ]);
+                    }
                 }
             }
 
@@ -190,7 +201,7 @@ class ThemeController extends Controller
         if (!$canManageKeys) {
             $submittedKeys = array_keys($details);
             $sortedSubmitted = $submittedKeys;
-            $sortedExisting = $existingKeys;
+            $sortedExisting = $allowedReadonlyKeys;
             sort($sortedSubmitted);
             sort($sortedExisting);
 
@@ -206,8 +217,26 @@ class ThemeController extends Controller
 
     private function normalizeDetailValue(string $key, ?string $value): ?string
     {
-        if ($value === null) {
+        if ($value === null || $value === '') {
             return null;
+        }
+
+        if ($this->isImageDetailKey($key)) {
+            $imageMediaIds = $this->extractImageMediaIds($value);
+
+            if (empty($imageMediaIds)) {
+                return null;
+            }
+
+            if ($this->isSingleImageDetailKey($key)) {
+                return (string) $imageMediaIds[0];
+            }
+
+            if (count($imageMediaIds) === 1) {
+                return (string) $imageMediaIds[0];
+            }
+
+            return json_encode(array_map('strval', $imageMediaIds), JSON_UNESCAPED_SLASHES);
         }
 
         if ($this->isMultilineDetailKey($key)) {
@@ -230,6 +259,72 @@ class ThemeController extends Controller
     private function isImageDetailKey(string $key): bool
     {
         return preg_match('/^image(_id)?_\d+$/', $key) === 1;
+    }
+
+    private function isSingleImageDetailKey(string $key): bool
+    {
+        return preg_match('/^image(_id)?_3$/', $key) === 1;
+    }
+
+    private function extractImageMediaIds(?string $value): array
+    {
+        $normalizedValue = trim((string) $value);
+
+        if ($normalizedValue === '') {
+            return [];
+        }
+
+        if (ctype_digit($normalizedValue)) {
+            return [(int) $normalizedValue];
+        }
+
+        $decoded = json_decode($normalizedValue, true);
+        if (!is_array($decoded)) {
+            return [];
+        }
+
+        $mediaIds = collect($decoded)
+            ->map(fn ($item) => trim((string) $item))
+            ->filter(fn ($item) => $item !== '' && ctype_digit($item))
+            ->map(fn ($item) => (int) $item)
+            ->unique()
+            ->values()
+            ->all();
+
+        return $mediaIds;
+    }
+
+    private function getReadonlyAllowedDetailKeys(Theme $theme, array $existingKeys = []): array
+    {
+        $keys = $existingKeys ?: $theme->details()
+            ->pluck('key')
+            ->reject(fn ($key) => $this->isDeprecatedDetailKey((string) $key))
+            ->values()
+            ->all();
+
+        return collect($keys)
+            ->merge($this->getFixedDetailKeys($theme))
+            ->unique()
+            ->values()
+            ->all();
+    }
+
+    private function getFixedDetailKeys(Theme $theme): array
+    {
+        if (!$this->isDefaultThemeByName($theme)) {
+            return [];
+        }
+
+        return [
+            'image_id_1',
+            'image_id_2',
+            'image_id_3',
+        ];
+    }
+
+    private function isDefaultThemeByName(Theme $theme): bool
+    {
+        return strcasecmp((string) $theme->name, 'Default Theme') === 0;
     }
 
     private function syncDetails(Theme $theme, array $details): void
