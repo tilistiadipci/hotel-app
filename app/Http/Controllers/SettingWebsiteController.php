@@ -86,8 +86,8 @@ class SettingWebsiteController extends Controller
         if ($section === 'language') {
             $validated = $request->validate([
                 'default_language' => ['required', Rule::in(['en_US', 'id_ID'])],
-                'longitude_app' => ['nullable', 'numeric', 'between:-180,180'],
-                'latitude_app' => ['nullable', 'numeric', 'between:-90,90'],
+                'longitude_app' => ['nullable', 'numeric'],
+                'latitude_app' => ['nullable', 'numeric'],
             ]);
 
             $this->saveLanguageSetting($validated['default_language']);
