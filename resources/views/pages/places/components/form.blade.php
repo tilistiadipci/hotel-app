@@ -94,7 +94,7 @@
                     </div>
                 </div>
 
-                <div class="position-relative row form-group">
+                <div class="position-relative row form-group" style="display: none">
                     <label class="col-sm-4 col-form-label text-sm-right">Distance (km)</label>
                     <div class="col-sm-8">
                         @include('partials.forms.input', [
