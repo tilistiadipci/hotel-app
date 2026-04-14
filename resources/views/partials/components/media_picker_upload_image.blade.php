@@ -6,9 +6,10 @@
         </button>
         <div class="text-muted small" id="selectedImageLabel">{{ trans('common.no_file_selected') }}</div>
     </div>
-    @isset($required && $required == true)
+    @if(isset($required) && $required == false)
+    @else
         <small class="text-primary d-block mb-2" style="font-style: italic">* {{ trans('common.required') }}</small>
-    @endisset
+    @endif
     <input type="hidden" name="image_media_id" id="image_media_id"
         value="{{ old('image_media_id', $data->imageMedia->id ?? '') }}">
     <input type="file" name="image" id="image" class="form-control-file d-none" accept="image/*">

@@ -132,7 +132,7 @@
             <div class="col-md-6">
                 @include('partials.components.media_picker_upload_image', [
                     'data' => $song ?? null,
-                    'required' => true,
+                    'required' => false,
                 ])
 
                 @include('partials.components.media_picker_upload_audio', [
