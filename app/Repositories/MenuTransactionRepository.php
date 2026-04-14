@@ -11,9 +11,13 @@ class MenuTransactionRepository extends BaseRepository
         parent::__construct($menuTransaction);
     }
 
-    public function statusCounts(): array
+    public function statusCounts(?array $tenantIds = null, ?int $activeTenantId = null): array
     {
-        $result = $this->query()
+        $result = $this->applyTenantScope(
+            $this->query(),
+            $tenantIds,
+            $activeTenantId
+        )
             ->selectRaw("COUNT(*) as total")
             ->selectRaw("SUM(status = 'ordered') as ordered")
             ->selectRaw("SUM(status = 'processing') as processing")
@@ -30,9 +34,13 @@ class MenuTransactionRepository extends BaseRepository
         ];
     }
 
-    public function paymentMethodCounts(string $status): array
+    public function paymentMethodCounts(string $status, ?array $tenantIds = null, ?int $activeTenantId = null): array
     {
-        $query = $this->query()
+        $query = $this->applyTenantScope(
+            $this->query(),
+            $tenantIds,
+            $activeTenantId
+        )
             ->when(in_array($status, ['ordered', 'processing', 'completed', 'cancelled'], true), function ($builder) use ($status) {
                 $builder->where('status', $status);
             })
@@ -48,9 +56,19 @@ class MenuTransactionRepository extends BaseRepository
         ];
     }
 
-    public function paginateFiltered(string $status, string $paymentMethod, int $perPage = 10)
+    public function paginateFiltered(
+        string $status,
+        string $paymentMethod,
+        int $perPage = 10,
+        ?array $tenantIds = null,
+        ?int $activeTenantId = null
+    )
     {
-        return $this->baseListQuery()
+        return $this->applyTenantScope(
+            $this->baseListQuery(),
+            $tenantIds,
+            $activeTenantId
+        )
             ->when(in_array($status, ['ordered', 'processing', 'completed', 'cancelled'], true), function ($query) use ($status) {
                 $query->where('status', $status);
             })
@@ -62,9 +80,17 @@ class MenuTransactionRepository extends BaseRepository
             ->paginate($perPage);
     }
 
-    public function findWithRelations(int|string $id): ?MenuTransaction
+    public function findWithRelations(
+        int|string $id,
+        ?array $tenantIds = null,
+        ?int $activeTenantId = null
+    ): ?MenuTransaction
     {
-        return $this->baseQuery()->find($id);
+        return $this->applyTenantScope(
+            $this->baseQuery(),
+            $tenantIds,
+            $activeTenantId
+        )->find($id);
     }
 
     public function cancel(MenuTransaction $transaction): MenuTransaction
@@ -99,5 +125,29 @@ class MenuTransactionRepository extends BaseRepository
         return $this->query()
             ->with(['invoice', 'tenant', 'player'])
             ->withCount('details');
+    }
+
+    private function applyTenantScope($query, ?array $tenantIds = null, ?int $activeTenantId = null)
+    {
+        if ($tenantIds !== null) {
+            $tenantIds = collect($tenantIds)
+                ->filter(fn ($id) => (int) $id > 0)
+                ->map(fn ($id) => (int) $id)
+                ->unique()
+                ->values()
+                ->all();
+
+            if (empty($tenantIds)) {
+                return $query->whereRaw('1 = 0');
+            }
+
+            $query->whereIn('menu_tenant_id', $tenantIds);
+        }
+
+        if ($activeTenantId !== null && $activeTenantId > 0) {
+            $query->where('menu_tenant_id', $activeTenantId);
+        }
+
+        return $query;
     }
 }

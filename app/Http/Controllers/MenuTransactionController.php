@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\MenuTenant;
 use App\Repositories\MenuTransactionRepository;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -19,11 +20,25 @@ class MenuTransactionController extends Controller
      */
     public function index(Request $request)
     {
+        $tenantContext = $this->resolveTenantContext($request);
         $activeStatus = $request->input('status', 'ordered');
         $activePaymentMethod = $this->normalizePaymentMethod($activeStatus, $request->input('payment_method', 'all'));
-        $statusCounts = $this->menuTransactionRepository->statusCounts();
-        $paymentMethodCounts = $this->menuTransactionRepository->paymentMethodCounts($activeStatus);
-        $transactionsPaginator = $this->menuTransactionRepository->paginateFiltered($activeStatus, $activePaymentMethod, 10);
+        $statusCounts = $this->menuTransactionRepository->statusCounts(
+            $tenantContext['allowedTenantIds'],
+            $tenantContext['activeTenantId']
+        );
+        $paymentMethodCounts = $this->menuTransactionRepository->paymentMethodCounts(
+            $activeStatus,
+            $tenantContext['allowedTenantIds'],
+            $tenantContext['activeTenantId']
+        );
+        $transactionsPaginator = $this->menuTransactionRepository->paginateFiltered(
+            $activeStatus,
+            $activePaymentMethod,
+            10,
+            $tenantContext['allowedTenantIds'],
+            $tenantContext['activeTenantId']
+        );
 
         $transactions = $transactionsPaginator->getCollection();
 
@@ -31,7 +46,11 @@ class MenuTransactionController extends Controller
         $selectedTransaction = $transactions->firstWhere('id', (int) $selectedId) ?? $transactions->first();
 
         if (!$selectedTransaction && $selectedId) {
-            $selectedTransaction = $this->menuTransactionRepository->findWithRelations((int) $selectedId);
+            $selectedTransaction = $this->menuTransactionRepository->findWithRelations(
+                (int) $selectedId,
+                $tenantContext['allowedTenantIds'],
+                $tenantContext['activeTenantId']
+            );
         }
 
         if ($request->ajax()) {
@@ -47,6 +66,8 @@ class MenuTransactionController extends Controller
                     'active_payment_method' => $activePaymentMethod,
                     'selected_transaction_id' => $selectedTransaction?->id,
                     'payment_method_counts' => $paymentMethodCounts,
+                    'detail_count' => $this->buildDetailCountPayload($statusCounts),
+                    'active_tenant_id' => $tenantContext['activeTenantId'],
                 ]);
             }
 
@@ -65,6 +86,9 @@ class MenuTransactionController extends Controller
             'activePaymentMethod' => $activePaymentMethod,
             'statusCounts' => $statusCounts,
             'paymentMethodCounts' => $paymentMethodCounts,
+            'isOperatorView' => $tenantContext['isOperatorView'],
+            'operatorTenants' => $tenantContext['operatorTenants'],
+            'activeTenantId' => $tenantContext['activeTenantId'],
         ]);
     }
 
@@ -72,9 +96,15 @@ class MenuTransactionController extends Controller
     {
         $validated = $request->validate([
             'status' => ['required', Rule::in(['processing', 'completed', 'cancelled'])],
+            'tenant_id' => ['nullable', 'integer'],
         ]);
+        $tenantContext = $this->resolveTenantContext($request);
 
-        $transaction = $this->menuTransactionRepository->findWithRelations((int) $id);
+        $transaction = $this->menuTransactionRepository->findWithRelations(
+            (int) $id,
+            $tenantContext['allowedTenantIds'],
+            $tenantContext['activeTenantId']
+        );
 
         if (!$transaction) {
             return response()->json([
@@ -142,6 +172,7 @@ class MenuTransactionController extends Controller
         }
         $transaction->refresh()->load([
             'invoice',
+            'tenant',
             'player',
             'details.menu.imageMedia',
             'createdBy',
@@ -150,28 +181,38 @@ class MenuTransactionController extends Controller
             'cancelledBy',
         ]);
 
-        $statusCounts = $this->menuTransactionRepository->statusCounts();
-        $paymentMethodCounts = $this->menuTransactionRepository->paymentMethodCounts($transaction->status);
+        $statusCounts = $this->menuTransactionRepository->statusCounts(
+            $tenantContext['allowedTenantIds'],
+            $tenantContext['activeTenantId']
+        );
+        $paymentMethodCounts = $this->menuTransactionRepository->paymentMethodCounts(
+            $transaction->status,
+            $tenantContext['allowedTenantIds'],
+            $tenantContext['activeTenantId']
+        );
 
         return response()->json([
             'message' => 'Transaction updated successfully.',
-            'detail_count' => [
-                'all' => $statusCounts['all'],
-                'completed' => $statusCounts['completed'],
-                'cancelled' => $statusCounts['cancelled'],
-                'processing' => $statusCounts['processing'],
-                'ordered' => $statusCounts['ordered'],
-            ],
+            'detail_count' => $this->buildDetailCountPayload($statusCounts),
             'payment_method_counts' => $paymentMethodCounts,
             'detail_html' => view('pages.transactions.components.detail', [
                 'selectedTransaction' => $transaction,
             ])->render(),
+            'active_tenant_id' => $tenantContext['activeTenantId'],
         ]);
     }
 
     public function cancel(Request $request, string $id): JsonResponse
     {
-        $transaction = $this->menuTransactionRepository->findWithRelations((int) $id);
+        $request->validate([
+            'tenant_id' => ['nullable', 'integer'],
+        ]);
+        $tenantContext = $this->resolveTenantContext($request);
+        $transaction = $this->menuTransactionRepository->findWithRelations(
+            (int) $id,
+            $tenantContext['allowedTenantIds'],
+            $tenantContext['activeTenantId']
+        );
 
         if (!$transaction) {
             return response()->json([
@@ -189,6 +230,7 @@ class MenuTransactionController extends Controller
 
         $transaction->refresh()->load([
             'invoice',
+            'tenant',
             'player',
             'details.menu.imageMedia',
             'createdBy',
@@ -197,27 +239,96 @@ class MenuTransactionController extends Controller
             'cancelledBy',
         ]);
 
-        $statusCounts = $this->menuTransactionRepository->statusCounts();
-        $paymentMethodCounts = $this->menuTransactionRepository->paymentMethodCounts($transaction->status);
+        $statusCounts = $this->menuTransactionRepository->statusCounts(
+            $tenantContext['allowedTenantIds'],
+            $tenantContext['activeTenantId']
+        );
+        $paymentMethodCounts = $this->menuTransactionRepository->paymentMethodCounts(
+            $transaction->status,
+            $tenantContext['allowedTenantIds'],
+            $tenantContext['activeTenantId']
+        );
 
         return response()->json([
             'message' => 'Transaction cancelled successfully.',
-            'detail_count' => [
-                'all' => $statusCounts['all'],
-                'completed' => $statusCounts['completed'],
-                'cancelled' => $statusCounts['cancelled'],
-                'processing' => $statusCounts['processing'],
-                'ordered' => $statusCounts['ordered'],
-            ],
+            'detail_count' => $this->buildDetailCountPayload($statusCounts),
             'payment_method_counts' => $paymentMethodCounts,
             'detail_html' => view('pages.transactions.components.detail', [
                 'selectedTransaction' => $transaction,
             ])->render(),
+            'active_tenant_id' => $tenantContext['activeTenantId'],
         ]);
     }
 
     private function normalizePaymentMethod(string $status, string $paymentMethod): string
     {
         return in_array($paymentMethod, ['qris', 'bill'], true) ? $paymentMethod : 'all';
+    }
+
+    private function resolveTenantContext(Request $request): array
+    {
+        $user = $request->user();
+        $isOperatorView = $user?->hasRoleCategory('operator') ?? false;
+
+        if (!$isOperatorView) {
+            return [
+                'isOperatorView' => false,
+                'operatorTenants' => collect(),
+                'allowedTenantIds' => null,
+                'activeTenantId' => null,
+            ];
+        }
+
+        $operatorTenants = $user->menuTenants()
+            ->select('menu_tenants.id', 'menu_tenants.name', 'menu_tenants.sort_order')
+            ->whereNull('menu_tenants.deleted_at')
+            ->orderBy('menu_tenants.sort_order')
+            ->orderBy('menu_tenants.name')
+            ->get();
+
+        if ($operatorTenants->isEmpty() && (int) ($user->menu_tenant_id ?? 0) > 0) {
+            $fallbackTenant = MenuTenant::query()
+                ->select('id', 'name', 'sort_order')
+                ->where('id', (int) $user->menu_tenant_id)
+                ->whereNull('deleted_at')
+                ->first();
+
+            if ($fallbackTenant) {
+                $operatorTenants = collect([$fallbackTenant]);
+            }
+        }
+
+        $allowedTenantIds = $operatorTenants->pluck('id')
+            ->map(fn ($id) => (int) $id)
+            ->unique()
+            ->values()
+            ->all();
+
+        $requestedTenantId = (int) $request->input('tenant_id');
+        $activeTenantId = null;
+
+        if (!empty($allowedTenantIds)) {
+            $activeTenantId = in_array($requestedTenantId, $allowedTenantIds, true)
+                ? $requestedTenantId
+                : $allowedTenantIds[0];
+        }
+
+        return [
+            'isOperatorView' => true,
+            'operatorTenants' => $operatorTenants,
+            'allowedTenantIds' => $allowedTenantIds,
+            'activeTenantId' => $activeTenantId,
+        ];
+    }
+
+    private function buildDetailCountPayload(array $statusCounts): array
+    {
+        return [
+            'all' => $statusCounts['all'] ?? 0,
+            'completed' => $statusCounts['completed'] ?? 0,
+            'cancelled' => $statusCounts['cancelled'] ?? 0,
+            'processing' => $statusCounts['processing'] ?? 0,
+            'ordered' => $statusCounts['ordered'] ?? 0,
+        ];
     }
 }

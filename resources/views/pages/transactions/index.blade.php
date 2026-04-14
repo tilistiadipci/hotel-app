@@ -1,6 +1,11 @@
 @extends('templates.index')
 
 @section('content')
+    @php
+        $isOperatorView = $isOperatorView ?? false;
+        $operatorTenants = $operatorTenants ?? collect();
+        $activeTenantId = $activeTenantId ?? null;
+    @endphp
     <div class="app-main__inner">
         {{-- <div class="app-page-title">
             <div class="page-title-wrapper">
@@ -17,6 +22,26 @@
 
         <div class="row">
             <div class="col-12">
+                @if ($isOperatorView)
+                    <ul class="nav nav-tabs mb-3 transaction-tenant-tabs" id="tenant-filters">
+                        @forelse ($operatorTenants as $tenant)
+                            <li class="nav-item">
+                                <button type="button"
+                                    class="nav-link tenant-filter {{ (int) $activeTenantId === (int) $tenant->id ? 'active' : '' }}"
+                                    data-tenant-id="{{ $tenant->id }}">
+                                    {{ $tenant->name }}
+                                </button>
+                            </li>
+                        @empty
+                            <li class="nav-item w-100">
+                                <div class="alert alert-warning mb-0 py-2 px-3">
+                                    {{ trans('common.transaction.no_assigned_tenant') }}
+                                </div>
+                            </li>
+                        @endforelse
+                    </ul>
+                @endif
+
                 <div class="transaction-status-tabs mb-3">
                     <button type="button"
                         class="badge badge-pill transaction-filter {{ $activeStatus === 'all' ? 'badge-primary' : 'badge-light' }}"
@@ -133,6 +158,35 @@
             font-size: 12px;
             padding: 7px 12px;
             border: 0;
+        }
+
+        .transaction-tenant-tabs {
+            gap: 0;
+            border-bottom: 1px solid #dee2e6;
+        }
+
+        .transaction-tenant-tabs .nav-item {
+            margin-bottom: -1px;
+        }
+
+        .transaction-tenant-tabs .nav-link {
+            border: 1px solid transparent;
+            border-top-left-radius: 0.25rem;
+            border-top-right-radius: 0.25rem;
+            color: #3f6ad8;
+            background: none;
+            padding: 0.55rem 1rem;
+        }
+
+        .transaction-tenant-tabs .nav-link:hover {
+            color: #2d4b9d;
+            border-color: #e9ecef #e9ecef #dee2e6;
+        }
+
+        .transaction-tenant-tabs .nav-link.active {
+            color: #495057;
+            background-color: #fff;
+            border-color: #dee2e6 #dee2e6 #fff;
         }
 
         .transaction-panel {
@@ -261,14 +315,17 @@
             const detailContainer = document.getElementById('transaction-detail-container');
             const detailContent = document.getElementById('transaction-detail-content');
             const loadingIndicator = document.getElementById('transaction-list-loading');
+            const tenantFilterButtons = document.querySelectorAll('.tenant-filter');
             const filterButtons = document.querySelectorAll('.transaction-filter');
             const paymentMethodFilterWrap = document.getElementById('payment-method-filters');
             const paymentMethodButtons = document.querySelectorAll('.payment-method-filter');
             const listOverlay = document.getElementById('transaction-list-overlay');
             const detailOverlay = document.getElementById('transaction-detail-overlay');
+            const isOperatorView = {{ $isOperatorView ? 'true' : 'false' }};
             let nextPage = {{ $nextTransactionPage }};
             let hasMore = {{ $hasMoreTransactions ? 'true' : 'false' }};
             let isLoading = false;
+            let activeTenantId = '{{ $activeTenantId ?? '' }}';
             let activeStatus = '{{ $activeStatus }}';
             let activePaymentMethod = '{{ $activePaymentMethod }}';
             let selectedTransactionId = '{{ $selectedTransaction?->id }}';
@@ -285,6 +342,20 @@
                 if (!paymentMethodFilterWrap) {
                     return;
                 }
+            }
+
+            function buildTenantQueryParam() {
+                if (!isOperatorView || !activeTenantId) {
+                    return '';
+                }
+
+                return `&tenant_id=${encodeURIComponent(activeTenantId)}`;
+            }
+
+            function updateTenantButtons(tenantId) {
+                tenantFilterButtons.forEach(function(button) {
+                    button.classList.toggle('active', String(button.dataset.tenantId) === String(tenantId));
+                });
             }
 
             function updateFilterButtons(status) {
@@ -411,6 +482,9 @@
                         const formData = new FormData();
                         formData.append('status', status);
                         formData.append('_token', '{{ csrf_token() }}');
+                        if (isOperatorView && activeTenantId) {
+                            formData.append('tenant_id', activeTenantId);
+                        }
 
                         fetch(`{{ url('transactions/status') }}/${transactionId}`, {
                                 method: 'POST',
@@ -438,6 +512,10 @@
                                 bindStatusButtons();
                                 updateCount(result.data.detail_count);
                                 updatePaymentMethodCount(result.data.payment_method_counts);
+                                if (result.data.active_tenant_id) {
+                                    activeTenantId = String(result.data.active_tenant_id);
+                                    updateTenantButtons(activeTenantId);
+                                }
                                 toastr["success"](result.data.message, "Success");
                                 return reloadTransactionList(transactionId, true);
                             })
@@ -489,7 +567,8 @@
                                             'Content-Type': 'application/json'
                                         },
                                         body: JSON.stringify({
-                                            _token: "{{ csrf_token() }}"
+                                            _token: "{{ csrf_token() }}",
+                                            tenant_id: isOperatorView ? activeTenantId : null
                                         })
                                     })
                                     .then(function(response) {
@@ -510,6 +589,10 @@
                                         bindStatusButtons();
                                         updateCount(result.data.detail_count);
                                         updatePaymentMethodCount(result.data.payment_method_counts);
+                                        if (result.data.active_tenant_id) {
+                                            activeTenantId = String(result.data.active_tenant_id);
+                                            updateTenantButtons(activeTenantId);
+                                        }
                                         toastr["success"](result.data.message, "Success");
                                         return reloadTransactionList(transactionId, true);
                                     })
@@ -535,7 +618,7 @@
                     toggleDetailOverlay(true);
                 }
 
-                return fetch(`{{ route('transactions.index') }}?transaction_id=${transactionId}&status=${activeStatus}&payment_method=${activePaymentMethod}`, {
+                return fetch(`{{ route('transactions.index') }}?transaction_id=${transactionId}&status=${activeStatus}&payment_method=${activePaymentMethod}${buildTenantQueryParam()}`, {
                         headers: {
                             'X-Requested-With': 'XMLHttpRequest'
                         }
@@ -558,11 +641,11 @@
             }
 
             function updateCount(detailCount) {
-                $('#count-all').text(detailCount.all);
-                $('#count-processing').text(detailCount.processing);
-                $('#count-ordered').text(detailCount.ordered);
-                $('#count-completed').text(detailCount.completed);
-                $('#count-cancelled').text(detailCount.cancelled);
+                $('#count-all').text(detailCount.all ?? 0);
+                $('#count-processing').text(detailCount.processing ?? 0);
+                $('#count-ordered').text(detailCount.ordered ?? 0);
+                $('#count-completed').text(detailCount.completed ?? 0);
+                $('#count-cancelled').text(detailCount.cancelled ?? 0);
             }
 
             function loadMoreTransactions() {
@@ -573,7 +656,7 @@
                 isLoading = true;
                 loadingIndicator.classList.remove('d-none');
 
-                fetch(`{{ route('transactions.index') }}?partial=list&page=${nextPage}&status=${activeStatus}&payment_method=${activePaymentMethod}`, {
+                fetch(`{{ route('transactions.index') }}?partial=list&page=${nextPage}&status=${activeStatus}&payment_method=${activePaymentMethod}${buildTenantQueryParam()}`, {
                         headers: {
                             'X-Requested-With': 'XMLHttpRequest',
                             'Accept': 'application/json'
@@ -609,7 +692,7 @@
                     toggleListOverlay(true);
                 }
 
-                return fetch(`{{ route('transactions.index') }}?partial=list&page=1&status=${activeStatus}&payment_method=${activePaymentMethod}${transactionQuery}`, {
+                return fetch(`{{ route('transactions.index') }}?partial=list&page=1&status=${activeStatus}&payment_method=${activePaymentMethod}${transactionQuery}${buildTenantQueryParam()}`, {
                         headers: {
                             'X-Requested-With': 'XMLHttpRequest',
                             'Accept': 'application/json'
@@ -624,6 +707,13 @@
                         hasMore = data.has_more;
                         nextPage = data.next_page;
                         selectedTransactionId = data.selected_transaction_id || null;
+                        if (typeof data.active_tenant_id !== 'undefined' && data.active_tenant_id !== null && data.active_tenant_id !== '') {
+                            activeTenantId = String(data.active_tenant_id);
+                            updateTenantButtons(activeTenantId);
+                        }
+                        if (data.detail_count) {
+                            updateCount(data.detail_count);
+                        }
                         updatePaymentMethodCount(data.payment_method_counts);
                         listContainer.scrollTop = 0;
                         return selectedTransactionId;
@@ -649,7 +739,7 @@
 
                     Promise.all([
                         reloadTransactionList(null, true),
-                        fetch(`{{ route('transactions.index') }}?status=${activeStatus}`, {
+                        fetch(`{{ route('transactions.index') }}?status=${activeStatus}${buildTenantQueryParam()}`, {
                                 headers: {
                                     'X-Requested-With': 'XMLHttpRequest'
                                 }
@@ -679,7 +769,7 @@
 
                     Promise.all([
                         reloadTransactionList(null, true),
-                        fetch(`{{ route('transactions.index') }}?status=${activeStatus}&payment_method=${activePaymentMethod}`, {
+                        fetch(`{{ route('transactions.index') }}?status=${activeStatus}&payment_method=${activePaymentMethod}${buildTenantQueryParam()}`, {
                                 headers: {
                                     'X-Requested-With': 'XMLHttpRequest'
                                 }
@@ -696,6 +786,36 @@
                             })
                     ]).catch(function() {
                         toastr["error"]('Failed to change payment method filter.', "Error");
+                    });
+
+                    toggleDetailOverlay(true);
+                });
+            });
+
+            tenantFilterButtons.forEach(function(button) {
+                button.addEventListener('click', function() {
+                    activeTenantId = this.dataset.tenantId;
+                    updateTenantButtons(activeTenantId);
+
+                    Promise.all([
+                        reloadTransactionList(null, true),
+                        fetch(`{{ route('transactions.index') }}?status=${activeStatus}&payment_method=${activePaymentMethod}${buildTenantQueryParam()}`, {
+                                headers: {
+                                    'X-Requested-With': 'XMLHttpRequest'
+                                }
+                            })
+                            .then(function(response) {
+                                return response.text();
+                            })
+                            .then(function(html) {
+                                detailContent.innerHTML = html;
+                                bindStatusButtons();
+                            })
+                            .finally(function() {
+                                toggleDetailOverlay(false);
+                            })
+                    ]).catch(function() {
+                        toastr["error"]('Failed to change tenant filter.', "Error");
                     });
 
                     toggleDetailOverlay(true);
@@ -752,6 +872,7 @@
 
             bindTransactionTriggers(document);
             bindStatusButtons();
+            updateTenantButtons(activeTenantId);
             updateFilterButtons(activeStatus);
             updatePaymentMethodButtons(activePaymentMethod);
             updatePaymentMethodFilterVisibility();

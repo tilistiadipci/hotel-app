@@ -369,8 +369,8 @@ return [
     ],
 
     'transaction' => [
-        'list_of_transaction' => 'List of Transactions',
-        'title' => 'Transactions',
+        'list_of_transaction' => 'List of TenantTransactions',
+        'title' => 'Tenant Transactions',
         'title_singular' => 'Transaction',
         'status_label' => [
             'ordered' => 'Ordered',
@@ -409,6 +409,7 @@ return [
         'no_transaction_selected' => 'No transaction selected.',
         'receipt_not_found' => 'Receipt not found.',
         'qris_pending_action_blocked' => 'QRIS transactions cannot be processed or completed while payment is still pending.',
+        'no_assigned_tenant' => 'No tenant is assigned to this operator yet.',
     ],
 
     'dashboard' => [

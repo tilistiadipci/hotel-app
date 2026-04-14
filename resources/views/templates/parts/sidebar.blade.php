@@ -59,13 +59,14 @@
                     </a>
                 </li>
 
-                <li class="{{ $page == 'warnings' ? 'mm-active' : '' }}">
-                    <a href="{{ route('warnings.index') }}" class="{{ $page == 'warnings' ? 'mm-active' : '' }}">
-                        <i class="metismenu-icon fa fa-exclamation-triangle"></i>
-                        Warning Broadcast
-                    </a>
-                </li>
+
                 @if ($canAccessAdminArea)
+                    <li class="{{ $page == 'warnings' ? 'mm-active' : '' }}">
+                    <a href="{{ route('warnings.index') }}" class="{{ $page == 'warnings' ? 'mm-active' : '' }}">
+                            <i class="metismenu-icon fa fa-exclamation-triangle"></i>
+                            Warning Broadcast
+                        </a>
+                    </li>
 
                     {{-- media --}}
                     <li class="{{ $page == 'media-library' ? 'mm-active' : '' }}">
@@ -265,15 +266,15 @@
                             <i class="metismenu-icon pe-7s-paint-bucket"></i> {{ trans('common.theme.title') }}
                         </a>
                     </li>
+                    <li class="{{ $page == 'license' ? 'mm-active' : '' }}">
+                        <a href="{{ route('licenses.index') }}" class="{{ $page == 'license' ? 'mm-active' : '' }}">
+                            <i class="metismenu-icon fa fa-key"></i> {{ trans('common.license.title') }}
+                        </a>
+                    </li>
                 @endif
                 <li class="{{ $page == 'account' ? 'mm-active' : '' }}">
                     <a href="{{ url('/profile') }}" class="{{ $page == 'account' ? 'mm-active' : '' }}">
                         <i class="metismenu-icon pe-7s-user"></i> {{ trans('common.account') }}
-                    </a>
-                </li>
-                <li class="{{ $page == 'license' ? 'mm-active' : '' }}">
-                    <a href="{{ route('licenses.index') }}" class="{{ $page == 'license' ? 'mm-active' : '' }}">
-                        <i class="metismenu-icon fa fa-key"></i> {{ trans('common.license.title') }}
                     </a>
                 </li>
             </ul>

@@ -437,9 +437,9 @@ return [
     'media_sync_clear_issues_done' => 'File issue berhasil dibersihkan.',
 
     'transaction' => [
-        'list_of_transaction' => 'Daftar Transaksi',
-        'title' => 'Transaksi',
-        'title_singular' => 'Transaksi',
+        'list_of_transaction' => 'Daftar Transaksi Tenant',
+        'title' => 'Transaksi Tenant',
+        'title_singular' => 'Transaksi Tenant',
         'status_label' => [
             'ordered' => 'Ordered',
             'processing' => 'Processing',
@@ -477,6 +477,7 @@ return [
         'no_transaction_selected' => 'Tidak ada transaksi yang dipilih.',
         'receipt_not_found' => 'Struk tidak ditemukan.',
         'qris_pending_action_blocked' => 'Transaksi QRIS tidak bisa diproses atau diselesaikan selama pembayaran masih pending.',
+        'no_assigned_tenant' => 'Operator ini belum memiliki tenant yang di-assign.',
     ],
 
     'dashboard' => [
