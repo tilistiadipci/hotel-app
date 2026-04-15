@@ -6,6 +6,7 @@ use App\Models\Booking;
 use App\Models\MenuTransaction;
 use App\Models\Player;
 use Carbon\Carbon;
+use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\DB;
 
 class DashboardRepository
@@ -22,34 +23,87 @@ class DashboardRepository
             ->count();
     }
 
-    public function pantryTransactionCountToday(): int
+    public function resolveDateRange(?string $dateRange = null): array
+    {
+        $today = Carbon::today();
+        $startDate = $today->copy()->startOfDay();
+        $endDate = $today->copy()->endOfDay();
+
+        $value = trim((string) $dateRange);
+        if ($value !== '') {
+            $parts = array_map('trim', explode(' - ', $value));
+
+            if (count($parts) === 1) {
+                $parts[1] = $parts[0];
+            }
+
+            if (count($parts) >= 2) {
+                try {
+                    $startDate = Carbon::createFromFormat('d/m/Y', $parts[0])->startOfDay();
+                    $endDate = Carbon::createFromFormat('d/m/Y', $parts[1])->endOfDay();
+                } catch (\Exception $e) {
+                    $startDate = $today->copy()->startOfDay();
+                    $endDate = $today->copy()->endOfDay();
+                }
+            }
+        }
+
+        if ($startDate->greaterThan($endDate)) {
+            [$startDate, $endDate] = [$endDate->copy()->startOfDay(), $startDate->copy()->endOfDay()];
+        }
+
+        return [$startDate, $endDate, $startDate->format('d/m/Y') . ' - ' . $endDate->format('d/m/Y')];
+    }
+
+    public function pantryTransactionCount(Carbon $startDate, Carbon $endDate): int
     {
         return MenuTransaction::query()
-            ->whereDate('created_at', today())
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->count();
+    }
+
+    public function pantryTransactionCountToday(): int
+    {
+        [$startDate, $endDate] = $this->resolveDateRange(today()->format('d/m/Y'));
+
+        return $this->pantryTransactionCount($startDate, $endDate);
+    }
+
+    public function bookingCheckinCount(Carbon $startDate, Carbon $endDate): int
+    {
+        return Booking::query()
+            ->whereBetween('checked_in_at', [$startDate, $endDate])
             ->count();
     }
 
     public function bookingCheckinCountToday(): int
     {
+        [$startDate, $endDate] = $this->resolveDateRange(today()->format('d/m/Y'));
+
+        return $this->bookingCheckinCount($startDate, $endDate);
+    }
+
+    public function bookingCheckoutCount(Carbon $startDate, Carbon $endDate): int
+    {
         return Booking::query()
-            ->whereDate('checked_in_at', today())
+            ->whereNotNull('checked_out_at')
+            ->whereBetween('checked_out_at', [$startDate, $endDate])
             ->count();
     }
 
     public function bookingCheckoutCountToday(): int
     {
-        return Booking::query()
-            ->whereNotNull('checked_out_at')
-            ->whereDate('checked_out_at', today())
-            ->count();
+        [$startDate, $endDate] = $this->resolveDateRange(today()->format('d/m/Y'));
+
+        return $this->bookingCheckoutCount($startDate, $endDate);
     }
 
-    public function checkinPlayerDonutChart(): array
+    public function checkinPlayerDonutChart(Carbon $startDate, Carbon $endDate): array
     {
         $result = Booking::query()
             ->join('players', 'players.id', '=', 'bookings.player_id')
             ->selectRaw('COALESCE(NULLIF(players.alias, ""), players.name) as player_label, COUNT(*) as total')
-            ->whereDate('bookings.checked_in_at', today())
+            ->whereBetween('bookings.checked_in_at', [$startDate, $endDate])
             ->groupBy('player_label')
             ->orderBy('player_label')
             ->get();
@@ -60,11 +114,16 @@ class DashboardRepository
         ];
     }
 
-    public function pantryTransactionDailyActivityChart(): array
+    public function checkinPlayerDonutChartToday(): array
     {
-        $hours = collect(range(0, 23))->map(function ($hour) {
-            return str_pad((string) $hour, 2, '0', STR_PAD_LEFT) . ':00';
-        });
+        [$startDate, $endDate] = $this->resolveDateRange(today()->format('d/m/Y'));
+
+        return $this->checkinPlayerDonutChart($startDate, $endDate);
+    }
+
+    public function pantryTransactionDailyActivityChart(Carbon $startDate, Carbon $endDate): array
+    {
+        [$dateKeys, $dateLabels] = $this->buildDateAxis($startDate, $endDate);
 
         $statuses = [
             'ordered' => [
@@ -86,25 +145,84 @@ class DashboardRepository
         ];
 
         $result = MenuTransaction::query()
-            ->selectRaw('status, HOUR(created_at) as hour_key, COUNT(*) as total')
-            ->whereDate('created_at', today())
-            ->groupBy('status', 'hour_key')
+            ->selectRaw('status, DATE(created_at) as date_key, COUNT(*) as total')
+            ->whereBetween('created_at', [$startDate, $endDate])
+            ->groupBy('status', 'date_key')
             ->get();
 
         return [
-            'labels' => $hours->all(),
-            'series' => collect($statuses)->map(function ($config, $status) use ($hours, $result) {
+            'labels' => $dateLabels,
+            'series' => collect($statuses)->map(function ($config, $status) use ($dateKeys, $result) {
                 return [
                     'name' => $config['label'],
-                    'data' => $hours->map(function ($label, $hour) use ($result, $status) {
+                    'data' => collect($dateKeys)->map(function ($dateKey) use ($result, $status) {
                         return (int) optional(
-                            $result->first(fn ($item) => $item->status === $status && (int) $item->hour_key === $hour)
+                            $result->first(fn ($item) => $item->status === $status && $item->date_key === $dateKey)
                         )->total ?: 0;
                     })->all(),
                     'color' => $config['color'],
                 ];
             })->values()->all(),
         ];
+    }
+
+    public function pantryTransactionDailyActivityChartToday(): array
+    {
+        [$startDate, $endDate] = $this->resolveDateRange(today()->format('d/m/Y'));
+
+        return $this->pantryTransactionDailyActivityChart($startDate, $endDate);
+    }
+
+    public function bookingDailyActivityChart(Carbon $startDate, Carbon $endDate): array
+    {
+        [$dateKeys, $dateLabels] = $this->buildDateAxis($startDate, $endDate);
+
+        $checkinResult = Booking::query()
+            ->selectRaw('DATE(checked_in_at) as date_key, COUNT(*) as total')
+            ->whereBetween('checked_in_at', [$startDate, $endDate])
+            ->groupBy('date_key')
+            ->pluck('total', 'date_key');
+
+        $checkoutResult = Booking::query()
+            ->selectRaw('DATE(checked_out_at) as date_key, COUNT(*) as total')
+            ->whereNotNull('checked_out_at')
+            ->whereBetween('checked_out_at', [$startDate, $endDate])
+            ->groupBy('date_key')
+            ->pluck('total', 'date_key');
+
+        return [
+            'labels' => $dateLabels,
+            'series' => [
+                [
+                    'name' => trans('common.dashboard.checkin_chart_label'),
+                    'data' => collect($dateKeys)->map(fn ($dateKey) => (int) ($checkinResult[$dateKey] ?? 0))->all(),
+                    'color' => '#10b981',
+                ],
+                [
+                    'name' => trans('common.dashboard.checkout_chart_label'),
+                    'data' => collect($dateKeys)->map(fn ($dateKey) => (int) ($checkoutResult[$dateKey] ?? 0))->all(),
+                    'color' => '#a855f7',
+                ],
+            ],
+        ];
+    }
+
+    private function buildDateAxis(Carbon $startDate, Carbon $endDate): array
+    {
+        $dateKeys = [];
+        $labels = [];
+
+        $period = CarbonPeriod::create(
+            $startDate->copy()->startOfDay(),
+            $endDate->copy()->startOfDay()
+        );
+
+        foreach ($period as $date) {
+            $dateKeys[] = $date->format('Y-m-d');
+            $labels[] = $date->format('d/m');
+        }
+
+        return [$dateKeys, $labels];
     }
 
     public function baseQueryChartAudit()

@@ -485,11 +485,14 @@ return [
         'pantry_transaction_summary' => 'Pantry Transaction',
         'checkin_summary' => 'Check In',
         'checkout_summary' => 'Check Out',
-        'transaction_donut_title' => 'Player Check In Hari Ini',
-        'booking_activity_title' => 'Aktivitas Transaksi Pantry Hari Ini',
+        'transaction_donut_title' => 'Player Check In',
+        'booking_activity_title' => 'Aktivitas Transaksi Pantry',
+        'booking_daily_chart_title' => 'Grafik Booking per Hari',
         'checkin_chart_label' => 'Check In',
         'checkout_chart_label' => 'Check Out',
         'daily_only' => 'Transaksi harian tanpa filter',
+        'filter_date_range' => 'Pilih rentang tanggal',
+        'range_label' => 'Rentang',
     ],
 
     'theme' => [

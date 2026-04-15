@@ -55,26 +55,26 @@ class LicenseController extends Controller
                 'description' => 'Route unresolved alarm events to the next response level.',
                 'status' => 'Enabled',
             ],
-            [
-                'name' => 'Tenant Catalog',
-                'description' => 'Browse tenants, categories, and available menu items.',
-                'status' => 'Enabled',
-            ],
-            [
-                'name' => 'Order Placement',
-                'description' => 'Create shopping or pantry orders directly from the application.',
-                'status' => 'Enabled',
-            ],
-            [
-                'name' => 'Transaction Tracking',
-                'description' => 'Review order progress and transaction history in one place.',
-                'status' => 'Enabled',
-            ],
-            [
-                'name' => 'Automatic Charge Calculation',
-                'description' => 'Apply tax and service charge settings to every transaction.',
-                'status' => 'Enabled',
-            ],
+            // [
+            //     'name' => 'Tenant Catalog',
+            //     'description' => 'Browse tenants, categories, and available menu items.',
+            //     'status' => 'Enabled',
+            // ],
+            // [
+            //     'name' => 'Order Placement',
+            //     'description' => 'Create shopping or pantry orders directly from the application.',
+            //     'status' => 'Enabled',
+            // ],
+            // [
+            //     'name' => 'Transaction Tracking',
+            //     'description' => 'Review order progress and transaction history in one place.',
+            //     'status' => 'Enabled',
+            // ],
+            // [
+            //     'name' => 'Automatic Charge Calculation',
+            //     'description' => 'Apply tax and service charge settings to every transaction.',
+            //     'status' => 'Enabled',
+            // ],
             [
                 'name' => 'Movie Library',
                 'description' => 'Manage and publish video-on-demand content collections.',

@@ -204,13 +204,15 @@
                                     <i class="metismenu-icon"></i> {{ trans('common.report_player_duration.title') }}
                                 </a>
                             </li>
-                            <li class="{{ $page == 'report-menu-transactions' ? 'mm-active' : '' }}">
-                                <a href="{{ url('/reports/menu-transactions') }}"
-                                    class="{{ $page == 'report-menu-transactions' ? 'mm-active' : '' }}">
-                                    <i class="metismenu-icon"></i>
-                                    {{ trans('common.report_menu_transactions.title') }}
-                                </a>
-                            </li>
+                            @if ($isShoppingMenuActive)
+                                <li class="{{ $page == 'report-menu-transactions' ? 'mm-active' : '' }}">
+                                    <a href="{{ url('/reports/menu-transactions') }}"
+                                        class="{{ $page == 'report-menu-transactions' ? 'mm-active' : '' }}">
+                                        <i class="metismenu-icon"></i>
+                                        {{ trans('common.report_menu_transactions.title') }}
+                                    </a>
+                                </li>
+                            @endif
                         </ul>
                     </li>
 

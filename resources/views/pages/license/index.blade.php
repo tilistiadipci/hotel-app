@@ -1,5 +1,16 @@
 @extends('templates.index')
 
+@php
+    $authUser = auth()->user();
+    $settings = session('settings', []);
+    $isMusicMenuActive = ($settings['menu_music_status'] ?? 'active') === 'active';
+    $isVodMenuActive = ($settings['menu_vod_status'] ?? 'active') === 'active';
+    $isGuideMenuActive = ($settings['menu_guide_status'] ?? 'active') === 'active';
+    $isNearbyMenuActive = ($settings['menu_nearby_status'] ?? 'active') === 'active';
+    $isShoppingMenuActive = ($settings['menu_shopping_status'] ?? 'active') === 'active';
+    $canAccessAdminArea = $authUser?->hasRoleCategory('master', 'superadmin', 'admin') ?? false;
+@endphp
+
 @section('content')
     <div class="app-main__inner">
         <div class="app-page-title">

@@ -417,11 +417,14 @@ return [
         'pantry_transaction_summary' => 'Pantry Transaction',
         'checkin_summary' => 'Check In',
         'checkout_summary' => 'Check Out',
-        'transaction_donut_title' => 'Players Checked In Today',
-        'booking_activity_title' => 'Today Pantry Transaction Activity',
+        'transaction_donut_title' => 'Players Checked In',
+        'booking_activity_title' => 'Pantry Transaction Activity',
+        'booking_daily_chart_title' => 'Daily Booking Chart',
         'checkin_chart_label' => 'Check In',
         'checkout_chart_label' => 'Check Out',
         'daily_only' => 'Daily transactions without filters',
+        'filter_date_range' => 'Select date range',
+        'range_label' => 'Range',
     ],
 
     'theme' => [
