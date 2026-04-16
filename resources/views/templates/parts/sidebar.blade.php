@@ -123,13 +123,13 @@
                                 </li>
                             @endif
 
-                            <li class="{{ $page == 'running-texts' ? 'mm-active' : '' }}">
+                            {{-- <li class="{{ $page == 'running-texts' ? 'mm-active' : '' }}">
                                 <a href="{{ url('/running-texts') }}"
                                     class="{{ $page == 'running-texts' ? 'mm-active' : '' }}">
                                     <i class="metismenu-icon fa fa-bullhorn"></i>
                                     {{ trans('common.running_text.title') }}
                                 </a>
-                            </li>
+                            </li> --}}
                         </ul>
                     </li>
 
