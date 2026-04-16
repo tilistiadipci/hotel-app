@@ -61,12 +61,12 @@
 
 
                 @if ($canAccessAdminArea)
-                    <li class="{{ $page == 'warnings' ? 'mm-active' : '' }}">
+                    {{-- <li class="{{ $page == 'warnings' ? 'mm-active' : '' }}">
                     <a href="{{ route('warnings.index') }}" class="{{ $page == 'warnings' ? 'mm-active' : '' }}">
                             <i class="metismenu-icon fa fa-exclamation-triangle"></i>
                             Warning Broadcast
                         </a>
-                    </li>
+                    </li> --}}
 
                     {{-- media --}}
                     <li class="{{ $page == 'media-library' ? 'mm-active' : '' }}">
