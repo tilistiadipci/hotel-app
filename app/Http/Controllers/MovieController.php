@@ -43,7 +43,19 @@ class MovieController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            return $this->movieRepository->getDatatable();
+            try {
+                return $this->movieRepository->getDatatable();
+            } catch (\Throwable $e) {
+                report($e);
+
+                return response()->json([
+                    'draw' => (int) $request->input('draw', 1),
+                    'recordsTotal' => 0,
+                    'recordsFiltered' => 0,
+                    'data' => [],
+                    'error' => app()->isProduction() ? 'Gagal memuat data movie.' : $e->getMessage(),
+                ], 500);
+            }
         }
 
         return view('pages.movies.index', [

@@ -69,7 +69,9 @@ class HotelController extends Controller
         $data = $this->validateData($request);
         $plainLicenseKey = $data['license_key'] ?? null;
 
-        DB::transaction(function () use ($data, &$plainLicenseKey) {
+        $hotel = null;
+
+        DB::transaction(function () use ($data, &$plainLicenseKey, &$hotel) {
             $hotel = Hotel::query()->create($this->hotelPayload($data));
             $hotel->configuration()->create($this->configurationPayload($data, $hotel));
             if (! $plainLicenseKey) {
@@ -83,6 +85,9 @@ class HotelController extends Controller
             ]);
             $hotel->update(['trial_ends_at' => $licenseData['plan_code'] === 'trial' ? $licenseData['expires_at'] : null]);
         });
+
+        \Illuminate\Support\Facades\Cache::forget("tenant:hotel-license-active:{$hotel->id}");
+        \Illuminate\Support\Facades\Cache::forget("tenant:hotel:{$hotel->id}");
 
         app(HotelLicenseLifecycle::class)->expireDueTrials();
 

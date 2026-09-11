@@ -276,10 +276,9 @@
             await renderHtml(await response.text(), response.url || url, options.pushState !== false);
         } catch (error) {
             if (error.name !== 'AbortError') {
-                window.console.error('CMS AJAX navigation failed:', error);
-                if (window.swal) {
-                    window.swal({ icon: 'error', title: 'Connection error', text: 'The page could not be loaded. Please try again.' });
-                }
+                window.console.error('CMS AJAX navigation failed, falling back to full page load:', error);
+                window.location.assign(url);
+                return;
             }
         } finally {
             isNavigating = false;
