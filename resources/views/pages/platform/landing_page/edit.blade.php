@@ -27,7 +27,7 @@
                     @method('PUT')
                     <div class="card-body">
                         <div class="alert alert-info">
-                            Tempelkan HTML untuk isi halaman di textarea. Gunakan <code>@{{LOGIN_URL}}</code> untuk URL login, <code>@{{CSRF_FIELD}}</code> di dalam form login, <code>@{{LOGO_URL}}</code> untuk logo yang diunggah, dan <code>@{{BASE_URL}}</code> untuk base URL aplikasi. HTML ini hanya boleh dikelola oleh superadmin tepercaya karena akan ditampilkan apa adanya.
+                            Tempelkan HTML untuk isi halaman di textarea. Gunakan <code>@{{LOGIN_URL}}</code> untuk URL login, <code>@{{CSRF_FIELD}}</code> di dalam form login, <code>@{{LOGO_URL}}</code> untuk logo, <code>@{{SITE_NAME}}</code> untuk nama website, dan <code>@{{BASE_URL}}</code> untuk base URL aplikasi. HTML ini hanya boleh dikelola oleh superadmin tepercaya karena akan ditampilkan apa adanya.
                         </div>
 
                         <div class="alert alert-light border">

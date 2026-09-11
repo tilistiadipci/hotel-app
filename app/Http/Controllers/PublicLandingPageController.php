@@ -35,6 +35,7 @@ class PublicLandingPageController extends Controller
             '{{CSRF_FIELD}}' => '<input type="hidden" name="_token" value="'.e(csrf_token()).'">',
             '{{LOGO_URL}}' => $logoUrl ?: '',
             '{{BASE_URL}}' => url('/'),
+            '{{SITE_NAME}}' => e($landingPage->site_name),
         ]);
 
         return response()->view('pages.landing.show', compact('landingPage', 'logoUrl', 'html'));

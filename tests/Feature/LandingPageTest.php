@@ -16,7 +16,8 @@ class LandingPageTest extends TestCase
         $landingPage = LandingPage::query()->firstOrFail();
         $landingPage->update([
             'meta_title' => 'Landing Page Test',
-            'html_content' => '<form action="{{LOGIN_URL}}">{{CSRF_FIELD}}<button>Masuk</button></form>',
+            'site_name' => 'Hotel Test',
+            'html_content' => '<strong>{{SITE_NAME}}</strong><form action="{{LOGIN_URL}}">{{CSRF_FIELD}}<button>Masuk</button></form>',
             'is_active' => true,
         ]);
 
@@ -27,6 +28,7 @@ class LandingPageTest extends TestCase
         $response->assertOk()
             ->assertSee('<title>Landing Page Test</title>', false)
             ->assertSee('action="'.route('login').'"', false)
+            ->assertSee('<strong>Hotel Test</strong>', false)
             ->assertSee('name="_token"', false)
             ->assertDontSee('{{LOGIN_URL}}', false)
             ->assertDontSee('{{CSRF_FIELD}}', false);
