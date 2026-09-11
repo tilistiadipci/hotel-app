@@ -60,10 +60,13 @@
                 <li class="{{ $page == 'hotel-admins' ? 'mm-active' : '' }}">
                     <a href="{{ route('platform.hotel-admins.index') }}" class="{{ $page == 'hotel-admins' ? 'mm-active' : '' }}"><i class="metismenu-icon fa fa-users"></i> Admin Hotel</a>
                 </li>
+                <li class="{{ $page == 'landing-page' ? 'mm-active' : '' }}">
+                    <a href="{{ route('platform.landing-page.edit') }}" class="{{ $page == 'landing-page' ? 'mm-active' : '' }}"><i class="metismenu-icon fa fa-globe"></i> Landing Page</a>
+                </li>
                 @else
                 <li class="app-sidebar__heading">General</li>
                 <li class="{{ $page == 'dashboard' ? 'mm-active' : '' }}">
-                    <a href="{{ url('/') }}" class="{{ $page == 'dashboard' ? 'mm-active' : '' }}">
+                    <a href="{{ route('dashboard.index') }}" class="{{ $page == 'dashboard' ? 'mm-active' : '' }}">
                         <i class="metismenu-icon lnr-laptop"></i> Dashboard
                     </a>
                 </li>

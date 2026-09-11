@@ -33,6 +33,8 @@ use App\Http\Controllers\WarningController;
 use App\Http\Controllers\HotelController;
 use App\Http\Controllers\HotelAdminController;
 use App\Http\Controllers\PlatformDashboardController;
+use App\Http\Controllers\LandingPageController;
+use App\Http\Controllers\PublicLandingPageController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -71,11 +73,16 @@ Route::get('/secureDecrypt/{value}', function ($value) {
 
 Auth::routes();
 
+Route::get('/', [PublicLandingPageController::class, 'show'])->name('landing.show');
+Route::get('/home', [HomeController::class, 'index'])->name('home');
+
 Route::middleware(['auth', 'role.category:master,superadmin'])
     ->prefix('superadmin')
     ->name('platform.')
     ->group(function () {
         Route::get('/dashboard', [PlatformDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/landing-page', [LandingPageController::class, 'edit'])->name('landing-page.edit');
+        Route::put('/landing-page', [LandingPageController::class, 'update'])->name('landing-page.update');
         Route::resource('hotels', HotelController::class)->except('destroy');
         Route::resource('hotel-admins', HotelAdminController::class)
             ->parameters(['hotel-admins' => 'hotelAdmin'])
@@ -87,9 +94,6 @@ Route::middleware(['auth', 'role.category:master,superadmin'])
 Route::post('change-language', [HomeController::class, 'changeLanguage'])->name('change-language');
 
 Route::middleware(['auth', 'role.category:admin,operator,user', 'hotel.resolve', 'hotel.license'])->group(function () {
-    Route::get('/', [DashboardController::class, 'index']);
-    Route::get('/home', [HomeController::class, 'index'])->name('home');
-
     Route::prefix('dashboard')
         ->name('dashboard.')
         ->group(function () {

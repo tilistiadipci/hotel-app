@@ -79,7 +79,7 @@ class LoginController extends Controller
             $redirectUrl = route('platform.dashboard');
         } elseif (in_array($role->category, ['admin', 'operator', 'user'], true)) {
             $this->settingRepository->getSettings();
-            $redirectUrl = url('/');
+            $redirectUrl = route('dashboard.index');
         }
 
         if ($request->expectsJson()) {

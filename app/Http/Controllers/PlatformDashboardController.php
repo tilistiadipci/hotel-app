@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Hotel;
 use App\Models\HotelVisitLog;
+use App\Models\LandingPageVisit;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -18,6 +19,9 @@ class PlatformDashboardController extends Controller
         $visits = HotelVisitLog::query()->whereBetween('visited_at', [$from, $until]);
         $uniqueVisitors = (clone $visits)->distinct()->count('ip_address');
         $totalVisits = (clone $visits)->count();
+        $landingVisits = LandingPageVisit::query()->whereBetween('visited_at', [$from, $until]);
+        $landingPageVisits = (clone $landingVisits)->count();
+        $landingPageUniqueVisitors = (clone $landingVisits)->distinct()->count('ip_address');
         $hotelCount = Hotel::query()->count();
         $activeHotelCount = Hotel::query()->where('is_active', true)->where('status', 'active')->count();
         $adminCount = User::query()->withoutGlobalScope('hotel')
@@ -58,6 +62,7 @@ class PlatformDashboardController extends Controller
         return view('pages.platform.dashboard', compact(
             'hotelCount', 'activeHotelCount', 'adminCount', 'totalUserCount', 'totalTenantCount',
             'totalPlayerCount', 'totalLoginCount', 'neverLoggedInAdminCount', 'uniqueVisitors', 'totalVisits',
+            'landingPageVisits', 'landingPageUniqueVisitors',
             'recentAdminLogins', 'visitsByIp', 'visitsByHotel', 'from', 'until'
         ) + ['page' => 'platform-dashboard', 'icon' => 'fa fa-chart-line']);
     }

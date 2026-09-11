@@ -22,6 +22,7 @@
             ['Player', $totalPlayerCount, 'seluruh hotel', 'fa-tv', 'alternate'],
             ['IP Unik', $uniqueVisitors, 'periode terpilih', 'fa-network-wired', 'focus'],
             ['Kunjungan', $totalVisits, 'periode terpilih', 'fa-eye', 'danger'],
+            ['Landing Page', $landingPageVisits, number_format($landingPageUniqueVisitors).' IP unik', 'fa-globe', 'secondary'],
         ] as [$label, $value, $description, $itemIcon, $color])
         <div class="col-md-6 col-xl-3"><div class="card mb-3 widget-content bg-{{ $color }} text-white">
             <div class="widget-content-wrapper">

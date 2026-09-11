@@ -22,9 +22,11 @@ class HomeController extends Controller
      *
      * @return \Illuminate\Contracts\Support\Renderable
      */
-    public function index()
+    public function index(Request $request)
     {
-        return redirect('/');
+        return $request->user()->hasRoleCategory('master', 'superadmin')
+            ? redirect()->route('platform.dashboard')
+            : redirect()->route('dashboard.index');
     }
 
     public function changeLanguage(Request $request)

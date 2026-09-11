@@ -16,7 +16,11 @@ class TrackHotelVisit
         $response = $next($request);
 
         try {
-            if (! app()->runningUnitTests() && $request->isMethod('GET') && ! $request->ajax() && Schema::hasTable('hotel_visit_logs')) {
+            if (! app()->runningUnitTests()
+                && $request->route()?->getName() !== 'landing.show'
+                && $request->isMethod('GET')
+                && ! $request->ajax()
+                && Schema::hasTable('hotel_visit_logs')) {
                 HotelVisitLog::query()->create([
                     'hotel_id' => $request->user()?->hotel_id,
                     'user_id' => $request->user()?->id,
