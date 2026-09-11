@@ -22,6 +22,7 @@ class User extends Authenticatable
         'email',
         'password',
         'last_login_at',
+        'login_count',
         'is_active',
         'role_id',
         'hotel_id',
@@ -35,6 +36,8 @@ class User extends Authenticatable
 
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'last_login_at' => 'datetime',
+        'login_count' => 'integer',
     ];
 
 

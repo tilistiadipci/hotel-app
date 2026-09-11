@@ -9,6 +9,7 @@ use App\Tenancy\TenantContext;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Illuminate\Support\Facades\DB;
 
 class LoginController extends Controller
 {
@@ -59,8 +60,16 @@ class LoginController extends Controller
     {
         app(TenantContext::class)->set($user->hotel_id);
 
-        // catat waktu login setiap autentikasi berhasil
-        User::where('id', $user->id)->update(['last_login_at' => now()]);
+        // Simpan jumlah dan waktu login untuk pemantauan admin platform.
+        $loginAt = now();
+        User::query()->withoutGlobalScope('hotel')->whereKey($user->id)->update([
+            'last_login_at' => $loginAt,
+            'login_count' => DB::raw('login_count + 1'),
+        ]);
+        $user->forceFill([
+            'last_login_at' => $loginAt,
+            'login_count' => ((int) $user->login_count) + 1,
+        ]);
 
         $role = $user->role;
         $redirectUrl = '/login';

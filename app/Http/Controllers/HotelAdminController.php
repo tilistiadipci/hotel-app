@@ -23,6 +23,7 @@ class HotelAdminController extends Controller
             return DataTables::of($query)
                 ->addColumn('name', fn (User $user) => $user->profile?->name ?: $user->username)
                 ->addColumn('hotel_name', fn (User $user) => $user->hotel?->name ?: '-')
+                ->editColumn('last_login_at', fn (User $user) => $user->last_login_at?->format('d/m/Y H:i') ?: '-')
                 ->addColumn('status_badge', fn (User $user) => '<span class="badge badge-'.($user->is_active ? 'success' : 'secondary').'">'.($user->is_active ? 'Aktif' : 'Nonaktif').'</span>')
                 ->addColumn('action', fn (User $user) => view('pages.platform.hotel_admins.action', compact('user'))->render())
                 ->rawColumns(['status_badge', 'action'])->make(true);

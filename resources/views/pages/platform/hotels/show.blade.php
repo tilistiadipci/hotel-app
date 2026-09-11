@@ -113,7 +113,7 @@
         <div class="row">
             <div class="col-md-6 col-xl-2">
                 <div class="card hotel-summary-card mb-3"><div class="card-body d-flex align-items-center justify-content-between">
-                    <div><div class="hotel-summary-label">User</div><div class="hotel-summary-value">{{ $stats['users'] }}</div><small class="text-muted">{{ $stats['admins'] }} admin hotel</small></div>
+                    <div><div class="hotel-summary-label">User</div><div class="hotel-summary-value">{{ $stats['users'] }}</div><small class="text-muted">{{ $stats['admins'] }} admin · {{ number_format($stats['total_logins']) }} login</small></div>
                     <span class="hotel-summary-icon bg-primary text-white"><i class="fa fa-users"></i></span>
                 </div></div>
             </div>
@@ -239,17 +239,17 @@
                     <div class="card-header"><i class="fa fa-users mr-2 text-primary"></i>User Hotel</div>
                     <div class="card-body table-responsive p-0">
                         <table class="table table-hover hotel-table mb-0">
-                            <thead><tr><th>Nama</th><th>Username</th><th>Email</th><th>Role</th><th>Tenant</th><th>Login Terakhir</th><th>Status</th></tr></thead>
+                            <thead><tr><th>Nama</th><th>Username</th><th>Email</th><th>Role</th><th>Tenant</th><th>Total Login</th><th>Login Terakhir</th><th>Status</th></tr></thead>
                             <tbody>
                                 @forelse ($users as $user)
                                     <tr>
                                         <td>{{ $user->profile?->name ?: '-' }}</td><td>{{ $user->username }}</td><td>{{ $user->email }}</td>
-                                        <td>{{ $user->role?->name ?: '-' }}</td><td>{{ $user->menuTenants->pluck('name')->implode(', ') ?: '-' }}</td>
+                                        <td>{{ $user->role?->name ?: '-' }}</td><td>{{ $user->menuTenants->pluck('name')->implode(', ') ?: '-' }}</td><td>{{ number_format($user->login_count) }}</td>
                                         <td>{{ $user->last_login_at ? \Carbon\Carbon::parse($user->last_login_at)->format('d/m/Y H:i') : '-' }}</td>
                                         <td><span class="badge badge-{{ $user->is_active ? 'success' : 'secondary' }}">{{ $user->is_active ? 'Aktif' : 'Nonaktif' }}</span></td>
                                     </tr>
                                 @empty
-                                    <tr><td colspan="7" class="text-center text-muted py-4">Belum ada user.</td></tr>
+                                    <tr><td colspan="8" class="text-center text-muted py-4">Belum ada user.</td></tr>
                                 @endforelse
                             </tbody>
                         </table>

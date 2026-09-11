@@ -134,6 +134,8 @@ class HotelController extends Controller
                 ->sum('grand_total'),
             'visits' => $hotel->visits_count,
             'unique_visitors' => $hotel->visits()->distinct()->count('ip_address'),
+            'total_logins' => (int) $users->sum('login_count'),
+            'last_login_at' => $users->max('last_login_at'),
         ];
 
         return view('pages.platform.hotels.show', compact('hotel', 'users', 'tenants', 'players', 'settings', 'stats', 'recentVisitors') + [
