@@ -4,7 +4,7 @@
     <style>
         :root { --auth-ink:#17243b; --auth-muted:#718096; --auth-primary:#3169df; }
         body { margin:0; background:#eef3fa; color:var(--auth-ink); }
-        .auth-shell { min-height:100vh; display:grid; grid-template-columns:minmax(420px,.9fr) minmax(520px,1.35fr); }
+        .auth-shell { min-height:100vh; display:grid; grid-template-columns:minmax(520px,1.35fr) minmax(420px,.9fr); }
         .auth-form-panel { display:flex; flex-direction:column; justify-content:center; padding:56px clamp(36px,7vw,110px); background:#fff; position:relative; z-index:2; }
         .auth-brand { display:flex; align-items:center; gap:12px; margin-bottom:64px; color:var(--auth-ink); }
         .auth-brand-mark { width:44px; height:44px; display:grid; place-items:center; border-radius:13px; color:#fff; background:linear-gradient(135deg,#3678ed,#7048cf); box-shadow:0 10px 24px rgba(49,105,223,.25); }
@@ -43,13 +43,27 @@
         .auth-feature { padding:10px 14px; border-radius:10px; background:rgba(255,255,255,.11); backdrop-filter:blur(8px); font-size:13px; }
         .photo-credit { position:absolute; right:24px; bottom:18px; z-index:2; color:rgba(255,255,255,.62); font-size:10px; }
         .photo-credit:hover { color:#fff; }
-        @media(max-width:991px){.auth-shell{grid-template-columns:1fr}.auth-story-panel{min-height:380px;order:-1}.auth-story-content{min-height:380px;padding:48px 36px}.auth-story-title{font-size:42px}.auth-form-panel{padding:48px 28px}.auth-brand{margin-bottom:42px}}
+        @media(max-width:991px){.auth-shell{grid-template-columns:1fr}.auth-story-panel{min-height:380px}.auth-story-content{min-height:380px;padding:48px 36px}.auth-story-title{font-size:42px}.auth-form-panel{padding:48px 28px}.auth-brand{margin-bottom:42px}}
         @media(max-width:575px){.auth-story-panel,.auth-story-content{min-height:300px}.auth-story-content{padding:34px 24px}.auth-story-title{font-size:34px;margin-top:16px}.auth-story-text,.auth-features{display:none}.auth-form-panel{padding:38px 22px}}
     </style>
 @endsection
 
 @section('content')
     <main class="auth-shell">
+        <aside class="auth-story-panel" aria-label="Application introduction">
+            <div class="auth-story-content">
+                <span class="auth-story-badge">Hospitality, connected</span>
+                <h2 class="auth-story-title">A better stay begins behind the scenes.</h2>
+                <p class="auth-story-text">Deliver consistent in-room entertainment, timely information, and seamless hotel services through one connected platform.</p>
+                <div class="auth-features">
+                    <span class="auth-feature"><i class="fa fa-tv mr-2"></i>Smart TV Players</span>
+                    <span class="auth-feature"><i class="fa fa-concierge-bell mr-2"></i>Guest Services</span>
+                    <span class="auth-feature"><i class="fa fa-layer-group mr-2"></i>Centralized Content</span>
+                </div>
+            </div>
+            <a class="photo-credit" href="https://www.pexels.com/photo/high-angle-view-on-people-at-the-reception-desk-in-a-hotel-7512139/" target="_blank" rel="noopener">Photo by Kateryna Naidenko via Pexels</a>
+        </aside>
+
         <section class="auth-form-panel">
             <div class="auth-brand">
                 <span class="auth-brand-mark"><i class="fa fa-building"></i></span>
@@ -86,20 +100,6 @@
             </div>
             <div class="auth-footer">Copyright &copy; Bio Experience 2024-{{ date('Y') }}</div>
         </section>
-
-        <aside class="auth-story-panel" aria-label="Application introduction">
-            <div class="auth-story-content">
-                <span class="auth-story-badge">Hospitality, connected</span>
-                <h2 class="auth-story-title">A better stay begins behind the scenes.</h2>
-                <p class="auth-story-text">Deliver consistent in-room entertainment, timely information, and seamless hotel services through one connected platform.</p>
-                <div class="auth-features">
-                    <span class="auth-feature"><i class="fa fa-tv mr-2"></i>Smart TV Players</span>
-                    <span class="auth-feature"><i class="fa fa-concierge-bell mr-2"></i>Guest Services</span>
-                    <span class="auth-feature"><i class="fa fa-layer-group mr-2"></i>Centralized Content</span>
-                </div>
-            </div>
-            <a class="photo-credit" href="https://www.pexels.com/photo/high-angle-view-on-people-at-the-reception-desk-in-a-hotel-7512139/" target="_blank" rel="noopener">Photo by Kateryna Naidenko via Pexels</a>
-        </aside>
     </main>
 @endsection
 
