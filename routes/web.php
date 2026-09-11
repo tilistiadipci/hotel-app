@@ -83,6 +83,7 @@ Route::middleware(['auth', 'role.category:master,superadmin'])
         Route::get('/dashboard', [PlatformDashboardController::class, 'index'])->name('dashboard');
         Route::get('/landing-page', [LandingPageController::class, 'edit'])->name('landing-page.edit');
         Route::put('/landing-page', [LandingPageController::class, 'update'])->name('landing-page.update');
+        Route::post('/hotels/license-key/generate', [HotelController::class, 'generateLicenseKey'])->name('hotels.license-key.generate');
         Route::resource('hotels', HotelController::class)->except('destroy');
         Route::resource('hotel-admins', HotelAdminController::class)
             ->parameters(['hotel-admins' => 'hotelAdmin'])

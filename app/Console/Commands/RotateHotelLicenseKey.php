@@ -4,24 +4,20 @@ namespace App\Console\Commands;
 
 use App\Models\Hotel;
 use App\Models\HotelLicense;
+use App\Services\HotelLicenseKeyGenerator;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Str;
 
 class RotateHotelLicenseKey extends Command
 {
     protected $signature = 'hotel:license-key
         {hotel : Hotel ID, UID, code, or slug}
-        {--license= : UUID lisensi tertentu}
-        {--length=48 : Panjang bagian acak license key}';
+        {--license= : UUID lisensi tertentu}';
 
     protected $description = 'Generate or rotate the secret X-Hotel-License key for a hotel';
 
-    public function handle(): int
+    public function handle(HotelLicenseKeyGenerator $generator): int
     {
         $identifier = (string) $this->argument('hotel');
-        $length = max(32, min(128, (int) $this->option('length')));
-
         $hotel = Hotel::query()
             ->where('id', $identifier)
             ->orWhere('uid', $identifier)
@@ -49,8 +45,11 @@ class RotateHotelLicenseKey extends Command
             ]);
         }
 
-        $plainKey = 'hotel_'.Str::random($length);
-        $license->forceFill(['license_key_hash' => Hash::make($plainKey)])->save();
+        $plainKey = $generator->generate($hotel->code);
+        $license->forceFill([
+            'license_key_hash' => bcrypt($plainKey),
+            'license_key_fingerprint' => HotelLicense::fingerprintFor($plainKey),
+        ])->save();
 
         $this->info("Hotel: {$hotel->name} ({$hotel->id})");
         $this->info("License: {$license->id}");

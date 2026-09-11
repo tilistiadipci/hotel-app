@@ -27,7 +27,7 @@ class HotelLicense extends Model
 
     protected $guarded = [];
 
-    protected $hidden = ['license_key_hash'];
+    protected $hidden = ['license_key_hash', 'license_key_fingerprint'];
 
     protected $casts = [
         'features' => 'array',
@@ -52,8 +52,26 @@ class HotelLicense extends Model
 
     public function matchesKey(?string $plainKey): bool
     {
-        return filled($plainKey)
-            && filled($this->license_key_hash)
+        if (blank($plainKey) || blank($this->license_key_hash)) {
+            return false;
+        }
+
+        $plainKey = trim($plainKey);
+
+        // Lisensi lama belum memiliki fingerprint dan tetap bisa diverifikasi.
+        if (blank($this->license_key_fingerprint)) {
+            return Hash::check($plainKey, $this->license_key_hash)
+                || Hash::check(strtoupper($plainKey), $this->license_key_hash);
+        }
+
+        $plainKey = strtoupper($plainKey);
+
+        return hash_equals($this->license_key_fingerprint, self::fingerprintFor($plainKey))
             && Hash::check($plainKey, $this->license_key_hash);
+    }
+
+    public static function fingerprintFor(string $plainKey): string
+    {
+        return hash_hmac('sha256', strtoupper(trim($plainKey)), (string) config('app.key'));
     }
 }

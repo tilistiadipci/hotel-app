@@ -44,4 +44,19 @@ class HotelLicenseTest extends TestCase
         $this->assertFalse($license->matchesKey('wrong-license-key'));
         $this->assertFalse((new HotelLicense)->matchesKey('hotel_example_license_key_123456'));
     }
+
+    public function test_fingerprinted_license_key_is_case_insensitive_and_bound_to_exact_key(): void
+    {
+        $license = new HotelLicense([
+            'license_key_hash' => Hash::make('A1B2C3'),
+            'license_key_fingerprint' => HotelLicense::fingerprintFor('A1B2C3'),
+        ]);
+
+        $this->assertTrue($license->matchesKey('a1b2c3'));
+        $this->assertFalse($license->matchesKey('A1B2C4'));
+        $this->assertSame(
+            HotelLicense::fingerprintFor('a1b2c3'),
+            HotelLicense::fingerprintFor('A1B2C3')
+        );
+    }
 }

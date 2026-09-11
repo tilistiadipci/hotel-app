@@ -6,6 +6,7 @@ use App\Models\Hotel;
 use App\Models\HotelVisitLog;
 use App\Models\LandingPageVisit;
 use App\Models\User;
+use App\Services\HotelLicenseLifecycle;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -13,6 +14,8 @@ class PlatformDashboardController extends Controller
 {
     public function index(Request $request)
     {
+        app(HotelLicenseLifecycle::class)->expireDueTrials();
+
         $from = $request->date('from')?->startOfDay() ?? now()->subDays(29)->startOfDay();
         $until = $request->date('until')?->endOfDay() ?? now()->endOfDay();
 

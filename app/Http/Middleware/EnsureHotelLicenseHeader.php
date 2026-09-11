@@ -3,6 +3,8 @@
 namespace App\Http\Middleware;
 
 use App\Models\Hotel;
+use App\Models\HotelLicense;
+use App\Services\HotelLicenseLifecycle;
 use Closure;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -34,10 +36,25 @@ class EnsureHotelLicenseHeader
             return $this->error('Kode hotel tidak sesuai.', Response::HTTP_FORBIDDEN);
         }
 
+        app(HotelLicenseLifecycle::class)->expireDueTrials($hotel->id);
+        $hotel->refresh();
+
+        $boundLicense = HotelLicense::query()
+            ->where('license_key_fingerprint', HotelLicense::fingerprintFor($licenseKey))
+            ->first();
+
+        if ($boundLicense && $boundLicense->hotel_id !== $hotel->id) {
+            return $this->error('License key terdaftar untuk hotel lain.', Response::HTTP_FORBIDDEN);
+        }
+
         $license = $hotel->latestLicense;
 
         if (! $hotel->is_active || $hotel->status !== 'active' || ! $license?->isUsable()) {
             return $this->error('Lisensi hotel tidak aktif atau sudah berakhir.', Response::HTTP_PAYMENT_REQUIRED);
+        }
+
+        if (! $license->license_key_fingerprint) {
+            return $this->error('License key lama harus digenerate ulang oleh superadmin.', Response::HTTP_UNAUTHORIZED);
         }
 
         if (! $license->matchesKey($licenseKey)) {

@@ -1,6 +1,7 @@
 @php
     $configuration = isset($hotel) ? $hotel->configuration : null;
     $currentLicense = $license ?? null;
+    $licensePlans = config('hotel_plans');
 @endphp
 
 <form method="POST"
@@ -80,16 +81,24 @@
                 header <code>X-Hotel-License</code>. Key asli hanya ditampilkan satu kali setelah disimpan karena
                 database hanya menyimpan hasil hash-nya.
             </div>
+            <hr class="my-2">
+            <ul class="small mb-0 pl-3">
+                @foreach($licensePlans as $plan)
+                    <li><strong>{{ $plan['label'] }}:</strong> {{ $plan['description'] }}</li>
+                @endforeach
+            </ul>
         </div>
 
         <div class="position-relative row form-group">
             <label for="license_plan" class="col-sm-3 col-form-label text-sm-right">Kode Plan</label>
             <div class="col-sm-9">
-                <input id="license_plan" name="license_plan" type="text"
-                    class="form-control @error('license_plan') is-invalid @enderror"
-                    value="{{ old('license_plan', $currentLicense->plan_code ?? 'custom') }}">
+                <select id="license_plan" name="license_plan" class="form-control @error('license_plan') is-invalid @enderror">
+                    @foreach($licensePlans as $planCode => $plan)
+                        <option value="{{ $planCode }}" @selected(old('license_plan', $currentLicense->plan_code ?? 'trial') === $planCode)>{{ $plan['label'] }}</option>
+                    @endforeach
+                </select>
                 @error('license_plan')<div class="invalid-feedback">{{ $message }}</div>
-                @else<small class="text-primary font-italic">* Nama paket lisensi, misalnya trial, standard, premium, atau custom.</small>@enderror
+                @else<small id="licensePlanInfo" class="text-info font-italic"></small>@enderror
             </div>
         </div>
 
@@ -153,16 +162,21 @@
         <div class="position-relative row form-group">
             <label for="license_key" class="col-sm-3 col-form-label text-sm-right">License Key</label>
             <div class="col-sm-9">
-                <input id="license_key" name="license_key" type="text" autocomplete="off"
-                    class="form-control @error('license_key') is-invalid @enderror"
-                    value="{{ old('license_key') }}"
-                    placeholder="{{ $currentLicense?->license_key_hash ? 'Sudah dibuat — kosongkan jika tidak ingin mengganti key' : 'Kosongkan agar sistem membuat key otomatis' }}">
-                @error('license_key')<div class="invalid-feedback">{{ $message }}</div>
-                @else
+                <div class="input-group">
+                    <input id="license_key" name="license_key" type="text" autocomplete="off" maxlength="6"
+                        class="form-control text-uppercase font-weight-bold @error('license_key') is-invalid @enderror"
+                        value="{{ old('license_key') }}"
+                        placeholder="{{ $currentLicense?->license_key_fingerprint ? 'Kosongkan jika key tidak diganti' : 'Klik Generate atau simpan untuk membuat key baru' }}">
+                    <div class="input-group-append">
+                        <button id="generateLicenseKey" type="button" class="btn btn-outline-primary"><i class="fa fa-random mr-1"></i>Generate</button>
+                    </div>
+                    @error('license_key')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                @unless($errors->has('license_key'))
                     <small class="text-warning font-italic">
-                        Minimal 24 karakter. Mengisi kolom ini akan mengganti key lama. Salin key yang tampil setelah menyimpan ke header <code>X-Hotel-License</code>.
+                        Key terdiri dari 1 karakter awal kode hotel + 5 huruf kapital/angka acak. Key unik untuk satu hotel, tidak dapat dipakai hotel lain, dan baru aktif setelah form disimpan.
                     </small>
-                @enderror
+                @endunless
             </div>
         </div>
 
@@ -248,3 +262,75 @@
         <button type="submit" class="btn btn-primary">Simpan</button>
     </div>
 </form>
+
+@section('js')
+<script>
+$(function () {
+    const plans = @json($licensePlans);
+    const $plan = $('#license_plan');
+    const $status = $('#license_status');
+    const $startsAt = $('#license_starts_at');
+    const $expiresAt = $('#license_expires_at');
+    const $maxPlayers = $('#license_max_players');
+    const $maxUsers = $('#license_max_users');
+    const $licenseKey = $('#license_key');
+
+    function addDays(dateValue, days) {
+        if (!dateValue) return '';
+        const date = new Date(dateValue + 'T00:00:00');
+        date.setDate(date.getDate() + Number(days));
+        return date.getFullYear() + '-' + String(date.getMonth() + 1).padStart(2, '0') + '-' + String(date.getDate()).padStart(2, '0');
+    }
+
+    function applyPlan(replaceValues) {
+        const code = $plan.val();
+        const selected = plans[code];
+        if (!selected) return;
+
+        $('#licensePlanInfo').text(selected.description);
+        const custom = code === 'custom';
+        $maxPlayers.prop('readonly', !custom);
+        $maxUsers.prop('readonly', !custom);
+
+        if (!custom) {
+            if (replaceValues || !$maxPlayers.val()) $maxPlayers.val(selected.max_players || '');
+            if (replaceValues || !$maxUsers.val()) $maxUsers.val(selected.max_users || '');
+        }
+
+        if (code === 'trial') {
+            if ($status.val() === 'active' || $status.val() === 'trial') $status.val('trial');
+            $expiresAt.prop('readonly', true).val(addDays($startsAt.val(), selected.duration_days));
+        } else {
+            $expiresAt.prop('readonly', false);
+            if ($status.val() === 'trial') $status.val('active');
+        }
+    }
+
+    $plan.on('change', function () { applyPlan(true); });
+    $startsAt.on('change', function () { if ($plan.val() === 'trial') applyPlan(true); });
+    $licenseKey.on('input', function () {
+        this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
+    });
+
+    $('#generateLicenseKey').on('click', function () {
+        const code = $('#code').val().trim();
+        if (!code) {
+            swal({icon: 'warning', title: 'Kode hotel belum diisi', text: 'Isi Kode Hotel sebelum membuat license key.'});
+            return;
+        }
+
+        const $button = $(this).prop('disabled', true);
+        fetch(@json(route('platform.hotels.license-key.generate')), {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': @json(csrf_token())},
+            body: JSON.stringify({code: code})
+        }).then(response => response.ok ? response.json() : response.json().then(data => Promise.reject(data)))
+          .then(data => $licenseKey.val(data.license_key))
+          .catch(error => swal({icon: 'error', title: 'Gagal membuat key', text: error.message || 'Silakan coba kembali.'}))
+          .finally(() => $button.prop('disabled', false));
+    });
+
+    applyPlan(false);
+});
+</script>
+@endsection

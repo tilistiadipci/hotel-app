@@ -3,6 +3,7 @@
 namespace App\Http\Middleware;
 
 use App\Models\HotelLicense;
+use App\Services\HotelLicenseLifecycle;
 use App\Tenancy\TenantContext;
 use Closure;
 use Illuminate\Http\Request;
@@ -13,6 +14,10 @@ class EnsureHotelLicenseActive
     public function handle(Request $request, Closure $next): Response
     {
         $hotelId = app(TenantContext::class)->id();
+
+        if ($hotelId) {
+            app(HotelLicenseLifecycle::class)->expireDueTrials($hotelId);
+        }
 
         if (! $hotelId || $request->routeIs('licenses.*') || $request->routeIs('logout')) {
             return $next($request);

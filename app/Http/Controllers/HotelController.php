@@ -12,9 +12,11 @@ use App\Models\MenuTransaction;
 use App\Models\Player;
 use App\Models\Setting;
 use App\Models\User;
+use App\Services\HotelLicenseKeyGenerator;
+use App\Services\HotelLicenseLifecycle;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Yajra\DataTables\Facades\DataTables;
@@ -23,6 +25,8 @@ class HotelController extends Controller
 {
     public function index(Request $request)
     {
+        app(HotelLicenseLifecycle::class)->expireDueTrials();
+
         if ($request->ajax()) {
             $query = Hotel::query()
                 ->with(['configuration', 'latestLicense'])
@@ -53,18 +57,34 @@ class HotelController extends Controller
         return view('pages.platform.hotels.create', ['page' => 'hotels', 'icon' => 'fa fa-hotel']);
     }
 
+    public function generateLicenseKey(Request $request, HotelLicenseKeyGenerator $generator)
+    {
+        $data = $request->validate(['code' => ['required', 'string', 'max:50']]);
+
+        return response()->json(['license_key' => $generator->generate($data['code'])]);
+    }
+
     public function store(Request $request)
     {
         $data = $this->validateData($request);
-        $plainLicenseKey = ($data['license_key'] ?? null) ?: 'hotel_'.Str::random(48);
+        $plainLicenseKey = $data['license_key'] ?? null;
 
-        DB::transaction(function () use ($data, $plainLicenseKey) {
+        DB::transaction(function () use ($data, &$plainLicenseKey) {
             $hotel = Hotel::query()->create($this->hotelPayload($data));
             $hotel->configuration()->create($this->configurationPayload($data, $hotel));
-            $hotel->licenses()->create($this->licensePayload($data) + [
-                'license_key_hash' => Hash::make($plainLicenseKey),
+            if (! $plainLicenseKey) {
+                $plainLicenseKey = app(HotelLicenseKeyGenerator::class)->generate($hotel->code);
+            }
+            app(HotelLicenseKeyGenerator::class)->assertAvailable($plainLicenseKey);
+            $licenseData = $this->licensePayload($data);
+            $hotel->licenses()->create($licenseData + [
+                'license_key_hash' => bcrypt($plainLicenseKey),
+                'license_key_fingerprint' => HotelLicense::fingerprintFor($plainLicenseKey),
             ]);
+            $hotel->update(['trial_ends_at' => $licenseData['plan_code'] === 'trial' ? $licenseData['expires_at'] : null]);
         });
+
+        app(HotelLicenseLifecycle::class)->expireDueTrials();
 
         return redirect()->route('platform.hotels.index')
             ->with('success', 'Hotel dan lisensinya berhasil dibuat.')
@@ -73,6 +93,8 @@ class HotelController extends Controller
 
     public function show(Hotel $hotel)
     {
+        app(HotelLicenseLifecycle::class)->expireDueTrials($hotel->id);
+        $hotel->refresh();
         $hotel->load(['configuration', 'licenses'])->loadCount('visits');
 
         $users = User::query()->withoutGlobalScope('hotel')
@@ -146,6 +168,8 @@ class HotelController extends Controller
 
     public function edit(Hotel $hotel)
     {
+        app(HotelLicenseLifecycle::class)->expireDueTrials($hotel->id);
+        $hotel->refresh();
         $hotel->load('configuration');
         $license = $hotel->licenses()->latest('starts_at')->first();
 
@@ -162,13 +186,15 @@ class HotelController extends Controller
             $hotel->configuration()->updateOrCreate([], $this->configurationPayload($data, $hotel));
 
             $license = $hotel->licenses()->latest('starts_at')->first();
-            if ((! $license || ! $license->license_key_hash) && ! $plainLicenseKey) {
-                $plainLicenseKey = 'hotel_'.Str::random(48);
+            if ((! $license || ! $license->license_key_hash || ! $license->license_key_fingerprint) && ! $plainLicenseKey) {
+                $plainLicenseKey = app(HotelLicenseKeyGenerator::class)->generate($hotel->code);
             }
 
             $licenseData = $this->licensePayload($data);
             if ($plainLicenseKey) {
-                $licenseData['license_key_hash'] = Hash::make($plainLicenseKey);
+                app(HotelLicenseKeyGenerator::class)->assertAvailable($plainLicenseKey, $license);
+                $licenseData['license_key_hash'] = bcrypt($plainLicenseKey);
+                $licenseData['license_key_fingerprint'] = HotelLicense::fingerprintFor($plainLicenseKey);
             }
 
             if ($license) {
@@ -176,7 +202,11 @@ class HotelController extends Controller
             } else {
                 $hotel->licenses()->create($licenseData);
             }
+
+            $hotel->update(['trial_ends_at' => $licenseData['plan_code'] === 'trial' ? $licenseData['expires_at'] : null]);
         });
+
+        app(HotelLicenseLifecycle::class)->expireDueTrials($hotel->id);
 
         $redirect = redirect()->route('platform.hotels.show', $hotel)
             ->with('success', 'Hotel dan lisensinya berhasil diperbarui.');
@@ -194,6 +224,9 @@ class HotelController extends Controller
                 ? Str::slug((string) $request->input('slug'))
                 : Str::slug((string) $request->input('name')),
             'currency' => strtoupper(trim((string) $request->input('currency'))),
+            'license_key' => $request->filled('license_key')
+                ? strtoupper(trim((string) $request->input('license_key')))
+                : null,
         ]);
 
         return $request->validate([
@@ -213,7 +246,7 @@ class HotelController extends Controller
             'mqtt_password' => ['nullable', 'string', 'max:255'],
             'mqtt_qos' => ['required', Rule::in([0, 1, 2])],
             'mqtt_tls' => ['nullable', 'boolean'],
-            'license_plan' => ['required', 'string', 'max:50'],
+            'license_plan' => ['required', Rule::in(array_keys(config('hotel_plans')))],
             'license_status' => ['required', Rule::in([
                 HotelLicense::STATUS_TRIAL,
                 HotelLicense::STATUS_ACTIVE,
@@ -225,7 +258,7 @@ class HotelController extends Controller
             'license_expires_at' => ['nullable', 'date', 'after_or_equal:license_starts_at'],
             'license_max_players' => ['nullable', 'integer', 'min:1'],
             'license_max_users' => ['nullable', 'integer', 'min:1'],
-            'license_key' => ['nullable', 'string', 'min:24', 'max:255'],
+            'license_key' => ['nullable', 'string', 'size:6', 'regex:/^[A-Z0-9]{6}$/'],
         ]);
     }
 
@@ -257,13 +290,26 @@ class HotelController extends Controller
 
     private function licensePayload(array $data): array
     {
+        $plan = config('hotel_plans.'.$data['license_plan']);
+        $startsAt = $data['license_starts_at'] ? Carbon::parse($data['license_starts_at'])->startOfDay() : now();
+        $isTrial = $data['license_plan'] === 'trial';
+        $status = $data['license_status'];
+
+        if ($isTrial && in_array($status, [HotelLicense::STATUS_ACTIVE, HotelLicense::STATUS_TRIAL], true)) {
+            $status = HotelLicense::STATUS_TRIAL;
+        } elseif (! $isTrial && $status === HotelLicense::STATUS_TRIAL) {
+            $status = HotelLicense::STATUS_ACTIVE;
+        }
+
         return [
             'plan_code' => $data['license_plan'],
-            'status' => $data['license_status'],
-            'starts_at' => $data['license_starts_at'] ?: now(),
-            'expires_at' => $data['license_expires_at'] ?: null,
-            'max_players' => $data['license_max_players'] ?: null,
-            'max_users' => $data['license_max_users'] ?: null,
+            'status' => $status,
+            'starts_at' => $startsAt,
+            'expires_at' => $isTrial
+                ? $startsAt->copy()->addDays((int) $plan['duration_days'])
+                : ($data['license_expires_at'] ? Carbon::parse($data['license_expires_at'])->endOfDay() : null),
+            'max_players' => $data['license_plan'] === 'custom' ? ($data['license_max_players'] ?: null) : $plan['max_players'],
+            'max_users' => $data['license_plan'] === 'custom' ? ($data['license_max_users'] ?: null) : $plan['max_users'],
         ];
     }
 }
