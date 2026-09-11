@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Hotel;
 use App\Models\Role;
 use App\Models\User;
+use App\Services\HotelLicenseCapacity;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Hash;
@@ -92,6 +93,10 @@ class HotelAdminController extends Controller
 
     private function persist(array $data, ?User $user = null): User
     {
+        if (! $user || $user->hotel_id !== $data['hotel_id']) {
+            app(HotelLicenseCapacity::class)->assertCanAddUser($data['hotel_id']);
+        }
+
         return DB::transaction(function () use ($data, $user) {
             $roleId = Role::query()->where('category', 'admin')->value('id');
             abort_unless($roleId, 422, 'Role admin belum tersedia.');

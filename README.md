@@ -57,5 +57,6 @@
 - Role `master`/`superadmin` is a platform account and uses `/superadmin/dashboard`.
 - Superadmin creates hotels and hotel-admin accounts. Hotel admins can only manage operational users and data belonging to their own hotel.
 - Media root and MQTT connection settings are stored in `hotel_configurations`. MQTT credentials are encrypted with `APP_KEY`.
+- Hotel API clients send the hotel code in `X-Hotel-Code` and the secret license key in `X-Hotel-License`. The plain key is shown only once; only its hash is stored.
 - `MEDIA_STORAGE_PATH` and MQTT values in `.env` are migration/default fallbacks for the legacy hotel only. Runtime tenant requests use each hotel's database configuration.
 - Apply the SaaS schema with `php artisan migrate`. Use a different media root for every hotel and keep `APP_KEY` stable so encrypted credentials remain readable.

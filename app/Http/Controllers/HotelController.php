@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Booking;
 use App\Models\Hotel;
+use App\Models\HotelLicense;
 use App\Models\HotelVisitLog;
 use App\Models\Media;
 use App\Models\MenuTenant;
@@ -13,6 +14,7 @@ use App\Models\Setting;
 use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Yajra\DataTables\Facades\DataTables;
@@ -22,7 +24,9 @@ class HotelController extends Controller
     public function index(Request $request)
     {
         if ($request->ajax()) {
-            $query = Hotel::query()->with('configuration')->withCount('users');
+            $query = Hotel::query()
+                ->with(['configuration', 'latestLicense'])
+                ->withCount(['users', 'menuTenants', 'players']);
 
             return DataTables::of($query)
                 ->addColumn('status_badge', fn (Hotel $hotel) => sprintf(
@@ -30,8 +34,15 @@ class HotelController extends Controller
                     $hotel->is_active ? 'success' : 'secondary',
                     $hotel->is_active ? 'Aktif' : 'Nonaktif'
                 ))
+                ->addColumn('license_badge', function (Hotel $hotel) {
+                    $license = $hotel->latestLicense;
+                    $class = $license?->isUsable() ? 'success' : 'warning';
+                    $label = $license ? ucfirst($license->status) : 'Belum ada';
+
+                    return '<span class="badge badge-'.$class.'">'.$label.'</span>';
+                })
                 ->addColumn('action', fn (Hotel $hotel) => view('pages.platform.hotels.action', compact('hotel'))->render())
-                ->rawColumns(['status_badge', 'action'])->make(true);
+                ->rawColumns(['status_badge', 'license_badge', 'action'])->make(true);
         }
 
         return view('pages.platform.hotels.index', ['page' => 'hotels', 'icon' => 'fa fa-hotel']);
@@ -45,13 +56,19 @@ class HotelController extends Controller
     public function store(Request $request)
     {
         $data = $this->validateData($request);
+        $plainLicenseKey = ($data['license_key'] ?? null) ?: 'hotel_'.Str::random(48);
 
-        DB::transaction(function () use ($data) {
+        DB::transaction(function () use ($data, $plainLicenseKey) {
             $hotel = Hotel::query()->create($this->hotelPayload($data));
             $hotel->configuration()->create($this->configurationPayload($data, $hotel));
+            $hotel->licenses()->create($this->licensePayload($data) + [
+                'license_key_hash' => Hash::make($plainLicenseKey),
+            ]);
         });
 
-        return redirect()->route('platform.hotels.index')->with('success', 'Hotel berhasil dibuat.');
+        return redirect()->route('platform.hotels.index')
+            ->with('success', 'Hotel dan lisensinya berhasil dibuat.')
+            ->with('plain_license_key', $plainLicenseKey);
     }
 
     public function show(Hotel $hotel)
@@ -128,20 +145,43 @@ class HotelController extends Controller
     public function edit(Hotel $hotel)
     {
         $hotel->load('configuration');
+        $license = $hotel->licenses()->latest('starts_at')->first();
 
-        return view('pages.platform.hotels.edit', compact('hotel') + ['page' => 'hotels', 'icon' => 'fa fa-hotel']);
+        return view('pages.platform.hotels.edit', compact('hotel', 'license') + ['page' => 'hotels', 'icon' => 'fa fa-hotel']);
     }
 
     public function update(Request $request, Hotel $hotel)
     {
         $data = $this->validateData($request, $hotel);
+        $plainLicenseKey = ($data['license_key'] ?? null) ?: null;
 
-        DB::transaction(function () use ($data, $hotel) {
+        DB::transaction(function () use ($data, $hotel, &$plainLicenseKey) {
             $hotel->update($this->hotelPayload($data));
             $hotel->configuration()->updateOrCreate([], $this->configurationPayload($data, $hotel));
+
+            $license = $hotel->licenses()->latest('starts_at')->first();
+            if ((! $license || ! $license->license_key_hash) && ! $plainLicenseKey) {
+                $plainLicenseKey = 'hotel_'.Str::random(48);
+            }
+
+            $licenseData = $this->licensePayload($data);
+            if ($plainLicenseKey) {
+                $licenseData['license_key_hash'] = Hash::make($plainLicenseKey);
+            }
+
+            if ($license) {
+                $license->update($licenseData);
+            } else {
+                $hotel->licenses()->create($licenseData);
+            }
         });
 
-        return redirect()->route('platform.hotels.index')->with('success', 'Hotel berhasil diperbarui.');
+        $redirect = redirect()->route('platform.hotels.show', $hotel)
+            ->with('success', 'Hotel dan lisensinya berhasil diperbarui.');
+
+        return $plainLicenseKey
+            ? $redirect->with('plain_license_key', $plainLicenseKey)
+            : $redirect;
     }
 
     private function validateData(Request $request, ?Hotel $hotel = null): array
@@ -171,6 +211,19 @@ class HotelController extends Controller
             'mqtt_password' => ['nullable', 'string', 'max:255'],
             'mqtt_qos' => ['required', Rule::in([0, 1, 2])],
             'mqtt_tls' => ['nullable', 'boolean'],
+            'license_plan' => ['required', 'string', 'max:50'],
+            'license_status' => ['required', Rule::in([
+                HotelLicense::STATUS_TRIAL,
+                HotelLicense::STATUS_ACTIVE,
+                HotelLicense::STATUS_SUSPENDED,
+                HotelLicense::STATUS_EXPIRED,
+                HotelLicense::STATUS_CANCELLED,
+            ])],
+            'license_starts_at' => ['nullable', 'date'],
+            'license_expires_at' => ['nullable', 'date', 'after_or_equal:license_starts_at'],
+            'license_max_players' => ['nullable', 'integer', 'min:1'],
+            'license_max_users' => ['nullable', 'integer', 'min:1'],
+            'license_key' => ['nullable', 'string', 'min:24', 'max:255'],
         ]);
     }
 
@@ -197,6 +250,18 @@ class HotelController extends Controller
             'mqtt_username' => $data['mqtt_username'] ?? null,
             'mqtt_password' => ($data['mqtt_password'] ?? null) ?: $existing?->mqtt_password,
             'mqtt_qos' => $data['mqtt_qos'], 'mqtt_tls' => $data['mqtt_tls'] ?? false,
+        ];
+    }
+
+    private function licensePayload(array $data): array
+    {
+        return [
+            'plan_code' => $data['license_plan'],
+            'status' => $data['license_status'],
+            'starts_at' => $data['license_starts_at'] ?: now(),
+            'expires_at' => $data['license_expires_at'] ?: null,
+            'max_players' => $data['license_max_players'] ?: null,
+            'max_users' => $data['license_max_users'] ?: null,
         ];
     }
 }

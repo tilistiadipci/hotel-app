@@ -68,5 +68,6 @@ class Kernel extends HttpKernel
         'setting.active' => \App\Http\Middleware\EnsureSettingIsActive::class,
         'hotel.resolve' => \App\Http\Middleware\ResolveHotel::class,
         'hotel.license' => \App\Http\Middleware\EnsureHotelLicenseActive::class,
+        'hotel.license.header' => \App\Http\Middleware\EnsureHotelLicenseHeader::class,
     ];
 }

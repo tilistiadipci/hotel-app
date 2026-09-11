@@ -1,4 +1,7 @@
-@php($configuration = isset($hotel) ? $hotel->configuration : null)
+@php
+    $configuration = isset($hotel) ? $hotel->configuration : null;
+    $currentLicense = $license ?? null;
+@endphp
 
 <form method="POST"
     action="{{ isset($hotel) ? route('platform.hotels.update', $hotel) : route('platform.hotels.store') }}">
@@ -63,6 +66,103 @@
                 </select>
                 @error('is_active')<div class="invalid-feedback">{{ $message }}</div>
                 @else<small class="text-primary font-italic">* Wajib diisi</small>@enderror
+            </div>
+        </div>
+
+        <h5 class="mt-5">Lisensi dan Akses Client</h5>
+        <hr class="mb-4">
+
+        <div class="alert alert-info ml-sm-auto col-sm-9 px-3">
+            <div class="font-weight-bold mb-1"><i class="fa fa-info-circle mr-1"></i> Cara kerja lisensi</div>
+            <div class="small">
+                Lisensi menentukan apakah aplikasi hotel boleh digunakan serta membatasi jumlah player dan user.
+                Client/perangkat mengirim kode hotel melalui header <code>X-Hotel-Code</code> dan key rahasia melalui
+                header <code>X-Hotel-License</code>. Key asli hanya ditampilkan satu kali setelah disimpan karena
+                database hanya menyimpan hasil hash-nya.
+            </div>
+        </div>
+
+        <div class="position-relative row form-group">
+            <label for="license_plan" class="col-sm-3 col-form-label text-sm-right">Kode Plan</label>
+            <div class="col-sm-9">
+                <input id="license_plan" name="license_plan" type="text"
+                    class="form-control @error('license_plan') is-invalid @enderror"
+                    value="{{ old('license_plan', $currentLicense->plan_code ?? 'custom') }}">
+                @error('license_plan')<div class="invalid-feedback">{{ $message }}</div>
+                @else<small class="text-primary font-italic">* Nama paket lisensi, misalnya trial, standard, premium, atau custom.</small>@enderror
+            </div>
+        </div>
+
+        <div class="position-relative row form-group">
+            <label for="license_status" class="col-sm-3 col-form-label text-sm-right">Status Lisensi</label>
+            <div class="col-sm-9">
+                <select id="license_status" name="license_status"
+                    class="form-control @error('license_status') is-invalid @enderror">
+                    @foreach (['trial' => 'Trial', 'active' => 'Aktif', 'suspended' => 'Ditangguhkan', 'expired' => 'Kedaluwarsa', 'cancelled' => 'Dibatalkan'] as $value => $label)
+                        <option value="{{ $value }}" @selected(old('license_status', $currentLicense->status ?? 'active') === $value)>{{ $label }}</option>
+                    @endforeach
+                </select>
+                @error('license_status')<div class="invalid-feedback">{{ $message }}</div>
+                @else<small class="text-primary font-italic">* Hanya status Trial atau Aktif yang dapat memakai aplikasi hotel.</small>@enderror
+            </div>
+        </div>
+
+        <div class="position-relative row form-group">
+            <label for="license_starts_at" class="col-sm-3 col-form-label text-sm-right">Mulai Berlaku</label>
+            <div class="col-sm-9">
+                <input id="license_starts_at" name="license_starts_at" type="date"
+                    class="form-control @error('license_starts_at') is-invalid @enderror"
+                    value="{{ old('license_starts_at', $currentLicense?->starts_at?->format('Y-m-d') ?? now()->format('Y-m-d')) }}">
+                @error('license_starts_at')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            </div>
+        </div>
+
+        <div class="position-relative row form-group">
+            <label for="license_expires_at" class="col-sm-3 col-form-label text-sm-right">Berakhir Pada</label>
+            <div class="col-sm-9">
+                <input id="license_expires_at" name="license_expires_at" type="date"
+                    class="form-control @error('license_expires_at') is-invalid @enderror"
+                    value="{{ old('license_expires_at', $currentLicense?->expires_at?->format('Y-m-d') ?? '') }}">
+                @error('license_expires_at')<div class="invalid-feedback">{{ $message }}</div>
+                @else<small class="text-muted font-italic">Kosongkan jika lisensi tidak memiliki tanggal kedaluwarsa.</small>@enderror
+            </div>
+        </div>
+
+        <div class="position-relative row form-group">
+            <label for="license_max_players" class="col-sm-3 col-form-label text-sm-right">Maksimal Player</label>
+            <div class="col-sm-9">
+                <input id="license_max_players" name="license_max_players" type="number" min="1"
+                    class="form-control @error('license_max_players') is-invalid @enderror"
+                    value="{{ old('license_max_players', $currentLicense->max_players ?? '') }}">
+                @error('license_max_players')<div class="invalid-feedback">{{ $message }}</div>
+                @else<small class="text-muted font-italic">Kosongkan jika jumlah player tidak dibatasi.</small>@enderror
+            </div>
+        </div>
+
+        <div class="position-relative row form-group">
+            <label for="license_max_users" class="col-sm-3 col-form-label text-sm-right">Maksimal User</label>
+            <div class="col-sm-9">
+                <input id="license_max_users" name="license_max_users" type="number" min="1"
+                    class="form-control @error('license_max_users') is-invalid @enderror"
+                    value="{{ old('license_max_users', $currentLicense->max_users ?? '') }}">
+                @error('license_max_users')<div class="invalid-feedback">{{ $message }}</div>
+                @else<small class="text-muted font-italic">Kosongkan jika jumlah user hotel tidak dibatasi.</small>@enderror
+            </div>
+        </div>
+
+        <div class="position-relative row form-group">
+            <label for="license_key" class="col-sm-3 col-form-label text-sm-right">License Key</label>
+            <div class="col-sm-9">
+                <input id="license_key" name="license_key" type="text" autocomplete="off"
+                    class="form-control @error('license_key') is-invalid @enderror"
+                    value="{{ old('license_key') }}"
+                    placeholder="{{ $currentLicense?->license_key_hash ? 'Sudah dibuat — kosongkan jika tidak ingin mengganti key' : 'Kosongkan agar sistem membuat key otomatis' }}">
+                @error('license_key')<div class="invalid-feedback">{{ $message }}</div>
+                @else
+                    <small class="text-warning font-italic">
+                        Minimal 24 karakter. Mengisi kolom ini akan mengganti key lama. Salin key yang tampil setelah menyimpan ke header <code>X-Hotel-License</code>.
+                    </small>
+                @enderror
             </div>
         </div>
 

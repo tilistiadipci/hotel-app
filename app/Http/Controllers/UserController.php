@@ -2,27 +2,30 @@
 
 namespace App\Http\Controllers;
 
-use App\Repositories\UserRepository;
-use App\Repositories\RoleRepository;
 use App\Repositories\MediaRepository;
 use App\Repositories\MenuTenantRepository;
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
-use App\Http\Controllers\Controller;
-use App\Repositories\DepartementRepository;
-use App\Http\Controllers\HelperController;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Validation\ValidationException;
-use Illuminate\Validation\Rule;
+use App\Repositories\RoleRepository;
+use App\Repositories\UserRepository;
+use App\Services\HotelLicenseCapacity;
 use App\Tenancy\TenantContext;
+use Illuminate\Http\Request;
+use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
+use Illuminate\Validation\ValidationException;
 
 class UserController extends Controller
 {
     protected $userRepository;
+
     protected $roleRepository;
+
     protected $tenantRepository;
+
     protected MediaRepository $mediaRepository;
+
     private $page;
+
     private $icon = 'fa fa-users';
 
     public function __construct(
@@ -73,6 +76,7 @@ class UserController extends Controller
     public function store(Request $request)
     {
         $this->validateRequest($request);
+        app(HotelLicenseCapacity::class)->assertCanAddUser(app(TenantContext::class)->id());
         $createdMediaIds = [];
         $storedPaths = [];
 
@@ -87,11 +91,13 @@ class UserController extends Controller
             $this->userRepository->create($payload);
 
             DB::commit();
+
             return redirect()->route('users.index')->with('success', trans('common.success.create'));
         } catch (\Exception $e) {
             DB::rollback();
             app(HelperController::class)->cleanupMedia($createdMediaIds, $storedPaths);
             $this->debugError($e);
+
             return redirect()->back()->with('error', $e->getMessage());
         }
     }
@@ -105,10 +111,10 @@ class UserController extends Controller
 
         if ($request->ajax()) {
 
-            if (!$user) {
+            if (! $user) {
                 return response()->json([
                     'status' => false,
-                    'message' => trans('common.error.404')
+                    'message' => trans('common.error.404'),
                 ]);
             }
 
@@ -123,7 +129,7 @@ class UserController extends Controller
             ]);
         }
 
-        if (!$user) {
+        if (! $user) {
             return redirect()->route('error.404');
         }
 
@@ -141,7 +147,7 @@ class UserController extends Controller
     {
         $user = $this->userRepository->findUid($id);
 
-        if (!$user) {
+        if (! $user) {
             return redirect()->route('error.404');
         }
 
@@ -182,7 +188,7 @@ class UserController extends Controller
             DB::beginTransaction();
 
             $existing = $this->userRepository->findUid($id) ?? $this->userRepository->find($id);
-            if (!$existing) {
+            if (! $existing) {
                 throw new \Exception('User tidak ditemukan.');
             }
 
@@ -226,12 +232,12 @@ class UserController extends Controller
 
             return response()->json([
                 'status' => true,
-                'message' => trans('common.success.delete')
+                'message' => trans('common.success.delete'),
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'status' => false,
-                'message' => env('APP_DEBUG') ? $e->getMessage() : trans('common.error.500')
+                'message' => env('APP_DEBUG') ? $e->getMessage() : trans('common.error.500'),
             ]);
         }
     }
@@ -243,7 +249,7 @@ class UserController extends Controller
 
             return response()->json([
                 'status' => true,
-                'message' => trans('common.success.delete')
+                'message' => trans('common.success.delete'),
             ]);
         } catch (\Exception $e) {
             return $this->debugErrorResJson($e);
@@ -251,7 +257,7 @@ class UserController extends Controller
 
     }
 
-    private function handleUploadFile(Request $request) : void
+    private function handleUploadFile(Request $request): void
     {
         if ($request->hasFile('img')) {
             app(HelperController::class)->storeImage($request, 'img', 'users');
@@ -273,7 +279,7 @@ class UserController extends Controller
             'gender' => 'required',
             'email' => [
                 'required',
-                uniqueNotDeleted('users', 'email', $userIdForUnique)
+                uniqueNotDeleted('users', 'email', $userIdForUnique),
             ],
             'phone' => 'required|min:6|max:20',
             'role_id' => 'required',
@@ -297,25 +303,25 @@ class UserController extends Controller
         }
 
         $messages = [
-            'username.required' => trans('common.error.required', ['attribute'=> 'Username']),
+            'username.required' => trans('common.error.required', ['attribute' => 'Username']),
             'name.required' => trans('common.error.required', ['attribute' => trans('common.name')]),
-            'gender.required' => trans('common.error.required', ['attribute'=> trans('common.gender')]),
-            'email.required' => trans('common.error.required', ['attribute'=> trans('common.email')]),
-            'email.unique' => trans('common.error.unique', ['attribute'=> trans('common.email')]),
-            'phone.required'=> trans('common.error.required', ['attribute'=> trans('common.phone')]),
-            'phone.min' => trans('common.error.min', ['attribute'=> trans('common.phone')]),
-            'role_id.required' => trans('common.error.required', ['attribute'=> 'Role']),
-            'img.dimensions'=> trans('common.error.image'),
+            'gender.required' => trans('common.error.required', ['attribute' => trans('common.gender')]),
+            'email.required' => trans('common.error.required', ['attribute' => trans('common.email')]),
+            'email.unique' => trans('common.error.unique', ['attribute' => trans('common.email')]),
+            'phone.required' => trans('common.error.required', ['attribute' => trans('common.phone')]),
+            'phone.min' => trans('common.error.min', ['attribute' => trans('common.phone')]),
+            'role_id.required' => trans('common.error.required', ['attribute' => 'Role']),
+            'img.dimensions' => trans('common.error.image'),
             'img.image' => trans('common.error.image'),
             'img.mimes' => trans('common.error.image'),
         ];
 
         if ($id) {
-            $rules['username'] = 'required|unique:users,username,' . $userIdForUnique;
-            $rules['email'] = 'required|unique:users,email,' . $userIdForUnique;
+            $rules['username'] = 'required|unique:users,username,'.$userIdForUnique;
+            $rules['email'] = 'required|unique:users,email,'.$userIdForUnique;
 
-            $messages['username.unique'] = trans('common.error.unique', ['attribute'=> 'Username']);
-            $messages['email.unique'] = trans('common.error.unique', ['attribute'=> trans('common.email')]);
+            $messages['username.unique'] = trans('common.error.unique', ['attribute' => 'Username']);
+            $messages['email.unique'] = trans('common.error.unique', ['attribute' => trans('common.email')]);
         }
 
         $validated = $request->validate($rules, $messages);
@@ -343,16 +349,18 @@ class UserController extends Controller
             $stored = $this->storeImageFile($file);
             $createdMediaIds[] = $stored['media_id'];
             $storedPaths[] = $stored['relative_path'];
+
             return $stored['media_id'];
         }
 
         if ($selectedMediaId) {
             $media = $this->mediaRepository->find($selectedMediaId);
-            if (!$media || $media->type !== 'image') {
+            if (! $media || $media->type !== 'image') {
                 throw ValidationException::withMessages([
                     'image' => 'Media gambar tidak ditemukan atau bukan gambar.',
                 ]);
             }
+
             return $media->id;
         }
 
@@ -361,7 +369,7 @@ class UserController extends Controller
 
     private function storeImageFile(UploadedFile $file): array
     {
-        if (!$file->isValid()) {
+        if (! $file->isValid()) {
             throw new \Exception('File gambar tidak valid.');
         }
 

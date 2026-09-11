@@ -87,6 +87,7 @@
     @endphp
 
     <div class="app-main__inner">
+        @include('pages.platform.hotels.license-key-alert')
         <div class="app-page-title">
             <div class="page-title-wrapper">
                 @include('templates.parts.breadcrumb', [
@@ -275,10 +276,10 @@
                 <div class="card hotel-detail-card mb-4">
                     <div class="card-header"><i class="fa fa-key mr-2 text-danger"></i>Lisensi</div>
                     <div class="card-body table-responsive p-0">
-                        <table class="table table-hover hotel-table mb-0"><thead><tr><th>Plan</th><th>Status</th><th>Maks. Player</th><th>Maks. User</th><th>Mulai</th><th>Berakhir</th></tr></thead><tbody>
+                        <table class="table table-hover hotel-table mb-0"><thead><tr><th>Plan</th><th>Status</th><th>Header Key</th><th>Maks. Player</th><th>Maks. User</th><th>Mulai</th><th>Berakhir</th></tr></thead><tbody>
                             @forelse($hotel->licenses->sortByDesc('starts_at') as $license)
-                                <tr><td>{{ $license->plan_code }}</td><td><span class="badge badge-{{ $license->isUsable() ? 'success' : 'secondary' }}">{{ ucfirst($license->status) }}</span></td><td>{{ $license->max_players ?? 'Tanpa batas' }}</td><td>{{ $license->max_users ?? 'Tanpa batas' }}</td><td>{{ $license->starts_at?->format('d/m/Y') ?? '-' }}</td><td>{{ $license->expires_at?->format('d/m/Y') ?? 'Selamanya' }}</td></tr>
-                            @empty<tr><td colspan="6" class="text-center text-muted py-4">Belum ada lisensi.</td></tr>@endforelse
+                                <tr><td>{{ $license->plan_code }}</td><td><span class="badge badge-{{ $license->isUsable() ? 'success' : 'secondary' }}">{{ ucfirst($license->status) }}</span></td><td><span class="badge badge-{{ $license->license_key_hash ? 'success' : 'warning' }}">{{ $license->license_key_hash ? 'X-Hotel-License siap' : 'Key belum dibuat' }}</span></td><td>{{ $license->max_players ?? 'Tanpa batas' }}</td><td>{{ $license->max_users ?? 'Tanpa batas' }}</td><td>{{ $license->starts_at?->format('d/m/Y') ?? '-' }}</td><td>{{ $license->expires_at?->format('d/m/Y') ?? 'Selamanya' }}</td></tr>
+                            @empty<tr><td colspan="7" class="text-center text-muted py-4">Belum ada lisensi.</td></tr>@endforelse
                         </tbody></table>
                     </div>
                 </div>

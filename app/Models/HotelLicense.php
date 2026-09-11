@@ -5,6 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Concerns\HasUuids;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\Hash;
 
 class HotelLicense extends Model
 {
@@ -47,5 +48,12 @@ class HotelLicense extends Model
         }
 
         return ! $this->expires_at || $this->expires_at->isFuture();
+    }
+
+    public function matchesKey(?string $plainKey): bool
+    {
+        return filled($plainKey)
+            && filled($this->license_key_hash)
+            && Hash::check($plainKey, $this->license_key_hash);
     }
 }

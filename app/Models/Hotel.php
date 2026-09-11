@@ -45,9 +45,24 @@ class Hotel extends Model
             ->latestOfMany('starts_at');
     }
 
+    public function latestLicense()
+    {
+        return $this->hasOne(HotelLicense::class)->latestOfMany('starts_at');
+    }
+
     public function users()
     {
         return $this->hasMany(User::class);
+    }
+
+    public function menuTenants()
+    {
+        return $this->hasMany(MenuTenant::class);
+    }
+
+    public function players()
+    {
+        return $this->hasMany(Player::class);
     }
 
     public function configuration()

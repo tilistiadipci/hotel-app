@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Repositories\PlayerGroupRepository;
 use App\Repositories\PlayerRepository;
 use App\Repositories\ThemeRepository;
+use App\Services\HotelLicenseCapacity;
+use App\Tenancy\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\ValidationException;
@@ -12,9 +14,13 @@ use Illuminate\Validation\ValidationException;
 class PlayerController extends Controller
 {
     protected PlayerRepository $playerRepository;
+
     protected PlayerGroupRepository $playerGroupRepository;
+
     protected ThemeRepository $themeRepository;
+
     private string $page = 'players';
+
     private string $icon = 'fa fa-users';
 
     public function __construct(PlayerRepository $playerRepository, PlayerGroupRepository $playerGroupRepository, ThemeRepository $themeRepository)
@@ -49,6 +55,7 @@ class PlayerController extends Controller
     public function store(Request $request)
     {
         $data = $this->validateRequest($request);
+        app(HotelLicenseCapacity::class)->assertCanAddPlayer(app(TenantContext::class)->id());
 
         try {
             DB::beginTransaction();
@@ -59,6 +66,7 @@ class PlayerController extends Controller
         } catch (\Exception $e) {
             DB::rollBack();
             $this->debugError($e);
+
             return redirect()->back()->with('error', $e->getMessage());
         }
     }
@@ -68,7 +76,7 @@ class PlayerController extends Controller
         $player = $this->playerRepository->findUid($uid);
 
         if ($request->ajax()) {
-            if (!$player) {
+            if (! $player) {
                 return response()->json([
                     'status' => false,
                     'message' => trans('common.error.404'),
@@ -84,7 +92,7 @@ class PlayerController extends Controller
             ]);
         }
 
-        if (!$player) {
+        if (! $player) {
             return redirect()->route('error.404');
         }
 
@@ -94,7 +102,7 @@ class PlayerController extends Controller
     public function edit(string $uid)
     {
         $player = $this->playerRepository->findUid($uid);
-        if (!$player) {
+        if (! $player) {
             return redirect()->route('error.404');
         }
 
@@ -114,7 +122,7 @@ class PlayerController extends Controller
         try {
             DB::transaction(function () use ($uid, $data) {
                 $player = $this->playerRepository->findUidForUpdate($uid);
-                if (!$player) {
+                if (! $player) {
                     throw new \RuntimeException(trans('common.error.404'));
                 }
 
@@ -132,6 +140,7 @@ class PlayerController extends Controller
             return redirect()->back()->withErrors($e->errors())->withInput();
         } catch (\Exception $e) {
             $this->debugError($e);
+
             return redirect()->back()->with('error', $e->getMessage());
         }
     }
@@ -174,7 +183,7 @@ class PlayerController extends Controller
                 return $this->playerRepository->regenerateTokenByUid($uid);
             });
 
-            if (!$player) {
+            if (! $player) {
                 return response()->json([
                     'status' => false,
                     'message' => trans('common.error.404'),

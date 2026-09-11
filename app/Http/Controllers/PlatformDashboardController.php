@@ -27,8 +27,17 @@ class PlatformDashboardController extends Controller
             ->select('ip_address', DB::raw('COUNT(*) as total'), DB::raw('MAX(visited_at) as last_visit'))
             ->groupBy('ip_address')->orderByDesc('total')->limit(20)->get();
 
-        $visitsByHotel = Hotel::query()->withCount(['visits' => fn ($query) => $query->whereBetween('visited_at', [$from, $until])])
-            ->orderByDesc('visits_count')->limit(10)->get();
+        $visitsByHotel = Hotel::query()
+            ->with('latestLicense')
+            ->withCount([
+                'users',
+                'menuTenants',
+                'players',
+                'visits' => fn ($query) => $query->whereBetween('visited_at', [$from, $until]),
+            ])
+            ->orderByDesc('visits_count')
+            ->orderBy('name')
+            ->get();
 
         return view('pages.platform.dashboard', compact(
             'hotelCount', 'activeHotelCount', 'adminCount', 'uniqueVisitors', 'totalVisits',

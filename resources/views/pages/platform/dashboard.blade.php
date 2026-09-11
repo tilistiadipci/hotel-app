@@ -30,9 +30,14 @@
             </tbody></table>
         </div></div></div>
         <div class="col-lg-5"><div class="card mb-3"><div class="card-header">Kunjungan per Hotel</div><div class="card-body table-responsive p-0">
-            <table class="table table-striped mb-0"><thead><tr><th>Hotel</th><th>Kunjungan</th></tr></thead><tbody>
-            @forelse ($visitsByHotel as $hotel)<tr><td><a href="{{ route('platform.hotels.show', $hotel) }}">{{ $hotel->name }}</a></td><td>{{ $hotel->visits_count }}</td></tr>
-            @empty<tr><td colspan="2" class="text-center text-muted">Belum ada hotel.</td></tr>@endforelse
+            <table class="table table-striped mb-0"><thead><tr><th>Hotel</th><th>User</th><th>Tenant</th><th>Player</th><th>Lisensi</th><th>Kunjungan</th></tr></thead><tbody>
+            @forelse ($visitsByHotel as $hotel)<tr>
+                <td><a href="{{ route('platform.hotels.show', $hotel) }}">{{ $hotel->name }}</a><br><small class="text-muted">{{ $hotel->code }}</small></td>
+                <td>{{ $hotel->users_count }}</td><td>{{ $hotel->menu_tenants_count }}</td><td>{{ $hotel->players_count }}</td>
+                <td><span class="badge badge-{{ $hotel->latestLicense?->isUsable() ? 'success' : 'secondary' }}">{{ $hotel->latestLicense ? ucfirst($hotel->latestLicense->status) : 'Belum ada' }}</span></td>
+                <td>{{ $hotel->visits_count }}</td>
+            </tr>
+            @empty<tr><td colspan="6" class="text-center text-muted">Belum ada hotel.</td></tr>@endforelse
             </tbody></table>
         </div></div></div>
     </div>
