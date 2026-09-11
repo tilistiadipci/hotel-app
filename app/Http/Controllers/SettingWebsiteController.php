@@ -165,6 +165,7 @@ class SettingWebsiteController extends Controller
         if ($section === 'notifications') {
             $validated = $request->validate([
                 'alert_notification' => ['required', Rule::in(['active', 'inactive'])],
+                'warning_broadcast_status' => ['required', Rule::in(['active', 'inactive'])],
             ]);
 
             $firebaseCredentialsJson = $this->getFirebaseCredentialsJsonFromStorage(true);
@@ -173,6 +174,11 @@ class SettingWebsiteController extends Controller
                 'Alert Notification',
                 'alert_notification',
                 $validated['alert_notification']
+            );
+            $this->settingRepository->saveByKey(
+                'Warning Broadcast Status',
+                'warning_broadcast_status',
+                $validated['warning_broadcast_status']
             );
             $this->settingRepository->saveByKey(
                 'Firebase Credentials JSON',
@@ -393,6 +399,6 @@ class SettingWebsiteController extends Controller
 
     protected function canManageAppMenus($user): bool
     {
-        return $user?->hasRoleCategory('master', 'superadmin') ?? false;
+        return $user?->hasRoleCategory('master', 'superadmin', 'admin') ?? false;
     }
 }

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
-class MenuCategory extends Model
+class MenuCategory extends TenantModel
 {
     use HasFactory, SoftDeletes;
 

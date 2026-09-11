@@ -6,7 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta http-equiv="Content-Language" content="en">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
-    <title>Bio Experience</title>
+    <title>{{ config('app.name') }} - Login</title>
 
     <meta name="viewport"
         content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no, shrink-to-fit=no" />
@@ -25,6 +25,7 @@
             cursor: pointer;
         }
     </style>
+    @yield('css')
 </head>
 
 <body>
@@ -51,24 +52,8 @@
             }
         });
 
-        // enter key submit form
-        $(document).on('keypress', 'input', function(e) {
-            if (e.which == 13) {
-                $(this).closest('form').submit();
-            }
-        });
-
-        $(document).on('submit', 'form', function() {
-            swal({
-                title: 'Please Wait',
-                text: 'Processing login...',
-                icon: 'info',
-                buttons: false,
-                closeOnClickOutside: false,
-                closeOnEsc: false,
-            });
-        });
     </script>
+    @yield('js')
 </body>
 
 </html>

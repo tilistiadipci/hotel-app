@@ -550,6 +550,8 @@ return [
         'alert_notification' => 'Alert Notification',
         'alert_notification_desc' => 'Atur status notifikasi alert dan sinkronkan file kredensial Firebase untuk pengiriman notifikasi warning.',
         'alert_notification_status_desc' => 'Aktifkan atau nonaktifkan pengiriman alert notification melalui Firebase.',
+        'warning_broadcast' => 'Menu Warning Broadcast',
+        'warning_broadcast_desc' => 'Tampilkan atau sembunyikan Warning Broadcast di sidebar sekaligus batasi akses ke halamannya.',
         'firebase_json' => 'Firebase JSON',
         'firebase_json_desc' => 'Isi kredensial service account Firebase. Saat Sync ditekan, isi ini akan disimpan ke file :path.',
         'notifications_desc' => 'Atur bagaimana Anda menerima pembaruan tentang pemesanan dan notifikasi sistem.',

@@ -124,11 +124,14 @@ class UserRepository extends BaseRepository
 
         $data = [
             'username' => $request['username'],
-            'password' => $request['password'] ?? Hash::make('12345678'),
             'role_id' => $request['role_id'],
             'menu_tenant_id' => $request['menu_tenant_id'] ?? null,
             'is_active' => $request['is_active']
         ];
+
+        if (! empty($request['password'])) {
+            $data['password'] = Hash::make($request['password']);
+        }
 
         // for check email
         $user = User::where('email', $request['email'])->first();

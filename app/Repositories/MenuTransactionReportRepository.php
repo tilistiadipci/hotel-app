@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\MenuTransaction;
+use App\Tenancy\TenantContext;
 use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Yajra\DataTables\Facades\DataTables;
@@ -101,12 +102,14 @@ class MenuTransactionReportRepository extends BaseRepository
 
     private function baseQuery(array $filters)
     {
+        $hotelId = app(TenantContext::class)->id();
         $itemsSubQuery = DB::table('menu_transaction_details')
             ->select([
                 'menu_transaction_id',
                 DB::raw('COALESCE(SUM(quantity), 0) as total_items'),
             ])
             ->whereNull('deleted_at')
+            ->when($hotelId, fn ($query) => $query->where('hotel_id', $hotelId))
             ->groupBy('menu_transaction_id');
 
         $query = DB::table('menu_transaction_invoices')
@@ -120,6 +123,11 @@ class MenuTransactionReportRepository extends BaseRepository
             ->leftJoin('users as completed_users', 'completed_users.id', '=', 'menu_transactions.completed_by')
             ->whereNull('menu_transaction_invoices.deleted_at')
             ->whereNull('menu_transactions.deleted_at')
+            ->when($hotelId, function ($query) use ($hotelId) {
+                $query->where('menu_transaction_invoices.hotel_id', $hotelId)
+                    ->where('menu_transactions.hotel_id', $hotelId)
+                    ->where('players.hotel_id', $hotelId);
+            })
             ->select([
                 'menu_transactions.id',
                 'menu_transactions.created_at',

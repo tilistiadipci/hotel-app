@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
-class PlayerGroup extends Model
+class PlayerGroup extends TenantModel
 {
     use HasFactory, SoftDeletes;
 
@@ -44,6 +44,12 @@ class PlayerGroup extends Model
     public function players()
     {
         return $this->hasMany(Player::class, 'player_group_id');
+    }
+
+    public function menuTenants()
+    {
+        return $this->belongsToMany(MenuTenant::class, 'menu_tenant_player_group')
+            ->withTimestamps();
     }
 
     public function scopeFilter($query, $filters)

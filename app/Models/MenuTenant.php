@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 use App\Models\Media;
 
-class MenuTenant extends Model
+class MenuTenant extends TenantModel
 {
     use HasFactory, SoftDeletes;
 
@@ -46,6 +46,18 @@ class MenuTenant extends Model
     public function users()
     {
         return $this->belongsToMany(User::class, 'menu_tenant_user', 'menu_tenant_id', 'user_id')
+            ->withTimestamps();
+    }
+
+    public function playerGroups()
+    {
+        return $this->belongsToMany(PlayerGroup::class, 'menu_tenant_player_group')
+            ->withTimestamps();
+    }
+
+    public function players()
+    {
+        return $this->belongsToMany(Player::class, 'menu_tenant_player')
             ->withTimestamps();
     }
 

@@ -66,6 +66,7 @@ class SettingRepository extends BaseRepository
             'service_charge_status' => $this->getValueByKey('service_charge_status', 'inactive'),
             'service_charge_fixed' => $this->getNumericValueByKey('service_charge_fixed', 0),
             'alert_notification' => $this->getValueByKey('alert_notification', 'inactive'),
+            'warning_broadcast_status' => $this->getValueByKey('warning_broadcast_status', 'active'),
             'firebase_credentials_json' => $this->getValueByKey('firebase_credentials_json', ''),
             'longitude_app' => $this->getNumericValueByKey('longitude_app', 0),
             'latitude_app' => $this->getNumericValueByKey('latitude_app', 0),

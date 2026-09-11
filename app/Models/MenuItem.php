@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 use App\Models\Media;
 
-class MenuItem extends Model
+class MenuItem extends TenantModel
 {
     use HasFactory, SoftDeletes;
 

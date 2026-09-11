@@ -6,6 +6,7 @@
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta http-equiv="Content-Language" content="en">
     <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+    <meta name="csrf-token" content="{{ csrf_token() }}">
     {{-- icon --}}
     <link rel="icon" type="image/png" href="{{ asset('images') }}/favicon.png">
     <title>{{ config('app.name') }} - {{ strtoupper($page ?? '') }}</title>
@@ -290,13 +291,36 @@
             padding: 5px;
             border-radius: 5px;
         }
+
+        #cms-ajax-progress {
+            position: fixed;
+            z-index: 99999;
+            top: 0;
+            left: 0;
+            width: 0;
+            height: 3px;
+            opacity: 0;
+            background: linear-gradient(90deg, #2b7ddd, #7655d8);
+            box-shadow: 0 1px 7px rgba(43, 125, 221, .45);
+            transition: width .25s ease, opacity .2s ease;
+        }
+
+        body.cms-ajax-busy #cms-ajax-progress { width: 72%; opacity: 1; }
+        body.cms-ajax-complete #cms-ajax-progress { width: 100%; opacity: 0; }
     </style>
 
+    <meta id="cms-page-styles-start">
     @yield('css')
+    <meta id="cms-page-styles-end">
 
 </head>
 
 <body>
+    <div id="cms-ajax-progress" aria-hidden="true"></div>
+    <div id="cms-ajax-flash" hidden
+        data-success="{{ Session::get('success', '') }}"
+        data-error="{{ Session::get('error', '') }}"
+        data-warning="{{ Session::get('warning', '') }}"></div>
     <div class="app-container app-theme-white body-tabs-shadow fixed-header fixed-sidebar">
         <!--Header START-->
         @include('templates.parts.header-top')
@@ -662,7 +686,10 @@
 
     @include('partials.media-picker')
 
+    <script src="{{ asset('js/cms-ajax.js') }}?v={{ filemtime(public_path('js/cms-ajax.js')) }}"></script>
+    <span id="cms-page-scripts-start" hidden></span>
     @yield('js')
+    <span id="cms-page-scripts-end" hidden></span>
 </body>
 
 </html>

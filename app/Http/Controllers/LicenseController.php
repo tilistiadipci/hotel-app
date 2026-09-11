@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Tenancy\TenantContext;
+
 class LicenseController extends Controller
 {
     protected $page = 'license';
@@ -9,16 +11,21 @@ class LicenseController extends Controller
 
     public function index()
     {
+        $hotel = app(TenantContext::class)->hotel();
+        $license = $hotel?->licenses()->latest('starts_at')->first();
+        $expiresAt = $license?->expires_at;
+        $isValid = $license?->isUsable() ?? true;
+
         $appDetails = [
             [
                 'label' => 'Status',
-                'value' => 'License is valid',
-                'meta' => 'Valid',
-                'meta_class' => 'is-valid',
+                'value' => $isValid ? 'License is valid' : 'License is not active',
+                'meta' => $isValid ? 'Valid' : 'Invalid',
+                'meta_class' => $isValid ? 'is-valid' : 'is-invalid',
             ],
             [
                 'label' => 'License',
-                'value' => 'Perpetual - Custom',
+                'value' => $license ? strtoupper($license->plan_code).' - '.ucfirst($license->status) : 'Platform License',
             ],
             [
                 'label' => 'App Name',
@@ -30,11 +37,13 @@ class LicenseController extends Controller
             ],
             [
                 'label' => 'Customer Name',
-                'value' => 'BIO-EXPERIENCE',
+                'value' => $hotel?->name ?? 'Platform Administrator',
             ],
             [
                 'label' => 'Expiration Date',
-                'value' => '27/03/2126 (36513 days remaining)',
+                'value' => $expiresAt
+                    ? $expiresAt->format('d/m/Y').' ('.max(0, now()->diffInDays($expiresAt, false)).' days remaining)'
+                    : 'No expiration date',
             ],
         ];
 

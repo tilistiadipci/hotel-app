@@ -7,13 +7,15 @@
         $isGuideMenuActive = ($settings['menu_guide_status'] ?? 'active') === 'active';
         $isNearbyMenuActive = ($settings['menu_nearby_status'] ?? 'active') === 'active';
         $isShoppingMenuActive = ($settings['menu_shopping_status'] ?? 'active') === 'active';
+        $isWarningBroadcastActive = ($settings['warning_broadcast_status'] ?? 'active') === 'active';
         $canAccessAdminArea = $authUser?->hasRoleCategory('master', 'superadmin', 'admin') ?? false;
+        $isPlatformAdmin = $authUser?->hasRoleCategory('master', 'superadmin') ?? false;
     @endphp
 
     <div class="app-header__logo text-center">
         <div class="d-flex align-items-center text-center" style="gap: 10px;">
             <div class="font-weight-bold text-dark pr-2" style="font-size: 16px; line-height: 1.2;">
-                {{ session('settings')['general_app_name'] }}
+                {{ session('settings.general_app_name', config('app.name')) }}
             </div>
         </div>
         <div class="header__pane ml-auto">
@@ -47,6 +49,18 @@
     <div class="scrollbar-sidebar">
         <div class="app-sidebar__inner">
             <ul class="vertical-nav-menu" style="margin-top: 20px">
+                @if ($isPlatformAdmin)
+                <li class="app-sidebar__heading">Platform</li>
+                <li class="{{ $page == 'platform-dashboard' ? 'mm-active' : '' }}">
+                    <a href="{{ route('platform.dashboard') }}" class="{{ $page == 'platform-dashboard' ? 'mm-active' : '' }}"><i class="metismenu-icon lnr-laptop"></i> Dashboard</a>
+                </li>
+                <li class="{{ $page == 'hotels' ? 'mm-active' : '' }}">
+                    <a href="{{ route('platform.hotels.index') }}" class="{{ $page == 'hotels' ? 'mm-active' : '' }}"><i class="metismenu-icon fa fa-hotel"></i> Hotel</a>
+                </li>
+                <li class="{{ $page == 'hotel-admins' ? 'mm-active' : '' }}">
+                    <a href="{{ route('platform.hotel-admins.index') }}" class="{{ $page == 'hotel-admins' ? 'mm-active' : '' }}"><i class="metismenu-icon fa fa-users"></i> Admin Hotel</a>
+                </li>
+                @else
                 <li class="app-sidebar__heading">General</li>
                 <li class="{{ $page == 'dashboard' ? 'mm-active' : '' }}">
                     <a href="{{ url('/') }}" class="{{ $page == 'dashboard' ? 'mm-active' : '' }}">
@@ -61,12 +75,14 @@
 
 
                 @if ($canAccessAdminArea)
-                    {{-- <li class="{{ $page == 'warnings' ? 'mm-active' : '' }}">
-                    <a href="{{ route('warnings.index') }}" class="{{ $page == 'warnings' ? 'mm-active' : '' }}">
-                            <i class="metismenu-icon fa fa-exclamation-triangle"></i>
-                            Warning Broadcast
-                        </a>
-                    </li> --}}
+                    @if ($isWarningBroadcastActive)
+                        <li class="{{ $page == 'warnings' ? 'mm-active' : '' }}">
+                            <a href="{{ route('warnings.index') }}" class="{{ $page == 'warnings' ? 'mm-active' : '' }}">
+                                <i class="metismenu-icon fa fa-exclamation-triangle"></i>
+                                Warning Broadcast
+                            </a>
+                        </li>
+                    @endif
 
                     {{-- media --}}
                     <li class="{{ $page == 'media-library' ? 'mm-active' : '' }}">
@@ -279,6 +295,7 @@
                         <i class="metismenu-icon pe-7s-user"></i> {{ trans('common.account') }}
                     </a>
                 </li>
+                @endif
             </ul>
         </div>
     </div>

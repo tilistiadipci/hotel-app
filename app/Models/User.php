@@ -2,17 +2,19 @@
 
 namespace App\Models;
 
+use App\Models\Concerns\BelongsToHotel;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use LogicException;
 use Illuminate\Support\Str;
 
 
 class User extends Authenticatable
 {
-    use HasApiTokens, HasFactory, Notifiable, SoftDeletes;
+    use BelongsToHotel, HasApiTokens, HasFactory, Notifiable, SoftDeletes;
 
     protected $fillable = [
         'uid',
@@ -22,6 +24,7 @@ class User extends Authenticatable
         'last_login_at',
         'is_active',
         'role_id',
+        'hotel_id',
         'menu_tenant_id',
     ];
 
@@ -39,6 +42,24 @@ class User extends Authenticatable
     {
         static::creating(function ($user) {
             $user->uuid = (string) Str::uuid();
+        });
+
+        static::saving(function (self $user): void {
+            $category = Role::query()->find($user->role_id)?->category;
+
+            if (in_array($category, ['master', 'superadmin'], true) || $user->hotel_id) {
+                return;
+            }
+
+            $hotelIds = Hotel::query()->where('is_active', true)->limit(2)->pluck('id');
+
+            if ($hotelIds->count() === 1) {
+                $user->hotel_id = $hotelIds->first();
+
+                return;
+            }
+
+            throw new LogicException('A hotel must be selected for non-platform users.');
         });
     }
 
@@ -84,6 +105,11 @@ class User extends Authenticatable
     public function role()
     {
         return $this->hasOne(Role::class, 'id', 'role_id');
+    }
+
+    public function hotel()
+    {
+        return $this->belongsTo(Hotel::class);
     }
 
     public function profile()

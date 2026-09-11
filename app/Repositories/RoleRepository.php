@@ -3,7 +3,6 @@
 namespace App\Repositories;
 
 use App\Models\Role;
-use App\Models\User;
 
 class RoleRepository extends BaseRepository
 {
@@ -14,26 +13,12 @@ class RoleRepository extends BaseRepository
 
     public function getRoles()
     {
-        // $user = User::with('role')->where('id', auth()->user()->id)->first();
+        $query = parent::where()->whereNotIn('category', ['master', 'superadmin']);
 
-        // if ($user->role->category == 'master') {
-        //     return parent::all();
-        // }
-
-        if (auth()->user()->role->category == 'admin') {
-            return parent::where()->whereNotIn('category', ['master', 'admin'])->get();
+        if (auth()->user()?->hasRoleCategory('admin')) {
+            $query->where('category', '!=', 'admin');
         }
 
-        // if ($user->role->category == 'admin') {
-            return parent::where()->where('category', '!=', 'master')->get();
-        // }
-
-        // if ($user->role->category == 'user') {
-        //     return parent::where()->where('category', '!=', 'master')->where('category', '!=', 'admin')->get();
-        // }
-
-        // if ($user->role->category == 'audit') {
-        //     return parent::where()->where('category', 'audit')->get();
-        // }
+        return $query->get();
     }
 }

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
-class SongPlaylist extends Model
+class SongPlaylist extends TenantModel
 {
     use HasFactory, SoftDeletes;
 

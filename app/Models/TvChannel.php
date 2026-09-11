@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
-class TvChannel extends Model
+class TvChannel extends TenantModel
 {
     use HasFactory, SoftDeletes;
 

@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
-class Player extends Model
+class Player extends TenantModel
 {
     use HasFactory, SoftDeletes;
 
@@ -78,5 +78,11 @@ class Player extends Model
         return $this->hasOne(Booking::class, 'player_id')
             ->whereNull('checked_out_at')
             ->latestOfMany('checked_in_at');
+    }
+
+    public function menuTenants()
+    {
+        return $this->belongsToMany(MenuTenant::class, 'menu_tenant_player')
+            ->withTimestamps();
     }
 }

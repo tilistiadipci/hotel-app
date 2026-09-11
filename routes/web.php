@@ -30,6 +30,9 @@ use App\Http\Controllers\BookingPlayerReportController;
 use App\Http\Controllers\BookingPlayerDurationReportController;
 use App\Http\Controllers\MenuTransactionReportController;
 use App\Http\Controllers\WarningController;
+use App\Http\Controllers\HotelController;
+use App\Http\Controllers\HotelAdminController;
+use App\Http\Controllers\PlatformDashboardController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -68,17 +71,22 @@ Route::get('/secureDecrypt/{value}', function ($value) {
 
 Auth::routes();
 
-// super user
-Route::middleware('auth')
+Route::middleware(['auth', 'role.category:master,superadmin'])
+    ->prefix('superadmin')
+    ->name('platform.')
     ->group(function () {
-        Route::get('/dashboard', [DashboardController::class, 'index'])->name('dashboard');
+        Route::get('/dashboard', [PlatformDashboardController::class, 'index'])->name('dashboard');
+        Route::resource('hotels', HotelController::class)->except('destroy');
+        Route::resource('hotel-admins', HotelAdminController::class)
+            ->parameters(['hotel-admins' => 'hotelAdmin'])
+            ->except('show');
     });
 
 
 // change language
 Route::post('change-language', [HomeController::class, 'changeLanguage'])->name('change-language');
 
-Route::middleware(['auth'])->group(function () {
+Route::middleware(['auth', 'role.category:admin,operator,user', 'hotel.resolve', 'hotel.license'])->group(function () {
     Route::get('/', [DashboardController::class, 'index']);
     Route::get('/home', [HomeController::class, 'index'])->name('home');
 
@@ -116,7 +124,7 @@ Route::middleware(['auth'])->group(function () {
         });
 
     // users (only admin & super admin/master)
-    Route::middleware('role.category:admin,master')->group(function () {
+    Route::middleware('role.category:admin')->group(function () {
         Route::resource('users', UserController::class);
         Route::prefix('users')
             ->name('users.')
@@ -234,9 +242,11 @@ Route::middleware(['auth'])->group(function () {
                 Route::post('/preview-rss', [RunningTextController::class, 'previewRss'])->name('preview-rss');
             });
 
-        Route::get('warnings', [WarningController::class, 'index'])->name('warnings.index');
-        Route::get('warnings/create', [WarningController::class, 'create'])->name('warnings.create');
-        Route::post('warnings', [WarningController::class, 'store'])->name('warnings.store');
+        Route::middleware('setting.active:warning_broadcast_status')->group(function () {
+            Route::get('warnings', [WarningController::class, 'index'])->name('warnings.index');
+            Route::get('warnings/create', [WarningController::class, 'create'])->name('warnings.create');
+            Route::post('warnings', [WarningController::class, 'store'])->name('warnings.store');
+        });
 
         // Menu
         Route::middleware('setting.active:menu_shopping_status')->group(function () {

@@ -9,7 +9,7 @@ use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 use App\Models\Media;
 
-class GuideItem extends Model
+class GuideItem extends TenantModel
 {
     use HasFactory, SoftDeletes;
 

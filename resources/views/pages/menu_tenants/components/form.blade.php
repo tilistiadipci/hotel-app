@@ -82,6 +82,59 @@
                         </select>
                     </div>
                 </div>
+
+                @php
+                    $targetMode = old('target_mode', $tenant->target_mode ?? 'all');
+                    $selectedGroupIds = collect(old('target_group_ids', $tenant?->playerGroups?->pluck('id')->all() ?? []))->map(fn ($id) => (string) $id);
+                    $selectedPlayerIds = collect(old('target_player_ids', $tenant?->players?->pluck('id')->all() ?? []))->map(fn ($id) => (string) $id);
+                @endphp
+
+                <div class="position-relative row form-group">
+                    <label class="col-sm-3 col-form-label text-sm-right">Playback Target</label>
+                    <div class="col-sm-9">
+                        <div class="tenant-target-grid">
+                            <label class="tenant-target-option">
+                                <input type="radio" name="target_mode" value="all" {{ $targetMode === 'all' ? 'checked' : '' }}>
+                                <span><strong>ALL PLAYERS</strong><small>{{ $playerCount }} active players will display this tenant.</small></span>
+                            </label>
+                            <label class="tenant-target-option">
+                                <input type="radio" name="target_mode" value="groups" {{ $targetMode === 'groups' ? 'checked' : '' }}>
+                                <span><strong>PLAYER GROUP</strong><small>Display on selected player groups.</small></span>
+                            </label>
+                            <label class="tenant-target-option">
+                                <input type="radio" name="target_mode" value="players" {{ $targetMode === 'players' ? 'checked' : '' }}>
+                                <span><strong>SPECIFIC PLAYERS</strong><small>Display only on selected devices.</small></span>
+                            </label>
+                        </div>
+                        @error('target_mode')
+                            <div class="text-danger mt-2">{{ $message }}</div>
+                        @enderror
+
+                        <div id="tenantGroupTarget" class="tenant-target-select {{ $targetMode === 'groups' ? 'd-block' : '' }}">
+                            <label class="font-weight-bold">Select Player Group</label>
+                            <select name="target_group_ids[]" id="target_group_ids" class="form-control select2" multiple data-placeholder="Pilih player group">
+                                @foreach ($playerGroups as $group)
+                                    <option value="{{ $group->id }}" {{ $selectedGroupIds->contains((string) $group->id) ? 'selected' : '' }}>
+                                        {{ $group->name }} ({{ $group->players_count }} players)
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('target_group_ids')<div class="text-danger mt-2">{{ $message }}</div>@enderror
+                        </div>
+
+                        <div id="tenantPlayerTarget" class="tenant-target-select {{ $targetMode === 'players' ? 'd-block' : '' }}">
+                            <label class="font-weight-bold">Select Players</label>
+                            <select name="target_player_ids[]" id="target_player_ids" class="form-control select2" multiple data-placeholder="Pilih player">
+                                @foreach ($players as $player)
+                                    <option value="{{ $player->id }}" {{ $selectedPlayerIds->contains((string) $player->id) ? 'selected' : '' }}>
+                                        {{ $player->name }} ({{ $player->serial }})
+                                    </option>
+                                @endforeach
+                            </select>
+                            @error('target_player_ids')<div class="text-danger mt-2">{{ $message }}</div>@enderror
+                        </div>
+                    </div>
+                </div>
             </div>
             <div class="col-md-4">
                 @include('partials.components.media_picker_upload_image', [
@@ -105,6 +158,19 @@
 @section('css')
     @parent
     @include('partials.components.media_picker_style')
+    <style>
+        .tenant-target-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+        .tenant-target-option { margin: 0; cursor: pointer; }
+        .tenant-target-option input { position: absolute; opacity: 0; pointer-events: none; }
+        .tenant-target-option span { display: block; min-height: 76px; padding: 14px; border: 1px solid #d6e4f0; border-radius: 12px; background: #fff; transition: .2s; }
+        .tenant-target-option strong, .tenant-target-option small { display: block; }
+        .tenant-target-option strong { color: #2a4861; margin-bottom: 6px; }
+        .tenant-target-option small { color: #698296; line-height: 1.4; }
+        .tenant-target-option input:checked + span { background: #2b7ddd; border-color: #2b7ddd; }
+        .tenant-target-option input:checked + span strong, .tenant-target-option input:checked + span small { color: #fff; }
+        .tenant-target-select { display: none; margin-top: 16px; }
+        @media (max-width: 767px) { .tenant-target-grid { grid-template-columns: 1fr; } }
+    </style>
 @endsection
 
 @section('js')
@@ -113,15 +179,24 @@
     <script>
         (function waitForjQuery() {
             if (window.jQuery) {
-                const el = $('#is_active');
-                if (el.hasClass('select2-hidden-accessible')) {
-                    el.select2('destroy');
-                }
-                el.select2({
-                    theme: 'bootstrap4',
-                    width: '100%',
-                    placeholder: "{{ trans('common.select_an_option') ?? 'Select an option' }}"
+                ['#is_active', '#target_group_ids', '#target_player_ids'].forEach(function(selector) {
+                    const el = $(selector);
+                    if (el.hasClass('select2-hidden-accessible')) el.select2('destroy');
+                    el.select2({
+                        theme: 'bootstrap4',
+                        width: '100%',
+                        placeholder: el.data('placeholder') || "{{ trans('common.select_an_option') ?? 'Select an option' }}"
+                    });
                 });
+
+                function updateTargetFields() {
+                    const mode = $('input[name="target_mode"]:checked').val();
+                    $('#tenantGroupTarget').toggleClass('d-block', mode === 'groups');
+                    $('#tenantPlayerTarget').toggleClass('d-block', mode === 'players');
+                }
+
+                $(document).on('change', 'input[name="target_mode"]', updateTargetFields);
+                updateTargetFields();
             } else {
                 setTimeout(waitForjQuery, 50);
             }

@@ -4,10 +4,11 @@ namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
 use App\Models\User;
-use Illuminate\Http\Request;
-use Illuminate\Foundation\Auth\AuthenticatesUsers;
-use Illuminate\Support\Facades\Auth;
 use App\Repositories\SettingRepository;
+use App\Tenancy\TenantContext;
+use Illuminate\Foundation\Auth\AuthenticatesUsers;
+use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Auth;
 
 class LoginController extends Controller
 {
@@ -49,27 +50,38 @@ class LoginController extends Controller
     public function logout()
     {
         Auth::logout();
-        session()->forget('settings');
+        session()->forget(['settings', 'active_hotel_id']);
+
         return redirect('/login');
     }
 
-    public function authenticated()
+    public function authenticated(Request $request, $user)
     {
+        app(TenantContext::class)->set($user->hotel_id);
+
         // catat waktu login setiap autentikasi berhasil
-        User::where('id', auth()->id())->update(['last_login_at' => now()]);
+        User::where('id', $user->id)->update(['last_login_at' => now()]);
 
-        $role = auth()->user()->role;
-        $this->settingRepository->getSettings();
+        $role = $user->role;
+        $redirectUrl = '/login';
 
-        if ($role->category == 'master') {
-            return redirect()->route('dashboard.index');
+        if (in_array($role->category, ['master', 'superadmin'], true)) {
+            session()->forget(['settings', 'active_hotel_id']);
+            $redirectUrl = route('platform.dashboard');
+        } elseif (in_array($role->category, ['admin', 'operator', 'user'], true)) {
+            $this->settingRepository->getSettings();
+            $redirectUrl = url('/');
         }
 
-        if ($role->category == 'admin' || $role->category == 'user') {
-            return redirect('/');
+        if ($request->expectsJson()) {
+            return response()->json([
+                'status' => true,
+                'message' => 'Login berhasil. Mengalihkan ke dashboard...',
+                'redirect' => $redirectUrl,
+            ]);
         }
 
-        return redirect('/login');
+        return redirect($redirectUrl);
     }
 
     /**

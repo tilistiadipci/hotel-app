@@ -8,7 +8,7 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
-class GuideCategory extends Model
+class GuideCategory extends TenantModel
 {
     use HasFactory, SoftDeletes;
 

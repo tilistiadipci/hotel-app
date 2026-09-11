@@ -2,6 +2,8 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Player;
+use App\Models\PlayerGroup;
 use App\Repositories\MenuItemRepository;
 use App\Repositories\MenuTenantRepository;
 use App\Repositories\MediaRepository;
@@ -41,6 +43,7 @@ class MenuTenantController extends Controller
         return view('pages.menu_tenants.create', [
             'page' => $this->page,
             'icon' => $this->icon,
+            ...$this->targetOptions(),
         ]);
     }
 
@@ -61,7 +64,8 @@ class MenuTenantController extends Controller
             DB::beginTransaction();
 
             $this->handleUploadImage($request, $data, null, $createdMediaIds, $storedPaths);
-            $this->tenantRepository->create($data);
+            $tenant = $this->tenantRepository->create($this->tenantAttributes($data));
+            $this->syncTargets($tenant, $data);
 
             DB::commit();
         } catch (\Exception $e) {
@@ -81,10 +85,13 @@ class MenuTenantController extends Controller
             return redirect()->route('error.404');
         }
 
+        $tenant->load(['playerGroups', 'players']);
+
         return view('pages.menu_tenants.edit', [
             'page' => $this->page,
             'icon' => $this->icon,
             'tenant' => $tenant,
+            ...$this->targetOptions(),
         ]);
     }
 
@@ -104,7 +111,8 @@ class MenuTenantController extends Controller
             DB::beginTransaction();
 
             $this->handleUploadImage($request, $data, $uid, $createdMediaIds, $storedPaths);
-            $this->tenantRepository->update($tenant->id, $data);
+            $tenant = $this->tenantRepository->update($tenant->id, $this->tenantAttributes($data));
+            $this->syncTargets($tenant, $data);
 
             DB::commit();
         } catch (\Exception $e) {
@@ -228,7 +236,7 @@ class MenuTenantController extends Controller
 
     private function validateRequest(Request $request, ?int $tenantId = null): array
     {
-        return $request->validate([
+        $data = $request->validate([
             'name' => [
                 'required',
                 'string',
@@ -244,7 +252,62 @@ class MenuTenantController extends Controller
             'service_charge' => 'required|numeric|min:0',
             'sort_order' => 'nullable|integer|min:0',
             'is_active' => 'nullable|boolean',
+            'target_mode' => ['required', Rule::in(['all', 'groups', 'players'])],
+            'target_group_ids' => ['nullable', 'array'],
+            'target_group_ids.*' => ['integer', 'distinct', 'exists:player_groups,id'],
+            'target_player_ids' => ['nullable', 'array'],
+            'target_player_ids.*' => ['integer', 'distinct', 'exists:players,id'],
         ]);
+
+        if ($data['target_mode'] === 'groups' && empty($data['target_group_ids'])) {
+            throw ValidationException::withMessages([
+                'target_group_ids' => 'Pilih minimal satu player group.',
+            ]);
+        }
+
+        if ($data['target_mode'] === 'players' && empty($data['target_player_ids'])) {
+            throw ValidationException::withMessages([
+                'target_player_ids' => 'Pilih minimal satu player.',
+            ]);
+        }
+
+        return $data;
+    }
+
+    private function targetOptions(): array
+    {
+        return [
+            'playerGroups' => PlayerGroup::query()
+                ->where('is_active', true)
+                ->withCount(['players' => fn ($query) => $query->where('is_active', true)])
+                ->orderBy('name')
+                ->get(),
+            'players' => Player::query()
+                ->where('is_active', true)
+                ->orderBy('name')
+                ->get(),
+            'playerCount' => Player::query()->where('is_active', true)->count(),
+        ];
+    }
+
+    private function syncTargets($tenant, array $data): void
+    {
+        $mode = $data['target_mode'];
+
+        $tenant->playerGroups()->sync($mode === 'groups' ? ($data['target_group_ids'] ?? []) : []);
+        $tenant->players()->sync($mode === 'players' ? ($data['target_player_ids'] ?? []) : []);
+    }
+
+    private function tenantAttributes(array $data): array
+    {
+        unset(
+            $data['image'],
+            $data['image_media_id'],
+            $data['target_group_ids'],
+            $data['target_player_ids']
+        );
+
+        return $data;
     }
 
     private function handleUploadImage(Request $request, array &$data, ?string $uid = null, array &$createdMediaIds = [], array &$storedPaths = []): void

@@ -13,6 +13,8 @@ use App\Repositories\DepartementRepository;
 use App\Http\Controllers\HelperController;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Rule;
+use App\Tenancy\TenantContext;
 
 class UserController extends Controller
 {
@@ -276,7 +278,12 @@ class UserController extends Controller
             'phone' => 'required|min:6|max:20',
             'role_id' => 'required',
             'menu_tenant_ids' => 'nullable|array',
-            'menu_tenant_ids.*' => 'integer|exists:menu_tenants,id',
+            'menu_tenant_ids.*' => [
+                'integer',
+                Rule::exists('menu_tenants', 'id')->where(
+                    fn ($query) => $query->where('hotel_id', app(TenantContext::class)->id())
+                ),
+            ],
         ];
 
         // file rule: allow empty, guard dimensions to avoid ValueError when tmp path missing
@@ -314,6 +321,12 @@ class UserController extends Controller
         $validated = $request->validate($rules, $messages);
 
         $role = $this->roleRepository->find($validated['role_id'] ?? null);
+        if (auth()->user()?->hasRoleCategory('admin') && in_array($role->category ?? null, ['master', 'superadmin', 'admin'], true)) {
+            throw ValidationException::withMessages([
+                'role_id' => 'Admin hotel hanya dapat membuat user operasional untuk hotelnya.',
+            ]);
+        }
+
         if (($role->category ?? null) === 'operator' && empty($validated['menu_tenant_ids'] ?? [])) {
             throw ValidationException::withMessages([
                 'menu_tenant_ids' => trans('common.error.required', ['attribute' => trans('common.tenant')]),

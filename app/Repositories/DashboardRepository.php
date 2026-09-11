@@ -5,6 +5,7 @@ namespace App\Repositories;
 use App\Models\Booking;
 use App\Models\MenuTransaction;
 use App\Models\Player;
+use App\Tenancy\TenantContext;
 use Carbon\Carbon;
 use Carbon\CarbonPeriod;
 use Illuminate\Support\Facades\DB;
@@ -232,7 +233,10 @@ class DashboardRepository
         $endDate = Carbon::createFromFormat('Y', $year)->endOfYear()->format('Y-m-d H:i:s');
 
         $query = DB::table('audit_reports')
-                ->whereBetween('audit_date', [$startDate, $endDate]);
+                ->whereBetween('audit_date', [$startDate, $endDate])
+                ->when(app(TenantContext::class)->id(), function ($query, $hotelId) {
+                    $query->where('hotel_id', $hotelId);
+                });
 
         return $query;
     }

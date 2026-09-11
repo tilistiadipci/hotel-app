@@ -248,7 +248,7 @@
             </form>
         </div>
 
-        @if (auth()->user()?->hasRoleCategory('master', 'superadmin'))
+        @if (auth()->user()?->hasRoleCategory('master', 'superadmin', 'admin'))
             <div class="card mb-3">
                 <div class="card-header">
                     <i class="fa fa-bell mr-2"></i>
@@ -258,6 +258,7 @@
                     @csrf
                     <input type="hidden" name="section" value="notifications">
                     <input type="hidden" name="alert_notification" value="inactive">
+                    <input type="hidden" name="warning_broadcast_status" value="inactive">
 
                     <div class="card-body">
                         <p class="text-muted">{{ trans('common.settings_page.alert_notification_desc') }}</p>
@@ -279,6 +280,21 @@
                             </div>
                         </div>
 
+                        <div class="border rounded p-3 mb-3">
+                            <div class="d-flex justify-content-between align-items-center mb-0">
+                                <div class="pr-3">
+                                    <h5 class="mb-1">{{ trans('common.settings_page.warning_broadcast') }}</h5>
+                                    <p class="mb-0 text-muted">{{ trans('common.settings_page.warning_broadcast_desc') }}</p>
+                                </div>
+                                <div class="custom-control custom-switch mb-0">
+                                    <input type="checkbox" class="custom-control-input alert-notification-toggle"
+                                        id="warning_broadcast_status" name="warning_broadcast_status" value="active"
+                                        {{ old('warning_broadcast_status', $settings['warning_broadcast_status'] ?? 'active') === 'active' ? 'checked' : '' }}>
+                                    <label class="custom-control-label" for="warning_broadcast_status"></label>
+                                </div>
+                            </div>
+                        </div>
+
                         <div class="form-group mb-0">
                             <label for="firebase_credentials_json">
                                 {{ trans('common.settings_page.firebase_json') }}
@@ -291,6 +307,9 @@
                         </div>
 
                         @error('alert_notification')
+                            <div class="text-danger small mt-2">{{ $message }}</div>
+                        @enderror
+                        @error('warning_broadcast_status')
                             <div class="text-danger small mt-2">{{ $message }}</div>
                         @enderror
                         @error('firebase_credentials_json')

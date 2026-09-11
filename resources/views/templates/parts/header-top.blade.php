@@ -2,7 +2,7 @@
     <div class="app-header__logo text-center">
         <div class="d-flex align-items-center text-center" style="gap: 10px;">
             <div class="font-weight-bold text-dark text-center" style="font-size: 18px; line-height: 1.2;">
-                {{ session('settings')['general_app_name'] }}
+                {{ session('settings.general_app_name', config('app.name')) }}
             </div>
         </div>
     </div>
@@ -130,6 +130,7 @@
                                                 <ul class="nav flex-column">
                                                     <li class="nav-item-header nav-item">
                                                         {{ trans('common.my_account') }}</li>
+                                                    @unless (auth()->user()->hasRoleCategory('master', 'superadmin'))
                                                     <li class="nav-item">
                                                         <a href="{{ route('profile.edit') }}" class="nav-link">
                                                             {{ trans('common.profile.change') }}
@@ -140,6 +141,7 @@
                                                             {{ trans('common.profile.change_password') }}
                                                         </a>
                                                     </li>
+                                                    @endunless
                                                 </ul>
                                             </div>
                                         </div>

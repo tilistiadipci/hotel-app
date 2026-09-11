@@ -562,6 +562,8 @@ return [
         'alert_notification' => 'Alert Notification',
         'alert_notification_desc' => 'Manage alert notification status and sync the Firebase credential file used for warning notifications.',
         'alert_notification_status_desc' => 'Enable or disable sending alert notifications through Firebase.',
+        'warning_broadcast' => 'Warning Broadcast Menu',
+        'warning_broadcast_desc' => 'Show or hide Warning Broadcast in the sidebar and control access to its pages.',
         'firebase_json' => 'Firebase JSON',
         'firebase_json_desc' => 'Enter the Firebase service account credentials. When Sync is clicked, this content will be saved to :path.',
         'notifications_desc' => 'Manage how you receive updates about booking and system alerts.',

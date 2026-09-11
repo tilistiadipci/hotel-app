@@ -1,0 +1,2 @@
+@extends('templates.index')
+@section('content')<div class="app-main__inner"><div class="app-page-title"><div class="page-title-wrapper">@include('templates.parts.breadcrumb',['title'=>'Buat Admin Hotel','icon'=>$icon,'breadcrumbs'=>[['href'=>route('platform.hotel-admins.index'),'label'=>'Admin Hotel'],['href'=>'#','label'=>'Tambah']]])</div></div><div class="card">@include('pages.platform.hotel_admins.form')</div></div>@endsection

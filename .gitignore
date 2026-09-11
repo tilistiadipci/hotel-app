@@ -55,6 +55,7 @@ Thumbs.db
 /public/storage
 /storage/*.key
 /vendor
+.phpunit.result.cache
 .env
 .env.backup
 .env.production

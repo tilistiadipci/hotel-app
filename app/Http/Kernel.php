@@ -36,6 +36,7 @@ class Kernel extends HttpKernel
             \Illuminate\View\Middleware\ShareErrorsFromSession::class,
             \App\Http\Middleware\VerifyCsrfToken::class,
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            \App\Http\Middleware\TrackHotelVisit::class,
         ],
 
         'api' => [
@@ -65,5 +66,7 @@ class Kernel extends HttpKernel
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'role.category' => \App\Http\Middleware\EnsureRoleCategory::class,
         'setting.active' => \App\Http\Middleware\EnsureSettingIsActive::class,
+        'hotel.resolve' => \App\Http\Middleware\ResolveHotel::class,
+        'hotel.license' => \App\Http\Middleware\EnsureHotelLicenseActive::class,
     ];
 }
