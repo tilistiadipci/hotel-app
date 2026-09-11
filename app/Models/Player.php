@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
@@ -46,8 +45,8 @@ class Player extends TenantModel
     {
         $query->when($filters['search']['value'] ?? false, function ($query, $search) {
             $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', '%' . $search . '%')
-                    ->orWhere('serial', 'like', '%' . $search . '%');
+                $q->where('name', 'like', '%'.$search.'%')
+                    ->orWhere('serial', 'like', '%'.$search.'%');
             });
         });
 
@@ -66,6 +65,11 @@ class Player extends TenantModel
     public function theme()
     {
         return $this->belongsTo(Theme::class);
+    }
+
+    public function playerGroup()
+    {
+        return $this->belongsTo(PlayerGroup::class);
     }
 
     public function bookings()

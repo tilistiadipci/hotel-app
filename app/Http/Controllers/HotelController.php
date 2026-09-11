@@ -2,7 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Booking;
 use App\Models\Hotel;
+use App\Models\HotelVisitLog;
+use App\Models\Media;
+use App\Models\MenuTenant;
+use App\Models\MenuTransaction;
+use App\Models\Player;
+use App\Models\Setting;
+use App\Models\User;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
@@ -48,9 +56,73 @@ class HotelController extends Controller
 
     public function show(Hotel $hotel)
     {
-        $hotel->load(['configuration', 'users.profile', 'users.role'])->loadCount('visits');
+        $hotel->load(['configuration', 'licenses'])->loadCount('visits');
 
-        return view('pages.platform.hotels.show', compact('hotel') + ['page' => 'hotels', 'icon' => 'fa fa-hotel']);
+        $users = User::query()->withoutGlobalScope('hotel')
+            ->where('hotel_id', $hotel->id)
+            ->with([
+                'profile',
+                'role',
+                'menuTenants' => fn ($query) => $query->forHotel($hotel->id),
+            ])
+            ->orderByDesc('is_active')
+            ->orderBy('username')
+            ->get();
+
+        $tenants = MenuTenant::query()->forHotel($hotel->id)
+            ->withCount(['items', 'transactions', 'users', 'players', 'playerGroups'])
+            ->orderBy('sort_order')
+            ->orderBy('name')
+            ->get();
+
+        $players = Player::query()->forHotel($hotel->id)
+            ->with([
+                'theme',
+                'playerGroup',
+                'currentBooking',
+                'menuTenants' => fn ($query) => $query->forHotel($hotel->id),
+            ])
+            ->withCount('bookings')
+            ->orderByDesc('is_active')
+            ->orderBy('name')
+            ->get();
+
+        $settings = Setting::query()->forHotel($hotel->id)
+            ->whereNotIn('key', ['firebase_credentials_json'])
+            ->orderBy('name')
+            ->get();
+
+        $recentVisitors = HotelVisitLog::query()
+            ->where('hotel_id', $hotel->id)
+            ->selectRaw('ip_address, COUNT(*) as total_visits, MAX(visited_at) as last_visit')
+            ->groupBy('ip_address')
+            ->orderByDesc('last_visit')
+            ->limit(10)
+            ->get();
+
+        $stats = [
+            'users' => $users->count(),
+            'admins' => $users->filter(fn (User $user) => $user->role?->category === 'admin')->count(),
+            'tenants' => $tenants->count(),
+            'active_tenants' => $tenants->where('is_active', true)->count(),
+            'players' => $players->count(),
+            'active_players' => $players->where('is_active', true)->count(),
+            'occupied_players' => Booking::query()->forHotel($hotel->id)->active()->distinct()->count('player_id'),
+            'media' => Media::query()->forHotel($hotel->id)->count(),
+            'media_bytes' => (int) Media::query()->forHotel($hotel->id)->sum('size'),
+            'transactions' => MenuTransaction::query()->forHotel($hotel->id)->count(),
+            'monthly_revenue' => (float) MenuTransaction::query()->forHotel($hotel->id)
+                ->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])
+                ->where('status', 'completed')
+                ->sum('grand_total'),
+            'visits' => $hotel->visits_count,
+            'unique_visitors' => $hotel->visits()->distinct()->count('ip_address'),
+        ];
+
+        return view('pages.platform.hotels.show', compact('hotel', 'users', 'tenants', 'players', 'settings', 'stats', 'recentVisitors') + [
+            'page' => 'hotels',
+            'icon' => 'fa fa-hotel',
+        ]);
     }
 
     public function edit(Hotel $hotel)
