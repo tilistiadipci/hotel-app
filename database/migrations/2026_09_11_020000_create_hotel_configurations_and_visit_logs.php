@@ -5,6 +5,7 @@ use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\Crypt;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 return new class extends Migration
 {
@@ -14,7 +15,7 @@ return new class extends Migration
             $table->id();
             $table->uuid('hotel_id')->unique();
             $table->string('media_disk')->default('media');
-            $table->text('media_root');
+            $table->string('media_root', 191)->unique();
             $table->string('mqtt_host')->nullable();
             $table->unsignedSmallInteger('mqtt_port')->default(1883);
             $table->string('mqtt_client_id')->nullable();
@@ -44,17 +45,21 @@ return new class extends Migration
             $table->index(['hotel_id', 'visited_at']);
         });
 
-        $fallbackRoot = (string) config('filesystems.disks.media.root', storage_path('app/hotels'));
+        $usedMediaRoots = [];
 
-        DB::table('hotels')->orderBy('created_at')->get(['id', 'code'])->each(function ($hotel, $index) use ($fallbackRoot) {
+        DB::table('hotels')->orderBy('created_at')->get(['id', 'code', 'name'])->each(function ($hotel) use (&$usedMediaRoots) {
+            $base = Str::slug($hotel->name) ?: Str::slug($hotel->code) ?: 'hotel';
+            $suffix = 1;
+            do {
+                $mediaRoot = '/'.$base.($suffix > 1 ? '-'.$suffix : '');
+                $suffix++;
+            } while (in_array($mediaRoot, $usedMediaRoots, true));
+            $usedMediaRoots[] = $mediaRoot;
+
             DB::table('hotel_configurations')->insert([
                 'hotel_id' => $hotel->id,
                 'media_disk' => 'media',
-                // Keep the first (legacy) hotel's existing media location.
-                // Any additional pre-existing hotel gets an isolated directory.
-                'media_root' => $index === 0
-                    ? $fallbackRoot
-                    : rtrim($fallbackRoot, '/\\').DIRECTORY_SEPARATOR.$hotel->id,
+                'media_root' => $mediaRoot,
                 'mqtt_host' => config('mqtt-client.connections.default.host'),
                 'mqtt_port' => config('mqtt-client.connections.default.port', 1883),
                 'mqtt_client_id' => config('mqtt-client.connections.default.client_id'),

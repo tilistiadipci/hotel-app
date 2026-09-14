@@ -27,7 +27,10 @@
         </div>
     </button>
 @empty
-    <div class="text-center text-muted py-4">
-        No transaction data available.
-    </div>
+    @include('partials.components.empty-state', [
+        'icon' => 'fa-receipt',
+        'title' => trans('common.empty_state.transaction_title'),
+        'description' => trans('common.empty_state.transaction_description'),
+        'class' => 'cms-empty-state--compact',
+    ])
 @endforelse

@@ -307,6 +307,64 @@
 
         body.cms-ajax-busy #cms-ajax-progress { width: 72%; opacity: 1; }
         body.cms-ajax-complete #cms-ajax-progress { width: 100%; opacity: 0; }
+
+        .cms-empty-state {
+            width: 100%;
+            min-height: 170px;
+            padding: 2rem 1.25rem;
+            border: 1px dashed #cbd5e1;
+            border-radius: 16px;
+            background: #fff;
+            color: #64748b;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
+        }
+
+        .cms-empty-state__icon {
+            width: 58px;
+            height: 58px;
+            margin-bottom: 0.9rem;
+            border-radius: 50%;
+            background: #eff6ff;
+            color: #3f6ad8;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.45rem;
+        }
+
+        .cms-empty-state__title {
+            color: #334155;
+            font-size: 1rem;
+            font-weight: 700;
+        }
+
+        .cms-empty-state__description {
+            max-width: 460px;
+            margin-top: 0.35rem;
+            color: #94a3b8;
+            font-size: 0.86rem;
+            line-height: 1.55;
+        }
+
+        .cms-empty-state__action {
+            margin-top: 1rem;
+        }
+
+        .cms-empty-state--compact {
+            min-height: 130px;
+            padding: 1.35rem 1rem;
+        }
+
+        .cms-empty-state--compact .cms-empty-state__icon {
+            width: 46px;
+            height: 46px;
+            margin-bottom: 0.65rem;
+            font-size: 1.15rem;
+        }
     </style>
 
     <meta id="cms-page-styles-start">

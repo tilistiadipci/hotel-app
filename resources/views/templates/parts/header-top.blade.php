@@ -59,10 +59,9 @@
                                     <a data-toggle="dropdown" aria-haspopup="true" aria-expanded="false"
                                         class="p-0 btn">
                                         @php
-                                            $avatarPath =
-                                                optional(auth()->user()->profile->imageMedia)->storage_path ??
-                                                'default/no-image.png';
-                                            $avatarName = auth()->user()->profile->name ?? 'U';
+                                            $profile = auth()->user()->profile;
+                                            $avatarPath = optional($profile?->imageMedia)->storage_path ?? 'default/no-image.png';
+                                            $avatarName = $profile?->name ?? auth()->user()->username ?? 'U';
                                             $initials = collect(explode(' ', $avatarName))
                                                 ->filter()
                                                 ->map(fn($p) => strtoupper(mb_substr($p, 0, 1)))

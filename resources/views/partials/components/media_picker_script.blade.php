@@ -353,10 +353,18 @@
             }
         }
 
+        function showMediaPickerEmpty(description) {
+            pickerEmpty.find('.cms-empty-state__title').text(@json(trans('common.empty_state.media_title')));
+            pickerEmpty.find('.cms-empty-state__description').text(
+                description || @json(trans('common.empty_state.media_description'))
+            );
+            pickerEmpty.removeClass('d-none');
+        }
+
         function renderItems(items, reset = false) {
             if (reset) pickerList.empty();
             if (!items.length && reset) {
-                pickerEmpty.removeClass('d-none');
+                showMediaPickerEmpty();
                 return;
             }
             pickerEmpty.addClass('d-none');
@@ -397,6 +405,9 @@
             pickerBusy = true;
             pickerLoading.removeClass('d-none');
             if (reset) {
+                pickerEmpty.find('.cms-empty-state__description').text(
+                    @json(trans('common.empty_state.media_description'))
+                );
                 pickerEmpty.addClass('d-none');
                 pickerList.empty();
             }
@@ -410,10 +421,10 @@
                     pickerNext = res.next_url || null;
                     setTimeout(maybeFillList, 0);
                 } else {
-                    pickerEmpty.removeClass('d-none');
+                    showMediaPickerEmpty();
                 }
             }).fail(function() {
-                pickerEmpty.removeClass('d-none').text('Gagal memuat media.');
+                showMediaPickerEmpty(@json(trans('common.empty_state.media_load_error')));
             }).always(function() {
                 pickerLoading.addClass('d-none');
                 pickerBusy = false;

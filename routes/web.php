@@ -1,50 +1,43 @@
 <?php
 
+use App\Http\Controllers\BookingController;
+use App\Http\Controllers\BookingPlayerDurationReportController;
+use App\Http\Controllers\BookingPlayerReportController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ErrorController;
+use App\Http\Controllers\GuideCategoryController;
+use App\Http\Controllers\GuideItemController;
 use App\Http\Controllers\HomeController;
+use App\Http\Controllers\HotelAdminController;
+use App\Http\Controllers\HotelController;
+use App\Http\Controllers\HotelSettingController;
+use App\Http\Controllers\LandingPageController;
+use App\Http\Controllers\LicenseController;
+use App\Http\Controllers\MediaController;
+use App\Http\Controllers\MenuCategoryController;
+use App\Http\Controllers\MenuController;
+use App\Http\Controllers\MenuTenantController;
+use App\Http\Controllers\MenuTransactionController;
+use App\Http\Controllers\MenuTransactionReportController;
 use App\Http\Controllers\MovieCategoryController;
+use App\Http\Controllers\MovieController;
+use App\Http\Controllers\PlaceCategoryController;
+use App\Http\Controllers\PlaceController;
+use App\Http\Controllers\PlatformDashboardController;
+use App\Http\Controllers\PlayerController;
+use App\Http\Controllers\PlayerGroupController;
 use App\Http\Controllers\ProfileController;
+use App\Http\Controllers\PublicLandingPageController;
+use App\Http\Controllers\RunningTextController;
 use App\Http\Controllers\SettingWebsiteController;
 use App\Http\Controllers\SongController;
 use App\Http\Controllers\SongPlaylistController;
 use App\Http\Controllers\ThemeController;
-use App\Http\Controllers\UserController;
 use App\Http\Controllers\TVChannelController;
-use App\Http\Controllers\MovieController;
-use App\Http\Controllers\PlaceController;
-use App\Http\Controllers\PlaceCategoryController;
-use App\Http\Controllers\MenuController;
-use App\Http\Controllers\MenuCategoryController;
-use App\Http\Controllers\GuideItemController;
-use App\Http\Controllers\GuideCategoryController;
-use App\Http\Controllers\LicenseController;
-use App\Http\Controllers\MediaController;
-use App\Http\Controllers\MenuTransactionController;
-use App\Http\Controllers\MenuTenantController;
-use App\Http\Controllers\PlayerController;
-use App\Http\Controllers\PlayerGroupController;
-use App\Http\Controllers\RunningTextController;
-use App\Http\Controllers\BookingController;
-use App\Http\Controllers\BookingPlayerReportController;
-use App\Http\Controllers\BookingPlayerDurationReportController;
-use App\Http\Controllers\MenuTransactionReportController;
+use App\Http\Controllers\UserController;
 use App\Http\Controllers\WarningController;
-use App\Http\Controllers\HotelController;
-use App\Http\Controllers\HotelAdminController;
-use App\Http\Controllers\PlatformDashboardController;
-use App\Http\Controllers\LandingPageController;
-use App\Http\Controllers\PublicLandingPageController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
-
-
-
-
-
-
-
-
 
 /*
 |--------------------------------------------------------------------------
@@ -84,15 +77,17 @@ Route::middleware(['auth', 'role.category:master,superadmin'])
         Route::get('/landing-page', [LandingPageController::class, 'edit'])->name('landing-page.edit');
         Route::put('/landing-page', [LandingPageController::class, 'update'])->name('landing-page.update');
         Route::post('/hotels/license-key/generate', [HotelController::class, 'generateLicenseKey'])->name('hotels.license-key.generate');
+        Route::put('/hotels/{hotel}/settings', [HotelSettingController::class, 'update'])->name('hotels.settings.update');
         Route::resource('hotels', HotelController::class)->except('destroy');
         Route::resource('hotel-admins', HotelAdminController::class)
             ->parameters(['hotel-admins' => 'hotelAdmin'])
             ->except('show');
     });
 
-
 // change language
-Route::post('change-language', [HomeController::class, 'changeLanguage'])->name('change-language');
+Route::post('change-language', [HomeController::class, 'changeLanguage'])
+    ->middleware('hotel.resolve')
+    ->name('change-language');
 
 Route::middleware(['auth', 'role.category:admin,operator,user', 'hotel.resolve', 'hotel.license'])->group(function () {
     Route::prefix('dashboard')
@@ -347,6 +342,5 @@ Route::middleware(['auth', 'role.category:admin,operator,user', 'hotel.resolve',
             Route::post('/cancel/{id}', [MenuTransactionController::class, 'cancel'])->name('.cancel');
         });
 });
-
 
 Route::get('/error/404', [ErrorController::class, 'error404'])->name('error.404');

@@ -59,8 +59,13 @@
                     <div id="rssItemsLoading" class="text-center text-muted py-3 d-none">
                         <i class="fa fa-spinner fa-spin mr-1"></i> {{ trans('common.running_text.loading_rss') }}
                     </div>
-                    <div id="rssItemsEmpty" class="text-center text-muted py-3">
-                        {{ trans('common.running_text.rss_empty') }}
+                    <div id="rssItemsEmpty">
+                        @include('partials.components.empty-state', [
+                            'icon' => 'fa-rss',
+                            'title' => trans('common.empty_state.rss_title'),
+                            'description' => trans('common.empty_state.rss_description'),
+                            'class' => 'cms-empty-state--compact',
+                        ])
                     </div>
                     <div id="rssItemsList" class="list-group" style="max-height: 350px; overflow-y: auto;"></div>
                 </div>
@@ -146,6 +151,14 @@
             const selectedMap = new Map();
             const isEdit = {{ $isEdit ? 'true' : 'false' }};
 
+            function showRssEmpty(description) {
+                $empty.find('.cms-empty-state__title').text(@json(trans('common.empty_state.rss_title')));
+                $empty.find('.cms-empty-state__description').text(
+                    description || @json(trans('common.empty_state.rss_description'))
+                );
+                $empty.removeClass('d-none');
+            }
+
             $selectedTable.find('tr').each(function() {
                 const key = $(this).data('key');
                 if (!key) return;
@@ -158,7 +171,7 @@
             function renderItems(items) {
                 $list.empty();
                 if (!items || !items.length) {
-                    $empty.removeClass('d-none');
+                    showRssEmpty();
                     return;
                 }
                 $empty.addClass('d-none');
@@ -217,11 +230,11 @@
                         if (res && res.status) {
                             renderItems(res.items || []);
                         } else {
-                            $empty.removeClass('d-none').text(res.message || '{{ trans('common.running_text.rss_invalid') }}');
+                            showRssEmpty(res.message || @json(trans('common.running_text.rss_invalid')));
                         }
                     },
                     error: function() {
-                        $empty.removeClass('d-none').text('{{ trans('common.running_text.rss_failed') }}');
+                        showRssEmpty(@json(trans('common.running_text.rss_failed')));
                     },
                     complete: function() {
                         $loading.addClass('d-none');

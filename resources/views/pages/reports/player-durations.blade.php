@@ -57,6 +57,13 @@
                     </div>
                     <div class="card-body report-card__body report-card__body--chart">
                         <div id="playerDurationChart" class="report-chart"></div>
+                        <div id="playerDurationEmpty" class="d-none">
+                            @include('partials.components.empty-state', [
+                                'icon' => 'fa-chart-pie',
+                                'title' => trans('common.empty_state.player_duration_title'),
+                                'description' => trans('common.empty_state.player_duration_description'),
+                            ])
+                        </div>
                     </div>
                 </div>
             </div>
@@ -142,6 +149,10 @@
         .report-chart {
             width: 100%;
             height: 280px;
+        }
+
+        #playerDurationEmpty .cms-empty-state {
+            min-height: 280px;
         }
 
         .report-card--table .dataTables_wrapper {
@@ -298,23 +309,17 @@
                         let labels = response.labels || [];
                         let series = response.series || [];
 
-                        if (!labels.length) {
-                            const selectedIds = $('#playerIdsDuration').val() || [];
-                            const options = $('#playerIdsDuration option').toArray();
-                            const selectedLabels = options
-                                .filter(opt => selectedIds.length === 0 || selectedIds.includes(opt.value))
-                                .map(opt => opt.text.trim());
-                            labels = selectedLabels;
-                            series = selectedLabels.map(() => 0);
-                        }
-
                         series = (series || []).map((value) => {
                             const numeric = Number(value);
                             return Number.isFinite(numeric) ? numeric : 0;
                         });
 
-                        if (labels.length && !series.length) {
-                            series = labels.map(() => 0);
+                        const hasChartData = labels.length > 0 && series.some(value => value > 0);
+                        $('#playerDurationChart').toggleClass('d-none', !hasChartData);
+                        $('#playerDurationEmpty').toggleClass('d-none', hasChartData);
+
+                        if (!hasChartData) {
+                            return;
                         }
 
                         chart.updateOptions({

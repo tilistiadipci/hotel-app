@@ -5,16 +5,19 @@ namespace App\Http\Controllers;
 use App\Models\Media;
 use App\Repositories\SettingRepository;
 use App\Repositories\UserRepository;
+use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\File;
 use Illuminate\Validation\Rule;
-use Throwable;
 
 class SettingWebsiteController extends Controller
 {
     protected $userRepository;
+
     protected $settingRepository;
+
     protected $page = 'website';
 
     public function __construct(UserRepository $userRepository, SettingRepository $settingRepository)
@@ -28,7 +31,7 @@ class SettingWebsiteController extends Controller
         $id = auth()->user()->id;
         $user = $this->userRepository->find($id);
 
-        if (!$user) {
+        if (! $user) {
             return redirect()->route('pages.errors.404');
         }
 
@@ -75,11 +78,11 @@ class SettingWebsiteController extends Controller
         $section = $request->input('section');
         $restrictedSections = ['customize_menu_active', 'on_mobile'];
 
-        if (!in_array($section, ['language', 'notifications', 'transaction_charge', 'general', 'customize_menu', 'customize_menu_active', 'on_mobile', 'others'], true)) {
+        if (! in_array($section, ['language', 'notifications', 'transaction_charge', 'general', 'customize_menu', 'customize_menu_active', 'on_mobile', 'others'], true)) {
             return redirect()->route('settings.index')->with('error', 'Invalid settings section.');
         }
 
-        if (in_array($section, $restrictedSections, true) && !$this->canManageAppMenus(auth()->user())) {
+        if (in_array($section, $restrictedSections, true) && ! $this->canManageAppMenus(auth()->user())) {
             abort(403);
         }
 
@@ -90,7 +93,11 @@ class SettingWebsiteController extends Controller
                 'latitude_app' => ['nullable', 'numeric'],
             ]);
 
-            $this->saveLanguageSetting($validated['default_language']);
+            $this->settingRepository->saveByKey(
+                'Default Language',
+                'default_language',
+                $validated['default_language']
+            );
             $this->settingRepository->saveByKey(
                 'Longitude',
                 'longitude_app',
@@ -323,43 +330,19 @@ class SettingWebsiteController extends Controller
             session(['settings_refresh' => true]);
         }
 
-        $this->settingRepository->getSettings(true);
+        $settings = $this->settingRepository->getSettings(true);
+        $locale = ($settings['default_language'] ?? 'id_ID') === 'en_US' ? 'en' : 'id';
+        App::setLocale($locale);
+        Carbon::setLocale($locale);
 
         return redirect()->route('settings.index')->with('success', trans('common.success.update'));
-    }
-
-    protected function getLanguageSetting(): string
-    {
-        $langPath = base_path('settings/lang.json');
-
-        if (!file_exists($langPath)) {
-            return 'en_US';
-        }
-
-        try {
-            $content = json_decode(file_get_contents($langPath), true, 512, JSON_THROW_ON_ERROR);
-        } catch (Throwable $e) {
-            return 'en_US';
-        }
-
-        return ($content['lang_code'] ?? 'en') === 'id' ? 'id_ID' : 'en_US';
-    }
-
-    protected function saveLanguageSetting(string $language): void
-    {
-        $langCode = $language === 'id_ID' ? 'id' : 'en';
-
-        file_put_contents(
-            base_path('settings/lang.json'),
-            json_encode(['lang_code' => $langCode], JSON_PRETTY_PRINT | JSON_UNESCAPED_SLASHES)
-        );
     }
 
     protected function getFirebaseCredentialsJsonFromStorage(bool $failWhenMissing = false): string
     {
         $path = storage_path(config('services.firebase.credentials'));
 
-        if (!File::exists($path)) {
+        if (! File::exists($path)) {
             if ($failWhenMissing) {
                 abort(redirect()->route('settings.index')->withErrors([
                     'firebase_sync' => 'File Firebase JSON tidak ditemukan di path yang dikonfigurasi.',
@@ -372,7 +355,7 @@ class SettingWebsiteController extends Controller
         $json = File::get($path);
         $decoded = json_decode($json, true);
 
-        if (json_last_error() !== JSON_ERROR_NONE || !is_array($decoded)) {
+        if (json_last_error() !== JSON_ERROR_NONE || ! is_array($decoded)) {
             if ($failWhenMissing) {
                 abort(redirect()->route('settings.index')->withErrors([
                     'firebase_sync' => 'Isi file Firebase JSON tidak valid.',

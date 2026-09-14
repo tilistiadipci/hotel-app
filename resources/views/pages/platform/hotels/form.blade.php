@@ -184,13 +184,20 @@
         <hr class="mb-4">
 
         <div class="position-relative row form-group">
-            <label for="media_root" class="col-sm-3 col-form-label text-sm-right">Root Folder Media</label>
+            <div class="col-sm-3 col-form-label text-sm-right">Folder Media Hotel</div>
             <div class="col-sm-9">
-                <input id="media_root" name="media_root" type="text"
-                    class="form-control @error('media_root') is-invalid @enderror"
-                    value="{{ old('media_root', $configuration->media_root ?? storage_path('app/hotels/'.(isset($hotel) ? $hotel->id : 'hotel-baru').'/media')) }}">
-                @error('media_root')<div class="invalid-feedback">{{ $message }}</div>
-                @else<small class="text-primary font-italic">* Wajib diisi dan harus berbeda untuk setiap hotel.</small>@enderror
+                @if ($configuration?->media_root)
+                    <div class="form-control-plaintext">
+                        <code>{{ $configuration->media_root }}</code>
+                    </div>
+                @else
+                    <div class="form-control-plaintext text-muted">
+                        Dibuat otomatis dari nama hotel setelah disimpan.
+                    </div>
+                @endif
+                <small class="text-primary font-italic">
+                    Folder bersifat unik dan tidak perlu diisi. Jika nama folder sudah digunakan, sistem otomatis menambahkan angka di belakangnya.
+                </small>
             </div>
         </div>
 

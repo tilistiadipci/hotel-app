@@ -17,7 +17,7 @@ class HotelConfigurationManager
 
         config([
             'filesystems.disks.media.driver' => 'local',
-            'filesystems.disks.media.root' => $settings->media_root,
+            'filesystems.disks.media.root' => app(HotelMediaPath::class)->absoluteRoot($settings->media_root),
             'filesystems.disks.media.visibility' => 'public',
             'mqtt-client.connections.default.host' => $settings->mqtt_host,
             'mqtt-client.connections.default.port' => $settings->mqtt_port,

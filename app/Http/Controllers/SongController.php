@@ -527,8 +527,8 @@ class SongController extends Controller
             ['artist', 'Wajib. Jika nama artist belum ada di database, sistem akan membuat artist baru otomatis.'],
             ['album', 'Wajib. Jika nama album belum ada untuk artist tersebut, sistem akan membuat album baru otomatis.'],
             ['playlist', 'Opsional. Jika nama playlist belum ada di database, sistem akan membuat playlist baru otomatis.'],
-            ['image_file', 'Wajib. Isi nama file gambar lengkap dengan extension, contoh cover.jpg. File harus ada persis di folder MEDIA_STORAGE_PATH/upload-song.'],
-            ['audio_file', 'Wajib. Isi nama file audio lengkap dengan extension, contoh song.mp3. File harus ada persis di folder MEDIA_STORAGE_PATH/upload-song.'],
+            ['image_file', 'Wajib. Isi nama file gambar lengkap dengan extension, contoh cover.jpg. File harus ada di folder import lagu hotel aktif.'],
+            ['audio_file', 'Wajib. Isi nama file audio lengkap dengan extension, contoh song.mp3. File harus ada di folder import lagu hotel aktif.'],
             ['sort_order', 'Wajib. Harus angka 0 atau lebih.'],
             ['is_active', 'Wajib. Isi 1 atau 0.'],
             ['is_favorit', 'Opsional. Isi 1 atau 0. Default 0.'],
@@ -770,7 +770,7 @@ class SongController extends Controller
         $sourcePath = $this->findSourceMediaFilePath($fileName);
         if (!$sourcePath) {
             throw ValidationException::withMessages([
-                $expectedType . '_file' => "Baris {$rowNumber}: file {$fileName} tidak ditemukan di folder MEDIA_STORAGE_PATH/upload-song.",
+                $expectedType . '_file' => "Baris {$rowNumber}: file {$fileName} tidak ditemukan di folder import lagu.",
             ]);
         }
 

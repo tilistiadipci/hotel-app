@@ -2,8 +2,11 @@
 
 namespace App\Http\Controllers;
 
+use App\Repositories\SettingRepository;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\App;
+use Illuminate\Validation\Rule;
 
 class HomeController extends Controller
 {
@@ -12,7 +15,7 @@ class HomeController extends Controller
      *
      * @return void
      */
-    public function __construct()
+    public function __construct(private readonly SettingRepository $settingRepository)
     {
         $this->middleware('auth');
     }
@@ -31,16 +34,23 @@ class HomeController extends Controller
 
     public function changeLanguage(Request $request)
     {
-        $language = $request->lang;
-        if (!in_array($language, ['en', 'id'])) {
-            $language = 'en';
-        }
-        // write to settings/lang.json
-        $lang['lang_code'] = $language;
-        file_put_contents(base_path('settings/lang.json'), json_encode($lang, JSON_PRETTY_PRINT));
+        abort_unless($request->user()?->hotel_id, 403);
 
+        $validated = $request->validate([
+            'lang' => ['required', Rule::in(['en', 'id'])],
+        ]);
+        $language = $validated['lang'];
+
+        $this->settingRepository->saveByKey(
+            'Default Language',
+            'default_language',
+            $language === 'id' ? 'id_ID' : 'en_US'
+        );
+        $this->settingRepository->getSettings(true);
+
+        App::setLocale($language);
         Carbon::setLocale($language);
 
-        return response()->json(['lang' => $lang]);
+        return response()->json(['lang' => ['lang_code' => $language]]);
     }
 }

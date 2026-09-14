@@ -13,7 +13,14 @@
             </div>
             <div id="mediaPickerList" class="media-picker-list"></div>
             <div class="text-center mt-2 d-none" id="mediaPickerLoading">Loading...</div>
-            <div class="text-center text-muted mt-2 d-none" id="mediaPickerEmpty">{{ trans('common.no_media_found') }}</div>
+            <div class="mt-2 d-none" id="mediaPickerEmpty">
+                @include('partials.components.empty-state', [
+                    'icon' => 'fa-images',
+                    'title' => trans('common.empty_state.media_title'),
+                    'description' => trans('common.empty_state.media_description'),
+                    'class' => 'cms-empty-state--compact',
+                ])
+            </div>
             <hr>
             <div class="form-group mb-2" id="mediaUploadGroup">
                 <label class="small mb-1">{{ trans('common.upload_file') }}</label>

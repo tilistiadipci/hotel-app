@@ -76,6 +76,10 @@
             height: 360px;
         }
 
+        .dashboard-chart-empty .cms-empty-state {
+            min-height: 360px;
+        }
+
         .highcharts-credits {
             display: none !important;
         }
@@ -179,6 +183,13 @@
                         </div>
                         <div class="card-body pt-0">
                             <div id="bookingActivityChart"></div>
+                            <div id="bookingActivityEmpty" class="dashboard-chart-empty d-none">
+                                @include('partials.components.empty-state', [
+                                    'icon' => 'fa-chart-bar',
+                                    'title' => trans('common.empty_state.dashboard_title'),
+                                    'description' => trans('common.empty_state.dashboard_description'),
+                                ])
+                            </div>
                         </div>
                     </div>
                 </div>
@@ -194,6 +205,13 @@
                             </div>
                             <div class="card-body pt-0">
                                 <div id="transactionDonutChart"></div>
+                                <div id="transactionDonutEmpty" class="dashboard-chart-empty d-none">
+                                    @include('partials.components.empty-state', [
+                                        'icon' => 'fa-chart-pie',
+                                        'title' => trans('common.empty_state.dashboard_title'),
+                                        'description' => trans('common.empty_state.dashboard_description'),
+                                    ])
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -210,7 +228,6 @@
             const isShoppingMenuActive = @json($isShoppingMenuActive);
             const bookingActivityChart = @json($bookingActivityChart);
             const transactionDonutChart = @json($transactionDonutChart);
-            const noDataLabel = @json(trans('common.no_data'));
             const totalLabel = @json(trans('common.total'));
             const bookingChartEl = document.getElementById('bookingActivityChart');
             const donutChartEl = document.getElementById('transactionDonutChart');
@@ -255,7 +272,15 @@
             }
 
             if (bookingChartEl) {
-                Highcharts.chart('bookingActivityChart', {
+                const hasBookingData = (bookingActivityChart.series || []).some(function(series) {
+                    return (series.data || []).some(function(value) {
+                        return Number(value) > 0;
+                    });
+                });
+                bookingChartEl.classList.toggle('d-none', !hasBookingData);
+                document.getElementById('bookingActivityEmpty').classList.toggle('d-none', hasBookingData);
+
+                if (hasBookingData) Highcharts.chart('bookingActivityChart', {
                     chart: {
                         type: 'column'
                     },
@@ -301,8 +326,10 @@
                     return total + point.y;
                 }, 0);
                 const hasDonutData = donutTotal > 0;
+                donutChartEl.classList.toggle('d-none', !hasDonutData);
+                document.getElementById('transactionDonutEmpty').classList.toggle('d-none', hasDonutData);
 
-                Highcharts.chart('transactionDonutChart', {
+                if (hasDonutData) Highcharts.chart('transactionDonutChart', {
                     chart: {
                         type: 'pie'
                     },
@@ -326,25 +353,21 @@
                         }
                     },
                     tooltip: {
-                        pointFormat: hasDonutData ? '<b>{point.y}</b>' : ''
+                        pointFormat: '<b>{point.y}</b>'
                     },
                     plotOptions: {
                         pie: {
                             innerSize: '62%',
                             dataLabels: {
-                                enabled: hasDonutData,
+                                enabled: true,
                                 format: '{point.name}: {point.y}'
                             },
-                            enableMouseTracking: hasDonutData
+                            enableMouseTracking: true
                         }
                     },
                     series: [{
                         name: @json(trans('common.dashboard.transaction_donut_title')),
-                        data: hasDonutData ? donutSeriesData : [{
-                            name: noDataLabel,
-                            y: 1,
-                            color: '#e2e8f0'
-                        }]
+                        data: donutSeriesData
                     }]
                 });
             }

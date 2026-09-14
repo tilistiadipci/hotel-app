@@ -39,6 +39,8 @@ class MediaController extends Controller
         $audios = collect($audiosPage->items())->map(fn($m) => $this->transformMedia($m));
 
         $usageBytes = $this->getDiskUsageBytes(config('filesystems.disks.media.root'));
+        $syncSourcePath = $this->syncSourceRoot();
+        File::ensureDirectoryExists($syncSourcePath);
         $quotaBytes = null;
         $usagePercent = null;
         $usagePercentLabel = null;
@@ -430,11 +432,12 @@ class MediaController extends Controller
                 }
             } catch (\Throwable $e) {
                 $result['errors']++;
-                $result['messages'][] = $e->getMessage();
+                report($e);
+                $result['messages'][] = trans('common.media_sync_item_failed');
                 $result['details'][] = [
                     'file' => $originalName,
                     'status' => 'failed',
-                    'message' => $e->getMessage(),
+                    'message' => trans('common.media_sync_item_failed'),
                 ];
             }
         }
@@ -443,7 +446,8 @@ class MediaController extends Controller
         try {
             File::cleanDirectory($sourceRoot);
         } catch (\Throwable $e) {
-            $result['messages'][] = 'Failed to clean source directory: ' . $e->getMessage();
+            report($e);
+            $result['messages'][] = trans('common.media_sync_clear_failed');
         }
 
         return response()->json([
@@ -551,7 +555,7 @@ class MediaController extends Controller
         $type = $request->input('type');
 
         $sourcePath = $this->syncSourceAbsolutePath($sourceRelative);
-        if (!is_file($sourcePath)) {
+        if (!$sourcePath || !is_file($sourcePath)) {
             return response()->json([
                 'status' => false,
                 'message' => 'Source file not found.',
@@ -582,9 +586,10 @@ class MediaController extends Controller
         try {
             File::cleanDirectory($sourceRoot);
         } catch (\Throwable $e) {
+            report($e);
             return response()->json([
                 'status' => false,
-                'message' => $e->getMessage(),
+                'message' => trans('common.media_sync_clear_failed'),
             ], 500);
         }
 
@@ -612,14 +617,15 @@ class MediaController extends Controller
                 continue;
             }
             $path = $this->syncSourceAbsolutePath($relative);
-            if (!is_file($path)) {
+            if (!$path || !is_file($path)) {
                 continue;
             }
             try {
                 File::delete($path);
                 $deleted++;
             } catch (\Throwable $e) {
-                $errors[] = $e->getMessage();
+                report($e);
+                $errors[] = trans('common.media_sync_clear_failed');
             }
         }
 
@@ -700,9 +706,14 @@ class MediaController extends Controller
         return rtrim((string) config('filesystems.disks.media.root'), "/\\") . DIRECTORY_SEPARATOR . 'upload-sync';
     }
 
-    private function syncSourceAbsolutePath(string $relativePath): string
+    private function syncSourceAbsolutePath(string $relativePath): ?string
     {
-        return $this->syncSourceRoot() . DIRECTORY_SEPARATOR . ltrim($relativePath, "/\\");
+        $normalized = str_replace('\\', '/', trim($relativePath));
+        if ($normalized === '' || basename($normalized) !== $normalized || str_contains($normalized, '..')) {
+            return null;
+        }
+
+        return $this->syncSourceRoot() . DIRECTORY_SEPARATOR . $normalized;
     }
 
     private function deleteMediaWithFile($media): void
@@ -910,9 +921,10 @@ class MediaController extends Controller
                 'relative_path' => $relativePath,
             ];
         } catch (\Throwable $e) {
+            report($e);
             return [
                 'status' => 'failed',
-                'message' => $e->getMessage(),
+                'message' => trans('common.media_sync_item_failed'),
             ];
         }
     }

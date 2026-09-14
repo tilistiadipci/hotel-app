@@ -82,9 +82,11 @@
                         @endforeach
                     </div>
                 @empty
-                    <div class="text-muted text-center py-5">
-                        {{ trans('common.no_data') }}
-                    </div>
+                    @include('partials.components.empty-state', [
+                        'icon' => 'fa-file-invoice-dollar',
+                        'title' => trans('common.empty_state.pending_bill_title'),
+                        'description' => trans('common.empty_state.pending_bill_description'),
+                    ])
                 @endforelse
             </div>
         </div>

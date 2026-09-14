@@ -2,8 +2,6 @@
 
 use Illuminate\Support\Facades\Facade;
 
-$lang = json_decode(file_get_contents(base_path('settings/lang.json')), true);
-
 return [
 
     /*
@@ -85,7 +83,7 @@ return [
     |
     */
 
-    'locale' => $lang['lang_code'],
+    'locale' => env('APP_LOCALE', 'id'),
 
     /*
     |--------------------------------------------------------------------------

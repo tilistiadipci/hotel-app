@@ -92,7 +92,7 @@
                                 <div class="font-weight-bold mb-1">Alur import</div>
                                 <div class="small text-muted mb-2">
                                     File gambar dan video harus diletakkan dulu di folder
-                                    <code>MEDIA_STORAGE_PATH/upload-video</code> dengan nama file yang sama persis seperti di Excel.
+                                    folder import video hotel aktif dengan nama file yang sama persis seperti di Excel.
                                 </div>
                                 <a href="{{ route('movies.import.template') }}" class="btn btn-sm btn-outline-primary">
                                     <i class="fa fa-download mr-1"></i> Download Template

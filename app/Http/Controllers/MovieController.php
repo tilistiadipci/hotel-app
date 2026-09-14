@@ -497,8 +497,8 @@ class MovieController extends Controller
             ['title', 'Wajib. Judul movie harus diisi dan unik.'],
             ['description', 'Wajib. Deskripsi movie harus diisi.'],
             ['categories', 'Wajib. Boleh lebih dari satu kategori, pisahkan dengan koma. Kategori baru akan dibuat otomatis jika belum ada.'],
-            ['image_file', 'Wajib. Nama file gambar di folder MEDIA_STORAGE_PATH/upload-video.'],
-            ['video_file', 'Wajib. Nama file video di folder MEDIA_STORAGE_PATH/upload-video.'],
+            ['image_file', 'Wajib. Nama file gambar di folder import video hotel aktif.'],
+            ['video_file', 'Wajib. Nama file video di folder import video hotel aktif.'],
             ['release_date', 'Wajib. Format tanggal YYYY-MM-DD.'],
             ['rating', 'Wajib. Pilihan: G, PG, PG-13, R, NC-17.'],
             ['is_active', 'Wajib. Isi 1 atau 0.'],
@@ -805,7 +805,7 @@ class MovieController extends Controller
         $sourcePath = $this->findSourceMediaFilePath($fileName);
         if (!$sourcePath) {
             throw ValidationException::withMessages([
-                $expectedType . '_file' => "Baris {$rowNumber}: file {$fileName} tidak ditemukan di folder MEDIA_STORAGE_PATH/upload-video.",
+                $expectedType . '_file' => "Baris {$rowNumber}: file {$fileName} tidak ditemukan di folder import video.",
             ]);
         }
 

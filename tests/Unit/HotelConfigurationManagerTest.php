@@ -13,7 +13,7 @@ class HotelConfigurationManagerTest extends TestCase
     {
         $hotel = new Hotel(['name' => 'Hotel Test']);
         $hotel->setRelation('configuration', new HotelConfiguration([
-            'media_root' => 'C:/hotel-test/media',
+            'media_root' => '/hotel-test',
             'mqtt_host' => 'broker.hotel.test',
             'mqtt_port' => 1884,
             'mqtt_client_id' => 'hotel-test',
@@ -25,7 +25,8 @@ class HotelConfigurationManagerTest extends TestCase
 
         app(HotelConfigurationManager::class)->apply($hotel);
 
-        $this->assertSame('C:/hotel-test/media', config('filesystems.disks.media.root'));
+        $expectedRoot = rtrim(config('filesystems.media_base_root'), '/\\').DIRECTORY_SEPARATOR.'hotel-test';
+        $this->assertSame($expectedRoot, config('filesystems.disks.media.root'));
         $this->assertSame('broker.hotel.test', config('mqtt-client.connections.default.host'));
         $this->assertSame(1884, config('mqtt-client.connections.default.port'));
         $this->assertSame('tenant-user', config('mqtt-client.connections.default.connection_settings.auth.username'));

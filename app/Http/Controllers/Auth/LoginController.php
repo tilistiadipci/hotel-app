@@ -6,8 +6,10 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Repositories\SettingRepository;
 use App\Tenancy\TenantContext;
+use Carbon\Carbon;
 use Illuminate\Foundation\Auth\AuthenticatesUsers;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\DB;
 
@@ -78,7 +80,11 @@ class LoginController extends Controller
             session()->forget(['settings', 'active_hotel_id']);
             $redirectUrl = route('platform.dashboard');
         } elseif (in_array($role->category, ['admin', 'operator', 'user'], true)) {
-            $this->settingRepository->getSettings();
+            session()->forget('settings');
+            $settings = $this->settingRepository->getSettings(true);
+            $locale = ($settings['default_language'] ?? 'id_ID') === 'en_US' ? 'en' : 'id';
+            App::setLocale($locale);
+            Carbon::setLocale($locale);
             $redirectUrl = route('dashboard.index');
         }
 

@@ -14,6 +14,8 @@ use App\Models\Setting;
 use App\Models\User;
 use App\Services\HotelLicenseKeyGenerator;
 use App\Services\HotelLicenseLifecycle;
+use App\Services\HotelSettingsManager;
+use App\Tenancy\HotelMediaPath;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -83,6 +85,10 @@ class HotelController extends Controller
                 'license_key_hash' => bcrypt($plainLicenseKey),
                 'license_key_fingerprint' => HotelLicense::fingerprintFor($plainLicenseKey),
             ]);
+            app(HotelSettingsManager::class)->save($hotel, [
+                'default_language' => $hotel->locale === 'en_US' ? 'en_US' : 'id_ID',
+                'general_app_name' => $hotel->name,
+            ], null, auth()->id());
             $hotel->update(['trial_ends_at' => $licenseData['plan_code'] === 'trial' ? $licenseData['expires_at'] : null]);
         });
 
@@ -178,7 +184,9 @@ class HotelController extends Controller
         $hotel->load('configuration');
         $license = $hotel->licenses()->latest('starts_at')->first();
 
-        return view('pages.platform.hotels.edit', compact('hotel', 'license') + ['page' => 'hotels', 'icon' => 'fa fa-hotel']);
+        return view('pages.platform.hotels.edit', compact('hotel', 'license')
+            + app(HotelSettingsManager::class)->viewData($hotel)
+            + ['page' => 'hotels', 'icon' => 'fa fa-hotel']);
     }
 
     public function update(Request $request, Hotel $hotel)
@@ -243,7 +251,6 @@ class HotelController extends Controller
             'currency' => ['required', 'string', 'size:3'],
             'status' => ['required', Rule::in(['active', 'suspended'])],
             'is_active' => ['required', 'boolean'],
-            'media_root' => ['required', 'string', 'max:1000', Rule::unique('hotel_configurations', 'media_root')->ignore($hotel?->configuration?->id)],
             'mqtt_host' => ['nullable', 'string', 'max:255'],
             'mqtt_port' => ['required', 'integer', 'between:1,65535'],
             'mqtt_client_id' => ['nullable', 'string', 'max:255'],
@@ -281,7 +288,8 @@ class HotelController extends Controller
     {
         $existing = $hotel->configuration;
 
-        $mediaRoot = str_replace('hotel-baru', $hotel->id, $data['media_root']);
+        $mediaRoot = $existing?->media_root
+            ?: app(HotelMediaPath::class)->uniqueRoot($hotel->name);
 
         return [
             'media_disk' => 'media', 'media_root' => $mediaRoot,

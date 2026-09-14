@@ -123,14 +123,14 @@
                         </div>
                     @empty
                         <div class="col-12">
-                            <div class="booking-empty py-5 d-flex flex-column align-items-center">
-                                <img src="{{ getMediaImageUrl('default/error.png', 200, 200) }}" alt="" style="opacity: 0.3">
-                                <br>
-                                <br>
-                                <h5>
-                                    {{ trans('common.no_data') }}
-                                </h5>
-                            </div>
+                            @include('partials.components.empty-state', [
+                                'icon' => 'fa-bed',
+                                'title' => trans('common.empty_state.booking_title'),
+                                'description' => trans('common.empty_state.booking_description'),
+                                'actionUrl' => route('players.create'),
+                                'actionLabel' => trans('common.booking.add_player'),
+                                'actionIcon' => 'fa-plus',
+                            ])
                         </div>
                     @endforelse
                 </div>
@@ -304,16 +304,6 @@
 
         .booking-card:focus-visible {
             box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.22), 0 18px 36px rgba(15, 23, 42, 0.12);
-        }
-
-        .booking-empty {
-            padding: 2rem 1.25rem;
-            border: 1px dashed #cbd5e1;
-            border-radius: 16px;
-            background: #fff;
-            text-align: center;
-            color: #64748b;
-            font-weight: 600;
         }
 
         .booking-modal {

@@ -245,8 +245,12 @@
     </div>
 @else
     <div class="card">
-        <div class="card-body text-center text-muted py-5">
-            {{ trans('common.transaction.no_transaction_selected') }}
+        <div class="card-body">
+            @include('partials.components.empty-state', [
+                'icon' => 'fa-hand-pointer',
+                'title' => trans('common.empty_state.transaction_select_title'),
+                'description' => trans('common.empty_state.transaction_select_description'),
+            ])
         </div>
     </div>
 @endif

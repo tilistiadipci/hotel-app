@@ -1267,7 +1267,7 @@
             $('#clearSyncBtn').on('click', function() {
                 swal({
                         title: "{{ trans('common.sync_clear_title') }}",
-                        text: "{{ trans('common.sync_clear_confirm') }}",
+                        text: @json(trans('common.sync_clear_confirm')),
                         icon: "warning",
                         buttons: ["{{ trans('common.cancel') }}", "{{ trans('common.sync_clear') }}"],
                         dangerMode: true,

@@ -23,7 +23,12 @@
         </div>
     @empty
         <div class="col-12">
-            <div class="alert alert-light mb-0">Belum ada media pada kategori ini.</div>
+            @include('partials.components.empty-state', [
+                'icon' => 'fa-images',
+                'title' => trans('common.empty_state.media_title'),
+                'description' => trans('common.empty_state.media_description'),
+                'class' => 'cms-empty-state--compact',
+            ])
         </div>
     @endforelse
 </div>

@@ -3,7 +3,6 @@
 namespace App\Repositories;
 
 use App\Models\Setting;
-use Exception;
 
 class SettingRepository extends BaseRepository
 {
@@ -16,7 +15,7 @@ class SettingRepository extends BaseRepository
 
     public function getSettings(bool $refresh = false)
     {
-        if (!$refresh && session()->has('settings') && !session('settings_refresh')) {
+        if (! $refresh && session()->has('settings') && ! session('settings_refresh')) {
             return session('settings');
         }
 
@@ -108,7 +107,7 @@ class SettingRepository extends BaseRepository
         $setting->value = $value;
         $setting->updated_by = auth()->id();
 
-        if (!$setting->exists) {
+        if (! $setting->exists) {
             $setting->created_by = auth()->id();
         }
 
@@ -132,18 +131,8 @@ class SettingRepository extends BaseRepository
 
     protected function getLanguageSetting(): string
     {
-        $langPath = base_path('settings/lang.json');
+        $language = $this->getValueByKey('default_language', 'id_ID');
 
-        if (!file_exists($langPath)) {
-            return 'en_US';
-        }
-
-        try {
-            $content = json_decode(file_get_contents($langPath), true, 512, JSON_THROW_ON_ERROR);
-        } catch (Exception $e) {
-            return 'en_US';
-        }
-
-        return ($content['lang_code'] ?? 'en') === 'id' ? 'id_ID' : 'en_US';
+        return in_array($language, ['en_US', 'id_ID'], true) ? $language : 'id_ID';
     }
 }

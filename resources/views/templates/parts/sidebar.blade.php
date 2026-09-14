@@ -102,11 +102,16 @@
                             <i class="metismenu-state-icon pe-7s-angle-down caret-left"></i>
                         </a>
                         <ul>
-                            {{-- <li class="{{ $page == 'tv channels' ? 'mm-active' : '' }}">
+                            <li class="{{ $page == 'tv channels' ? 'mm-active' : '' }}">
                                 <a href="{{ url('/tv-channels') }}" class="{{ $page == 'tv channels' ? 'mm-active' : '' }}">
                                     <i class="metismenu-icon pe-7s-monitor"></i> TV Channels
                                 </a>
-                            </li> --}}
+                            </li>
+                            <li class="{{ $page == 'players' ? 'mm-active' : '' }}">
+                                <a href="{{ url('/players') }}" class="{{ $page == 'players' ? 'mm-active' : '' }}">
+                                    <i class="metismenu-icon pe-7s-play"></i> {{ trans('common.player.title') }}
+                                </a>
+                            </li>
                             @if ($isMusicMenuActive)
                                 <li class="{{ $page == 'songs' ? 'mm-active' : '' }}">
                                     <a href="{{ url('/songs') }}" class="{{ $page == 'songs' ? 'mm-active' : '' }}">
@@ -121,11 +126,6 @@
                                     </a>
                                 </li>
                             @endif
-                            <li class="{{ $page == 'players' ? 'mm-active' : '' }}">
-                                <a href="{{ url('/players') }}" class="{{ $page == 'players' ? 'mm-active' : '' }}">
-                                    <i class="metismenu-icon pe-7s-play"></i> {{ trans('common.player.title') }}
-                                </a>
-                            </li>
                             @if ($isNearbyMenuActive)
                                 <li class="{{ $page == 'places' ? 'mm-active' : '' }}">
                                     <a href="{{ url('/places') }}" class="{{ $page == 'places' ? 'mm-active' : '' }}">
