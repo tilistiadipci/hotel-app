@@ -8,6 +8,10 @@ use Illuminate\Support\Str;
 
 class M3uPlaylistService
 {
+    public function __construct(private TvChannelChangeNotifier $channelNotifier)
+    {
+    }
+
     public function parse(string $contents): array
     {
         $lines = preg_split('/\R/u', preg_replace('/^\xEF\xBB\xBF/', '', $contents)) ?: [];
@@ -52,8 +56,9 @@ class M3uPlaylistService
     {
         $created = 0;
         $updated = 0;
+        $touchedChannelIds = [];
 
-        DB::transaction(function () use ($channels, $masterHotelId, &$created, &$updated): void {
+        DB::transaction(function () use ($channels, $masterHotelId, &$created, &$updated, &$touchedChannelIds): void {
             foreach ($channels as $index => $data) {
                 $channel = $this->findExisting($data, $masterHotelId);
                 $payload = [
@@ -74,6 +79,7 @@ class M3uPlaylistService
                 if ($channel) {
                     $channel->update($payload);
                     $updated++;
+                    $touchedChannelIds[] = $channel->id;
 
                     continue;
                 }
@@ -85,6 +91,14 @@ class M3uPlaylistService
                 $created++;
             }
         });
+
+        if (! empty($touchedChannelIds)) {
+            $affectedHotelIds = DB::table('hotel_tv_channel')
+                ->whereIn('tv_channel_id', $touchedChannelIds)
+                ->pluck('hotel_id');
+
+            $this->channelNotifier->notifyHotels($affectedHotelIds);
+        }
 
         return compact('created', 'updated');
     }

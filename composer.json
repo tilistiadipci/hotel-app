@@ -13,6 +13,7 @@
         "laravel/ui": "^4.5",
         "php-mqtt/laravel-client": "^1.5",
         "phpoffice/phpspreadsheet": "^2.2",
+        "predis/predis": "^3.6",
         "yajra/laravel-datatables-oracle": "10.5"
     },
     "require-dev": {

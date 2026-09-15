@@ -6,6 +6,7 @@ use App\Models\Hotel;
 use App\Repositories\MediaRepository;
 use App\Repositories\TVChannelRepository;
 use App\Services\M3uPlaylistService;
+use App\Services\TvChannelChangeNotifier;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -22,14 +23,17 @@ class TVChannelController extends Controller
 
     protected MediaRepository $mediaRepository;
 
+    protected TvChannelChangeNotifier $channelNotifier;
+
     private $page;
 
     private $icon = 'fa fa-tv';
 
-    public function __construct(TVChannelRepository $channelRepository, MediaRepository $mediaRepository)
+    public function __construct(TVChannelRepository $channelRepository, MediaRepository $mediaRepository, TvChannelChangeNotifier $channelNotifier)
     {
         $this->channelRepository = $channelRepository;
         $this->mediaRepository = $mediaRepository;
+        $this->channelNotifier = $channelNotifier;
         $this->page = 'tv channels';
     }
 
@@ -112,9 +116,13 @@ class TVChannelController extends Controller
 
             $this->handleUploadLogo($request, $data, $uid, $createdMediaIds, $storedPaths);
 
-            $this->channelRepository->updateByUid($uid, $data);
+            $channel = $this->channelRepository->updateByUid($uid, $data);
 
             DB::commit();
+
+            if ($channel) {
+                $this->channelNotifier->notifyHotels($this->channelNotifier->hotelIdsAssignedTo($channel->id));
+            }
 
             return redirect()->route('tv-channels.index')->with('success', trans('common.success.update'));
         } catch (\Exception $e) {
@@ -130,7 +138,12 @@ class TVChannelController extends Controller
     {
         abort_unless($this->isMasterCatalog(), 403);
         try {
+            $channel = $this->channelRepository->findUid($uid);
+            $affectedHotelIds = $channel ? $this->channelNotifier->hotelIdsAssignedTo($channel->id) : collect();
+
             $this->channelRepository->delete($uid);
+
+            $this->channelNotifier->notifyHotels($affectedHotelIds);
 
             return response()->json([
                 'status' => true,
@@ -356,6 +369,8 @@ class TVChannelController extends Controller
         }
 
         abort_unless($updated || DB::table('hotel_tv_channel')->where('hotel_id', $hotelId)->where('tv_channel_id', $channel->id)->exists(), 404);
+
+        $this->channelNotifier->notifyHotel($hotelId);
 
         return back()->with('success', __('platform.tv_catalog.channel_saved'));
     }

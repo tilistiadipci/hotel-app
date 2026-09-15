@@ -7,7 +7,7 @@ use PhpMqtt\Client\ConnectionSettings;
 
 class MqttService
 {
-    public function publish($topic, $message)
+    public function publish($topic, $message, bool $retain = true)
     {
         $server   = config('mqtt-client.connections.default.host');
         $port     = config('mqtt-client.connections.default.port');
@@ -25,7 +25,7 @@ class MqttService
             $topic,
             $message,
             config('mqtt-client.connections.default.qos', 1),
-            true // retain (recommended)
+            $retain
         );
 
         $mqtt->disconnect();
