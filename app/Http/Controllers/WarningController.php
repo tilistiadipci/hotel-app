@@ -20,7 +20,7 @@ class WarningController extends Controller
     protected PlayerGroupRepository $playerGroupRepository;
     protected SettingRepository $settingRepository;
     private string $page = 'warnings';
-    private string $icon = 'fa fa-exclamation-triangle';
+    private string $icon = 'fa fa-bell';
 
     public function __construct(
         WarningRepository $warningRepository,

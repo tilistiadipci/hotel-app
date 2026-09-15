@@ -161,6 +161,7 @@ class TVChannelController extends Controller
                 'data' => view('pages.tv_channels.info', [
                     'page' => $this->page,
                     'channel' => $channel->load('imageMedia'),
+                    'isMasterCatalog' => $this->isMasterCatalog(),
                 ])->render(),
                 'return_type' => 'json',
             ]);
@@ -172,7 +173,9 @@ class TVChannelController extends Controller
 
         return view('pages.tv_channels.show', [
             'page' => $this->page,
+            'icon' => $this->icon,
             'channel' => $channel->load('imageMedia'),
+            'isMasterCatalog' => $this->isMasterCatalog(),
         ]);
     }
 

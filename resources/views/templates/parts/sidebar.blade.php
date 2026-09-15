@@ -85,7 +85,10 @@
                     <a href="{{ route('platform.master-tv-channels.index') }}" class="{{ $page == 'tv channels' ? 'mm-active' : '' }}"><i class="metismenu-icon fa fa-tv"></i> Master TV Channels</a>
                 </li>
                 <li class="{{ $page == 'media-library' ? 'mm-active' : '' }}">
-                    <a href="{{ route('platform.media-library.index') }}" class="{{ $page == 'media-library' ? 'mm-active' : '' }}"><i class="metismenu-icon fa fa-photo-video"></i> Media Library</a>
+                    <a href="{{ route('platform.media-library.index') }}" class="{{ $page == 'media-library' ? 'mm-active' : '' }}"><i class="metismenu-icon fa fa-file"></i> Media Library</a>
+                </li>
+                <li class="{{ $page == 'mqtt-docs' ? 'mm-active' : '' }}">
+                    <a href="{{ route('docs.mqtt') }}" class="{{ $page == 'mqtt-docs' ? 'mm-active' : '' }}"><i class="metismenu-icon fa fa-book"></i> Dokumentasi MQTT</a>
                 </li>
                 @elseif ($isManagerPortfolio)
                 <li class="app-sidebar__heading">Manager</li>
@@ -120,8 +123,8 @@
                     @if ($isWarningBroadcastActive)
                         <li class="{{ $page == 'warnings' ? 'mm-active' : '' }}">
                             <a href="{{ route('warnings.index') }}" class="{{ $page == 'warnings' ? 'mm-active' : '' }}">
-                                <i class="metismenu-icon fa fa-exclamation-triangle"></i>
-                                Warning Broadcast
+                                <i class="metismenu-icon fa fa-bell"></i>
+                                Notification Broadcast
                             </a>
                         </li>
                     @endif

@@ -49,11 +49,20 @@ class TvChannelCatalogTest extends TestCase
         $hotel = $this->hotel('TV-C');
         $hotel->tvChannels()->attach($assigned->id, ['is_active' => true, 'sort_order' => 2]);
         $admin = $this->user('admin', $hotel);
+        $masterStreamUrl = $assigned->stream_url;
 
         $response = $this->actingAs($admin)->getJson(route('tv-channels.index'), [
             'X-Requested-With' => 'XMLHttpRequest',
         ]);
-        $response->assertOk()->assertSee('Assigned Channel')->assertDontSee('Hidden Channel');
+        $response->assertOk()
+            ->assertSee('Assigned Channel')
+            ->assertDontSee('Hidden Channel')
+            ->assertDontSee($masterStreamUrl);
+
+        $this->actingAs($admin)
+            ->get(route('tv-channels.assignment.edit', $assigned->uuid))
+            ->assertOk()
+            ->assertDontSee($masterStreamUrl);
 
         $this->actingAs($admin)->patch(route('tv-channels.assignment.update', $assigned->uuid), [
             'custom_name' => 'Channel Kamar',
@@ -83,6 +92,8 @@ class TvChannelCatalogTest extends TestCase
             ->get(route('tv-channels.assignment.edit', $assigned->uuid))
             ->assertOk()
             ->assertSee('Kelola Channel Hotel')
+            ->assertSee('https://hotel.example.test/channel.m3u8')
+            ->assertDontSee($masterStreamUrl)
             ->assertSee('name="image"', false);
     }
 
@@ -96,6 +107,26 @@ class TvChannelCatalogTest extends TestCase
         $manager = $this->user('manager');
         $manager->managedHotels()->attach($managedHotel->id, ['is_active' => true]);
         $managedHotel->tvChannels()->attach($first->id, ['is_active' => true, 'sort_order' => 1]);
+
+        $this->actingAs($manager)
+            ->withSession(['active_hotel_id' => $managedHotel->id])
+            ->get(route('tv-channels.assignment.edit', $first->uuid))
+            ->assertOk()
+            ->assertDontSee($first->stream_url);
+
+        $this->actingAs($manager)
+            ->withSession(['active_hotel_id' => $managedHotel->id])
+            ->patch(route('tv-channels.assignment.update', $first->uuid), [
+                'custom_stream_url' => 'https://manager.example.test/channel.m3u8',
+                'sort_order' => 1,
+                'is_active' => 1,
+            ])->assertRedirect();
+
+        $this->assertDatabaseHas('hotel_tv_channel', [
+            'hotel_id' => $managedHotel->id,
+            'tv_channel_id' => $first->id,
+            'custom_stream_url' => 'https://manager.example.test/channel.m3u8',
+        ]);
 
         $this->actingAs($manager)
             ->get(route('manager.tv-channels.index', ['hotel_id' => $managedHotel->id]))

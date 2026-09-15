@@ -115,11 +115,29 @@ class TVChannelRepository extends BaseRepository
             ->join('hotel_tv_channel', 'hotel_tv_channel.tv_channel_id', '=', 'tv_channels.id')
             ->where('hotel_tv_channel.hotel_id', $hotel?->id)
             ->whereNull('tv_channels.deleted_at')
-            ->select('tv_channels.*',
+            // Do not select the master stream URL for a hotel-scoped CMS user.
+            // Player delivery uses its own authenticated API query, so hiding it
+            // here does not interfere with playback.
+            ->select(
+                'tv_channels.id',
+                'tv_channels.uuid',
+                'tv_channels.hotel_id',
+                'tv_channels.slug',
+                'tv_channels.tvg_id',
+                'tv_channels.group_title',
+                'tv_channels.source_type',
+                'tv_channels.source_logo_url',
+                'tv_channels.source_hash',
+                'tv_channels.image_id',
+                'tv_channels.created_by',
+                'tv_channels.updated_by',
+                'tv_channels.deleted_by',
+                'tv_channels.created_at',
+                'tv_channels.updated_at',
+                'tv_channels.deleted_at',
                 'tv_channels.name as master_name',
                 'tv_channels.type as master_type',
                 'tv_channels.region as master_region',
-                'tv_channels.stream_url as master_stream_url',
                 'tv_channels.frequency as master_frequency',
                 'tv_channels.quality as master_quality',
                 'hotel_tv_channel.is_active as assignment_is_active',
@@ -134,9 +152,10 @@ class TVChannelRepository extends BaseRepository
             ->selectRaw('COALESCE(hotel_tv_channel.custom_name, tv_channels.name) as name')
             ->selectRaw('COALESCE(hotel_tv_channel.custom_type, tv_channels.type) as type')
             ->selectRaw('COALESCE(hotel_tv_channel.custom_region, tv_channels.region) as region')
-            ->selectRaw('COALESCE(hotel_tv_channel.custom_stream_url, tv_channels.stream_url) as stream_url')
+            ->selectRaw('hotel_tv_channel.custom_stream_url as stream_url')
             ->selectRaw('COALESCE(hotel_tv_channel.custom_frequency, tv_channels.frequency) as frequency')
             ->selectRaw('COALESCE(hotel_tv_channel.custom_quality, tv_channels.quality) as quality')
+            ->selectRaw('hotel_tv_channel.sort_order as sort_order')
             ->selectRaw('hotel_tv_channel.is_active as is_active')
             ->orderBy('hotel_tv_channel.sort_order')
             ->orderBy('tv_channels.name');

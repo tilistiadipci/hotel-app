@@ -22,37 +22,37 @@
             ['Check-out', $totals['checkouts'], 'fa-sign-out-alt', 'alternate'],
             ['Transaksi', $totals['transactions'], 'fa-receipt', 'danger'],
         ] as [$label,$value,$statIcon,$color])
-        <div class="col-sm-6 col-lg-4 col-xl-2"><div class="card metric-card mb-3"><div class="card-body d-flex align-items-center p-3">
+        <div class="col-sm-6 col-lg-4 col-xl-2"><div class="card metric-card mb-2"><div class="card-body d-flex align-items-center px-3 py-2">
             <span class="metric-icon bg-{{ $color }}"><i class="fa {{ $statIcon }}"></i></span>
-            <div><div class="h5 font-weight-bold mb-0">{{ is_numeric($value) ? number_format((float) $value) : $value }}</div><small class="text-muted">{{ $label }}</small></div>
+            <div><div class="metric-value font-weight-bold">{{ is_numeric($value) ? number_format((float) $value) : $value }}</div><small class="text-muted">{{ $label }}</small></div>
         </div></div></div>
         @endforeach
     </div>
 
-    <div class="row">
-        <div class="col-lg-8"><div class="card mb-3 h-100">
+    <div class="row dashboard-feature-row mt-2">
+        <div class="col-lg-8"><div class="card mb-3">
             <div class="card-header"><strong>Tren Check-in & Check-out</strong><span class="ml-auto text-muted small">{{ $dateRange }}</span></div>
-            <div class="card-body"><div id="managerBookingChart" style="height:310px"></div></div>
+            <div class="card-body py-2"><div id="managerBookingChart" style="height:235px"></div></div>
         </div></div>
-        <div class="col-lg-4"><div class="card mb-3 h-100">
+        <div class="col-lg-4"><div class="card mb-3">
             <div class="card-header"><strong>Nilai Transaksi Tenant</strong></div>
-            <div class="card-body d-flex flex-column justify-content-center text-center">
-                <i class="fa fa-wallet fa-3x text-success mb-3"></i>
-                <div class="h3 font-weight-bold mb-1">Rp {{ number_format($totals['revenue'], 0, ',', '.') }}</div>
-                <div class="text-muted">{{ number_format($totals['transactions']) }} transaksi non-batal</div>
-                <a href="{{ route('manager.portfolio') }}" class="btn btn-outline-primary mt-4">Buka Portfolio Hotel</a>
+            <div class="card-body d-flex flex-column justify-content-center text-center py-3">
+                <i class="fa fa-wallet fa-2x text-success mb-2"></i>
+                <div class="h4 font-weight-bold mb-0">Rp {{ number_format($totals['revenue'], 0, ',', '.') }}</div>
+                <small class="text-muted">{{ number_format($totals['transactions']) }} transaksi non-batal</small>
+                <a href="{{ route('manager.portfolio') }}" class="btn btn-sm btn-outline-primary mt-3">Buka Portfolio Hotel</a>
             </div>
         </div></div>
     </div>
 
-    <div class="row mt-3">
+    <div class="row mt-2">
         <div class="col-lg-6"><div class="card mb-3">
             <div class="card-header"><strong>Aktivitas per Hotel</strong></div>
-            <div class="card-body"><div id="managerHotelChart" style="height:320px"></div></div>
+            <div class="card-body py-2"><div id="managerHotelChart" style="height:245px"></div></div>
         </div></div>
         <div class="col-lg-6"><div class="card mb-3">
             <div class="card-header"><strong>Transaksi Tenant per Hotel</strong></div>
-            <div class="card-body"><div id="managerTransactionChart" style="height:320px"></div></div>
+            <div class="card-body py-2"><div id="managerTransactionChart" style="height:245px"></div></div>
         </div></div>
     </div>
 
@@ -78,8 +78,12 @@
 @section('css')
 <style>
 .manager-overview .metric-card { border:0; box-shadow:0 .35rem 1.2rem rgba(30,45,75,.08); }
-.manager-overview .metric-icon { width:42px;height:42px;border-radius:12px;color:#fff;display:flex;align-items:center;justify-content:center;margin-right:12px;flex:0 0 42px; }
-.manager-overview .card-header { min-height:48px; }
+.manager-overview .metric-card .card-body { min-height:60px; }
+.manager-overview .metric-icon { width:36px;height:36px;border-radius:10px;color:#fff;display:flex;align-items:center;justify-content:center;margin-right:10px;flex:0 0 36px; }
+.manager-overview .metric-value { font-size:17px; line-height:1.15; }
+.manager-overview .card-header { min-height:42px; padding-top:.55rem; padding-bottom:.55rem; }
+.manager-overview .dashboard-feature-row > [class*="col-"] { display:flex; }
+.manager-overview .dashboard-feature-row > [class*="col-"] > .card { flex:1 1 auto; }
 </style>
 @endsection
 

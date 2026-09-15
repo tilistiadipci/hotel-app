@@ -23,6 +23,7 @@ use App\Http\Controllers\ManagerPortfolioController;
 use App\Http\Controllers\ManagerPortfolioReportController;
 use App\Http\Controllers\ManagerTvChannelAccessController;
 use App\Http\Controllers\MediaController;
+use App\Http\Controllers\MqttDocumentationController;
 use App\Http\Controllers\MenuCategoryController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\MenuTenantController;
@@ -80,6 +81,10 @@ Auth::routes();
 
 Route::get('/', [PublicLandingPageController::class, 'show'])->name('landing.show');
 Route::get('/home', [HomeController::class, 'index'])->name('home');
+
+Route::get('/docs/mqtt', MqttDocumentationController::class)
+    ->middleware(['auth', 'role.category:master,superadmin'])
+    ->name('docs.mqtt');
 
 Route::middleware(['auth', 'role.category:master,superadmin'])
     ->prefix('superadmin')

@@ -53,10 +53,10 @@
                             </div>
                         </div>
                         <div class="form-group">
-                            <label>Stream URL</label>
-                            <textarea name="custom_stream_url" rows="2" class="form-control @error('custom_stream_url') is-invalid @enderror" placeholder="Master: {{ $channel->master_stream_url ?: '-' }}">{{ old('custom_stream_url', $channel->custom_stream_url) }}</textarea>
+                            <label>Stream URL Hotel</label>
+                            <textarea name="custom_stream_url" rows="2" class="form-control @error('custom_stream_url') is-invalid @enderror" placeholder="Masukkan URL stream khusus hotel (opsional)">{{ old('custom_stream_url', $channel->custom_stream_url) }}</textarea>
                             @error('custom_stream_url')<div class="invalid-feedback">{{ $message }}</div>@enderror
-                            <small class="text-muted">Kosongkan untuk tetap menggunakan URL dari superadmin.</small>
+                            <small class="text-muted">Kosongkan untuk memakai stream bawaan. URL stream milik superadmin dirahasiakan.</small>
                         </div>
                         <div class="form-row">
                             <div class="form-group col-md-4">

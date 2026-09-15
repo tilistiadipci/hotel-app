@@ -6,11 +6,14 @@
     $imageUrl = $channel->imageMedia
         ? getMediaImageUrl($channel->imageMedia->storage_path)
         : ($remoteLogo ?: getMediaImageUrl('images/no-image.png'));
+    $isMasterCatalog = $isMasterCatalog ?? false;
     $items = [
         trans('common.name') => $channel->name,
         trans('common.type') => ucfirst($channel->type),
         trans('common.region') => ucfirst($channel->region),
-        trans('common.stream_url') => $channel->stream_url ?? '-',
+        $isMasterCatalog ? trans('common.stream_url') : 'Stream URL Hotel' => $isMasterCatalog
+            ? ($channel->stream_url ?? '-')
+            : ($channel->custom_stream_url ?: 'Menggunakan stream bawaan (URL dirahasiakan)'),
         trans('common.frequency') => $channel->frequency ?? '-',
         trans('common.quality') => $channel->quality ?? '-',
         trans('common.sort_order') => $channel->sort_order ?? '-',

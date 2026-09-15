@@ -85,7 +85,9 @@
         <div class="position-relative row form-group">
             <label for="manager_ids" class="col-sm-3 col-form-label text-sm-right">Manager</label>
             <div class="col-sm-9">
-                <select id="manager_ids" name="manager_ids[]" class="form-control select2 @error('manager_ids') is-invalid @enderror" multiple>
+                <select id="manager_ids" name="manager_ids[]"
+                    class="form-control @error('manager_ids') is-invalid @enderror"
+                    multiple data-placeholder="Pilih satu atau beberapa manager" style="width: 100%;">
                     @foreach($managerOptions as $managerOption)
                         <option value="{{ $managerOption->id }}" @selected(in_array((string) $managerOption->id, $selectedManagerIds, true))>
                             {{ $managerOption->profile?->name ?: $managerOption->username }} — {{ $managerOption->email }}
@@ -311,6 +313,17 @@
 @section('js')
 <script>
 $(function () {
+    const $managerSelect = $('#manager_ids');
+    if ($managerSelect.hasClass('select2-hidden-accessible')) {
+        $managerSelect.select2('destroy');
+    }
+    $managerSelect.select2({
+        theme: 'bootstrap4',
+        width: '100%',
+        placeholder: $managerSelect.data('placeholder'),
+        closeOnSelect: false
+    });
+
     const plans = @json($licensePlans);
     const $plan = $('#license_plan');
     const $status = $('#license_status');

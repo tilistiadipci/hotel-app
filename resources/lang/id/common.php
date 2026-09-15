@@ -643,13 +643,13 @@ return [
     ],
 
     'warning' => [
-        'title' => 'Warning Broadcast',
+        'title' => 'Notification Broadcast',
         'type_disaster' => 'Tipe Bencana',
         'priority_status_critical' => 'Priority Status: Critical',
         'playback_target_groups' => 'Playback Target Groups',
         'scheduling_offset' => 'Scheduling Offset',
         'priority' => 'Priority',
-        'message' => 'Pesan Warning',
+        'message' => 'Pesan Notification',
         'expires_at' => 'Berakhir Pada',
         'custom_schedule' => 'Jadwal Custom',
         'select_group' => 'Pilih Group TV',
