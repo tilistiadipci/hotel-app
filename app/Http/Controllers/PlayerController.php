@@ -9,6 +9,7 @@ use App\Services\HotelLicenseCapacity;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class PlayerController extends Controller
@@ -229,7 +230,13 @@ class PlayerController extends Controller
                 'max:100',
                 uniqueNotDeleted('players', 'serial', $playerId),
             ],
-            'theme_id' => 'required|integer|exists:themes,id',
+            'theme_id' => [
+                'required',
+                'integer',
+                Rule::exists('hotel_theme', 'theme_id')->where(
+                    fn ($query) => $query->where('hotel_id', app(TenantContext::class)->id())
+                ),
+            ],
             'is_active' => 'nullable|boolean',
             'player_group_id' => 'nullable|integer|exists:player_groups,id',
         ];

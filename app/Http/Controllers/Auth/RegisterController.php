@@ -3,10 +3,10 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
-use App\Models\User;
-use Illuminate\Foundation\Auth\RegistersUsers;
+use App\Models\Registration;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Validator;
+use Illuminate\Validation\Rule;
 
 class RegisterController extends Controller
 {
@@ -20,15 +20,6 @@ class RegisterController extends Controller
     | provide this functionality without requiring any additional code.
     |
     */
-
-    use RegistersUsers;
-
-    /**
-     * Where to redirect users after registration.
-     *
-     * @var string
-     */
-    protected $redirectTo = '/';
 
     /**
      * Create a new controller instance.
@@ -46,13 +37,9 @@ class RegisterController extends Controller
      * @param  array  $data
      * @return \Illuminate\Contracts\Validation\Validator
      */
-    protected function validator(array $data)
+    public function showRegistrationForm()
     {
-        return Validator::make($data, [
-            'name' => ['required', 'string', 'max:255'],
-            'email' => ['required', 'string', 'email', 'max:255', 'unique:users'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
-        ]);
+        return view('auth.register');
     }
 
     /**
@@ -61,17 +48,40 @@ class RegisterController extends Controller
      * @param  array  $data
      * @return \App\Models\User
      */
-    protected function create(array $data)
+    public function register(Request $request)
     {
-        return User::create([
-            'name' => $data['name'],
-            'email' => $data['email'],
-            'password' => Hash::make($data['password']),
+        $request->merge([
+            'email' => mb_strtolower(trim((string) $request->input('email'))),
+            'username' => mb_strtolower(trim((string) $request->input('username'))),
+            'whatsapp' => preg_replace('/[^0-9+]/', '', (string) $request->input('whatsapp')),
         ]);
-    }
 
-    public function showRegistrationForm()
-    {
-        return redirect('/login');
+        $data = $request->validate([
+            'hotel_name' => ['required', 'string', 'max:180'],
+            'hotel_address' => ['required', 'string', 'max:2000'],
+            'person_in_charge' => ['required', 'string', 'max:150'],
+            'username' => [
+                'required', 'string', 'min:4', 'max:255', 'alpha_dash',
+                Rule::unique('users', 'username'),
+                Rule::unique('registration', 'username')->where('status', Registration::STATUS_PENDING),
+            ],
+            'email' => [
+                'required', 'email:rfc', 'max:180',
+                Rule::unique('users', 'email'),
+                Rule::unique('registration', 'email')->where('status', Registration::STATUS_PENDING),
+            ],
+            'whatsapp' => [
+                'required', 'regex:/^\+?[0-9]{9,15}$/',
+                Rule::unique('registration', 'whatsapp')->where('status', Registration::STATUS_PENDING),
+            ],
+            'gender' => ['nullable', Rule::in(['male', 'female'])],
+            'admin_address' => ['nullable', 'string', 'max:255'],
+            'password' => ['required', 'string', 'min:8', 'confirmed'],
+        ]);
+
+        $data['password'] = Hash::make($data['password']);
+        Registration::query()->create($data + ['status' => Registration::STATUS_PENDING]);
+
+        return redirect()->route('login')->with('success', __('platform.registration.submitted'));
     }
 }

@@ -4,8 +4,8 @@ namespace Database\Seeders;
 
 use App\Models\User;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
 class UserSeeder extends Seeder
@@ -26,7 +26,7 @@ class UserSeeder extends Seeder
             'type' => 'image',
             'extension' => strtolower($ext),
             'storage_path' => $storagePath,
-            'mime_type' => 'image/' . strtolower($ext),
+            'mime_type' => 'image/'.strtolower($ext),
             'size' => null,
             'duration' => null,
             'width' => null,
@@ -42,7 +42,7 @@ class UserSeeder extends Seeder
             'type' => 'image',
             'extension' => strtolower($ext),
             'storage_path' => $storagePath,
-            'mime_type' => 'image/' . strtolower($ext),
+            'mime_type' => 'image/'.strtolower($ext),
             'size' => null,
             'duration' => null,
             'width' => null,
@@ -58,7 +58,7 @@ class UserSeeder extends Seeder
             'type' => 'image',
             'extension' => strtolower($ext),
             'storage_path' => $storagePath,
-            'mime_type' => 'image/' . strtolower($ext),
+            'mime_type' => 'image/'.strtolower($ext),
             'size' => null,
             'duration' => null,
             'width' => null,
@@ -67,12 +67,14 @@ class UserSeeder extends Seeder
             'updated_at' => $now,
         ]);
 
-        User::factory()->create([
+        $superadmin = User::factory()->create([
             'username' => 'superadmin',
             'email' => 'superadmin@mail.com',
+            'phone' => '081234567890',
             'password' => Hash::make('superadmin'),
-            'role_id' => 1,
-        ])->profile()->create([
+            'role_id' => DB::table('roles')->where('category', 'master')->value('id'),
+        ]);
+        $superadmin->profile()->create([
             'name' => 'Super Admin',
             'phone' => '081234567890',
             'address' => 'Jl. Jalan Raya No. 123',
@@ -84,8 +86,9 @@ class UserSeeder extends Seeder
         User::factory()->create([
             'username' => 'admin',
             'email' => 'admin@mail.com',
+            'phone' => '081234567891',
             'password' => Hash::make('admin'),
-            'role_id' => 2,
+            'role_id' => DB::table('roles')->where('category', 'admin')->value('id'),
         ])->profile()->create([
             'name' => 'Admin',
             'phone' => '081234567890',
@@ -98,8 +101,9 @@ class UserSeeder extends Seeder
         User::factory()->create([
             'username' => 'operator',
             'email' => 'operator@gmail.com',
+            'phone' => '081234567892',
             'password' => Hash::make('operator'),
-            'role_id' => 3,
+            'role_id' => DB::table('roles')->where('category', 'operator')->value('id'),
         ])->profile()->create([
             'name' => 'Operator',
             'phone' => '081234567890',
@@ -107,5 +111,29 @@ class UserSeeder extends Seeder
             'gender' => 'male',
             'image_id' => $avatarMediaId3,
         ]);
+
+        $manager = User::factory()->create([
+            'username' => 'manager',
+            'email' => 'manager@mail.com',
+            'phone' => '081234567893',
+            'password' => Hash::make('manager'),
+            'role_id' => DB::table('roles')->where('category', 'manager')->value('id'),
+            'hotel_id' => null,
+        ]);
+        $manager->profile()->create([
+            'name' => 'Hotel Manager',
+            'phone' => '081234567893',
+            'address' => 'Jl. Jalan Raya No. 123',
+            'gender' => 'male',
+            'image_id' => $avatarMediaId2,
+        ]);
+
+        $hotelId = DB::table('hotels')->where('is_system', false)->whereNull('deleted_at')->orderBy('created_at')->value('id');
+        if ($hotelId) {
+            DB::table('hotel_manager')->updateOrInsert(
+                ['hotel_id' => $hotelId, 'manager_id' => $manager->id],
+                ['assigned_by' => $superadmin->id, 'is_active' => true, 'created_at' => $now, 'updated_at' => $now]
+            );
+        }
     }
 }

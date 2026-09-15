@@ -17,9 +17,11 @@ class ResolveHotel
 
         // A platform superadmin has no hotel_id. A selected hotel may be stored
         // in the session later when hotel switching is implemented.
-        $hotelId = $user?->hotel_id ?: $request->session()->get('active_hotel_id');
+        $hotelId = $user?->hasRoleCategory('manager')
+            ? $request->session()->get('active_hotel_id')
+            : ($user?->hotel_id ?: $request->session()->get('active_hotel_id'));
 
-        if ($user?->hasRoleCategory('admin', 'operator', 'user') && ! $hotelId) {
+        if ($user?->hasRoleCategory('manager', 'admin', 'operator', 'user') && ! $hotelId) {
             abort(403, 'Akun ini belum terhubung ke hotel.');
         }
 
@@ -30,6 +32,7 @@ class ResolveHotel
         }
 
         if (isset($hotel)) {
+            $request->attributes->set('active_hotel', $hotel);
             app(HotelConfigurationManager::class)->apply($hotel);
         }
 

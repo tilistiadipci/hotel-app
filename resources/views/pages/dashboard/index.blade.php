@@ -232,45 +232,54 @@
             const bookingChartEl = document.getElementById('bookingActivityChart');
             const donutChartEl = document.getElementById('transactionDonutChart');
 
-            const $dateRangeInput = $('.dashboard-daterange-picker');
-            if ($dateRangeInput.length) {
-                const initialValue = ($dateRangeInput.val() || '').trim();
-                let startDate = moment().startOf('day');
-                let endDate = moment().endOf('day');
+            // Chart rendering must not depend on the date-range-picker widget
+            // setup below - if that throws (missing plugin, bad locale data,
+            // etc.) it must not silently kill the charts that follow it in
+            // the same script.
+            try {
+                const $dateRangeInput = $('.dashboard-daterange-picker');
+                if ($dateRangeInput.length) {
+                    const initialValue = ($dateRangeInput.val() || '').trim();
+                    let startDate = moment().startOf('day');
+                    let endDate = moment().endOf('day');
 
-                if (initialValue.includes(' - ')) {
-                    const parts = initialValue.split(' - ');
-                    const start = moment(parts[0], 'DD/MM/YYYY', true);
-                    const end = moment(parts[1], 'DD/MM/YYYY', true);
-                    if (start.isValid() && end.isValid()) {
-                        startDate = start;
-                        endDate = end;
+                    if (initialValue.includes(' - ')) {
+                        const parts = initialValue.split(' - ');
+                        const start = moment(parts[0], 'DD/MM/YYYY', true);
+                        const end = moment(parts[1], 'DD/MM/YYYY', true);
+                        if (start.isValid() && end.isValid()) {
+                            startDate = start;
+                            endDate = end;
+                        }
                     }
+
+                    $dateRangeInput.daterangepicker({
+                        autoUpdateInput: false,
+                        locale: {
+                            format: 'DD/MM/YYYY',
+                            cancelLabel: 'Clear'
+                        },
+                        startDate: startDate,
+                        endDate: endDate,
+                        opens: 'left'
+                    });
+
+                    $dateRangeInput.val(startDate.format('DD/MM/YYYY') + ' - ' + endDate.format('DD/MM/YYYY'));
+
+                    $dateRangeInput.on('apply.daterangepicker', function(ev, picker) {
+                        $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format(
+                            'DD/MM/YYYY'));
+                    });
+
+                    $dateRangeInput.on('cancel.daterangepicker', function() {
+                        $(this).val('');
+                    });
                 }
-
-                $dateRangeInput.daterangepicker({
-                    autoUpdateInput: false,
-                    locale: {
-                        format: 'DD/MM/YYYY',
-                        cancelLabel: 'Clear'
-                    },
-                    startDate: startDate,
-                    endDate: endDate,
-                    opens: 'left'
-                });
-
-                $dateRangeInput.val(startDate.format('DD/MM/YYYY') + ' - ' + endDate.format('DD/MM/YYYY'));
-
-                $dateRangeInput.on('apply.daterangepicker', function(ev, picker) {
-                    $(this).val(picker.startDate.format('DD/MM/YYYY') + ' - ' + picker.endDate.format(
-                        'DD/MM/YYYY'));
-                });
-
-                $dateRangeInput.on('cancel.daterangepicker', function() {
-                    $(this).val('');
-                });
+            } catch (error) {
+                console.error('Dashboard date-range picker failed to initialize:', error);
             }
 
+            try {
             if (bookingChartEl) {
                 const hasBookingData = (bookingActivityChart.series || []).some(function(series) {
                     return (series.data || []).some(function(value) {
@@ -314,7 +323,11 @@
                     series: bookingActivityChart.series
                 });
             }
+            } catch (error) {
+                console.error('Failed to render the pantry-transaction activity chart:', error);
+            }
 
+            try {
             if (isShoppingMenuActive && donutChartEl) {
                 const donutSeriesData = transactionDonutChart.labels.map(function(label, index) {
                     return {
@@ -370,6 +383,9 @@
                         data: donutSeriesData
                     }]
                 });
+            }
+            } catch (error) {
+                console.error('Failed to render the player check-in chart:', error);
             }
         });
     </script>

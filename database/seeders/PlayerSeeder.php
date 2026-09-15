@@ -12,7 +12,11 @@ class PlayerSeeder extends Seeder
     public function run(): void
     {
         $now = Carbon::now();
-        $hotelId = DB::table('hotels')->orderBy('created_at')->value('id');
+        $hotelId = DB::table('hotels')
+            ->where('is_system', false)
+            ->whereNull('deleted_at')
+            ->orderBy('created_at')
+            ->value('id');
 
         $players = [
             [
@@ -52,6 +56,7 @@ class PlayerSeeder extends Seeder
 
         foreach ($players as $player) {
             $existingId = DB::table('players')
+                ->where('hotel_id', $hotelId)
                 ->where('serial', $player['serial'])
                 ->whereNull('deleted_at')
                 ->value('id');

@@ -31,6 +31,7 @@ class PublicLandingPageController extends Controller
         $logoUrl = $landingPage->logo_path ? asset('storage/'.$landingPage->logo_path) : null;
         $html = strtr($landingPage->html_content, [
             '{{LOGIN_URL}}' => route('login'),
+            '{{REGISTER_URL}}' => route('register'),
             '{{CSRF_TOKEN}}' => csrf_token(),
             '{{CSRF_FIELD}}' => '<input type="hidden" name="_token" value="'.e(csrf_token()).'">',
             '{{LOGO_URL}}' => $logoUrl ?: '',

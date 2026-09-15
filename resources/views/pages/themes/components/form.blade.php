@@ -98,7 +98,7 @@
 
     $resolveDetailImageUrl = function ($value, $fallback = null) {
         if (is_numeric($value)) {
-            $media = \App\Models\Media::query()->find((int) $value);
+            $media = \App\Models\Media::query()->withoutGlobalScope('hotel')->find((int) $value);
             if ($media && $media->type === 'image') {
                 return getMediaImageUrl($media->storage_path, 1200, 800);
             }

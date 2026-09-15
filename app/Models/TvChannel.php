@@ -3,7 +3,6 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
@@ -15,6 +14,11 @@ class TvChannel extends TenantModel
         'uuid',
         'name',
         'slug',
+        'tvg_id',
+        'group_title',
+        'source_type',
+        'source_logo_url',
+        'source_hash',
         'type',
         'region',
         'stream_url',
@@ -45,8 +49,8 @@ class TvChannel extends TenantModel
     {
         $query->when($filters['search']['value'] ?? false, function ($query, $search) {
             $query->where(function ($q) use ($search) {
-                $q->where('name', 'like', '%' . $search . '%')
-                  ->orWhere('slug', 'like', '%' . $search . '%');
+                $q->where('name', 'like', '%'.$search.'%')
+                    ->orWhere('slug', 'like', '%'.$search.'%');
             });
         });
 
@@ -59,6 +63,22 @@ class TvChannel extends TenantModel
 
     public function imageMedia()
     {
-        return $this->belongsTo(Media::class, 'image_id');
+        return $this->belongsTo(Media::class, 'image_id')->withoutGlobalScope('hotel');
+    }
+
+    public function hotelImageMedia()
+    {
+        return $this->belongsTo(Media::class, 'custom_image_id')->withoutGlobalScope('hotel');
+    }
+
+    public function hotels()
+    {
+        return $this->belongsToMany(Hotel::class, 'hotel_tv_channel')
+            ->withPivot([
+                'is_active', 'sort_order', 'custom_name', 'custom_type',
+                'custom_region', 'custom_stream_url', 'custom_frequency',
+                'custom_quality', 'custom_image_id',
+            ])
+            ->withTimestamps();
     }
 }

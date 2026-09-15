@@ -13,7 +13,11 @@ class SettingSeeder extends Seeder
     public function run(): void
     {
         $now = Carbon::now();
-        $hotelId = DB::table('hotels')->orderBy('created_at')->value('id');
+        $hotelId = DB::table('hotels')
+            ->where('is_system', false)
+            ->whereNull('deleted_at')
+            ->orderBy('created_at')
+            ->value('id');
 
         $settings = [
             [

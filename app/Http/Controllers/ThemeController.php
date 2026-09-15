@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Media;
 use App\Models\Theme;
 use App\Models\ThemeDetail;
 use App\Repositories\MediaRepository;
 use App\Repositories\ThemeRepository;
+use App\Tenancy\TenantContext;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -17,13 +19,13 @@ use Illuminate\Validation\ValidationException;
 class ThemeController extends Controller
 {
     private string $page = 'themes';
+
     private string $icon = 'pe-7s-paint-bucket';
 
     public function __construct(
         private readonly MediaRepository $mediaRepository,
         private readonly ThemeRepository $themeRepository
-    ) {
-    }
+    ) {}
 
     public function index()
     {
@@ -38,7 +40,7 @@ class ThemeController extends Controller
     {
         $theme = $this->themeRepository->findUidWithRelations($uuid);
 
-        if (!$theme) {
+        if (! $theme) {
             return redirect()->route('error.404');
         }
 
@@ -47,6 +49,7 @@ class ThemeController extends Controller
             'icon' => $this->icon,
             'theme' => $theme,
             'canManageDetailKeys' => $this->canManageDetailKeys(),
+            'focusMode' => true,
         ]);
     }
 
@@ -54,7 +57,7 @@ class ThemeController extends Controller
     {
         $theme = $this->themeRepository->findUidWithRelations($uuid);
 
-        if (!$theme) {
+        if (! $theme) {
             return redirect()->route('error.404');
         }
 
@@ -76,14 +79,14 @@ class ThemeController extends Controller
         try {
             DB::beginTransaction();
 
-            if (($validated['is_default'] ?? '0') === '1') {
-                $this->themeRepository->resetDefaultExcept($theme->id);
-            }
+            $this->themeRepository->updateDefaultStatus(
+                $theme->id,
+                ($validated['is_default'] ?? '0') === '1'
+            );
 
             $this->themeRepository->update($theme->id, [
                 'name' => $validated['name'],
                 'description' => $validated['description'] ?? null,
-                'is_default' => $validated['is_default'] ?? '0',
                 'image_id' => $this->resolveImageId($request, $theme, $createdMediaIds, $storedPaths),
             ]);
 
@@ -105,7 +108,7 @@ class ThemeController extends Controller
     {
         $theme = $this->themeRepository->findUid($uuid);
 
-        if (!$theme) {
+        if (! $theme) {
             return response()->json([
                 'status' => false,
                 'message' => trans('common.error.404'),
@@ -115,10 +118,7 @@ class ThemeController extends Controller
         try {
             DB::beginTransaction();
 
-            $this->themeRepository->resetDefaultExcept($theme->id);
-            $this->themeRepository->update($theme->id, [
-                'is_default' => '1',
-            ]);
+            $this->themeRepository->setDefault($theme->id);
 
             DB::commit();
 
@@ -145,6 +145,14 @@ class ThemeController extends Controller
             ->all();
         $allowedReadonlyKeys = $this->getReadonlyAllowedDetailKeys($theme, $existingKeys);
         $canManageKeys = $this->canManageDetailKeys();
+        $existingImageMediaIds = $theme->details
+            ->filter(fn ($detail) => $this->isImageDetailKey((string) $detail->key))
+            ->flatMap(fn ($detail) => $this->extractImageMediaIds($detail->value))
+            ->push($theme->image_id)
+            ->filter()
+            ->map(fn ($id) => (int) $id)
+            ->unique();
+        $hotelId = app(TenantContext::class)->id();
 
         foreach ($keys as $index => $key) {
             $normalizedKey = Str::of((string) $key)->trim()->toString();
@@ -186,8 +194,12 @@ class ThemeController extends Controller
                 }
 
                 foreach ($imageMediaIds as $mediaId) {
-                    $media = $this->mediaRepository->find($mediaId);
-                    if (!$media || $media->type !== 'image') {
+                    $media = Media::query()->withoutGlobalScope('hotel')->find($mediaId);
+                    $canUseMedia = $media
+                        && $media->type === 'image'
+                        && (! $media->hotel_id || $media->hotel_id === $hotelId || $existingImageMediaIds->contains($media->id));
+
+                    if (! $canUseMedia) {
                         throw ValidationException::withMessages([
                             "detail_values.$index" => "Value {$normalizedKey} harus berupa media image yang valid.",
                         ]);
@@ -198,7 +210,7 @@ class ThemeController extends Controller
             $details[$normalizedKey] = $this->normalizeDetailValue($normalizedKey, $value);
         }
 
-        if (!$canManageKeys) {
+        if (! $canManageKeys) {
             $submittedKeys = array_keys($details);
             $sortedSubmitted = $submittedKeys;
             $sortedExisting = $allowedReadonlyKeys;
@@ -279,7 +291,7 @@ class ThemeController extends Controller
         }
 
         $decoded = json_decode($normalizedValue, true);
-        if (!is_array($decoded)) {
+        if (! is_array($decoded)) {
             return [];
         }
 
@@ -311,7 +323,7 @@ class ThemeController extends Controller
 
     private function getFixedDetailKeys(Theme $theme): array
     {
-        if (!$this->isDefaultThemeByName($theme)) {
+        if (! $this->isDefaultThemeByName($theme)) {
             return [];
         }
 
@@ -332,7 +344,7 @@ class ThemeController extends Controller
         $existingDetails = $theme->details()->get()->keyBy('key');
         $keys = array_keys($details);
 
-        if (!empty($keys)) {
+        if (! empty($keys)) {
             $duplicateInDb = ThemeDetail::query()
                 ->where('theme_id', $theme->id)
                 ->whereIn('key', $keys)
@@ -384,7 +396,7 @@ class ThemeController extends Controller
         if ($selectedMediaId) {
             $media = $this->mediaRepository->find($selectedMediaId);
 
-            if (!$media || $media->type !== 'image') {
+            if (! $media || $media->type !== 'image') {
                 throw ValidationException::withMessages([
                     'image' => 'Media gambar tidak ditemukan atau bukan gambar.',
                 ]);

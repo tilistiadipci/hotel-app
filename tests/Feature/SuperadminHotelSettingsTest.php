@@ -16,6 +16,36 @@ class SuperadminHotelSettingsTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_new_hotel_is_automatically_assigned_theme_one_as_default(): void
+    {
+        $code = 'NEW-'.Str::upper(Str::random(6));
+        $defaultTheme = Theme::query()->findOrFail(1);
+
+        $this->actingAs($this->superadmin())->post(route('platform.hotels.store'), [
+            'name' => 'New Theme Hotel',
+            'code' => $code,
+            'slug' => 'new-theme-hotel-'.Str::lower(Str::random(5)),
+            'timezone' => 'Asia/Jakarta',
+            'locale' => 'id_ID',
+            'currency' => 'IDR',
+            'status' => 'active',
+            'is_active' => '1',
+            'mqtt_port' => 1883,
+            'mqtt_qos' => 1,
+            'mqtt_tls' => '0',
+            'license_plan' => 'standard',
+            'license_status' => 'active',
+            'license_starts_at' => now()->format('Y-m-d'),
+        ])->assertRedirect(route('platform.hotels.index'));
+
+        $hotel = Hotel::query()->where('code', $code)->firstOrFail();
+        $this->assertDatabaseHas('hotel_theme', [
+            'hotel_id' => $hotel->id,
+            'theme_id' => $defaultTheme->id,
+            'is_default' => true,
+        ]);
+    }
+
     public function test_edit_hotel_page_contains_the_scoped_settings_tab(): void
     {
         $hotel = $this->hotel('VIEW-A');
@@ -33,15 +63,15 @@ class SuperadminHotelSettingsTest extends TestCase
         $firstHotel = $this->hotel('SET-A');
         $secondHotel = $this->hotel('SET-B');
         $firstTheme = Theme::query()->create([
-            'hotel_id' => $firstHotel->id,
             'name' => 'First Theme',
             'is_default' => '0',
         ]);
         $secondTheme = Theme::query()->create([
-            'hotel_id' => $secondHotel->id,
             'name' => 'Second Theme',
             'is_default' => '1',
         ]);
+        $firstHotel->themes()->attach($firstTheme->id, ['is_default' => false]);
+        $secondHotel->themes()->attach($secondTheme->id, ['is_default' => true]);
         $firstLogo = $this->image($firstHotel, 'first-logo');
 
         Setting::query()->create([
@@ -76,8 +106,16 @@ class SuperadminHotelSettingsTest extends TestCase
             'key' => 'general_app_name',
             'value' => 'Hotel Kedua',
         ]);
-        $this->assertSame('1', (string) $firstTheme->fresh()->is_default);
-        $this->assertSame('1', (string) $secondTheme->fresh()->is_default);
+        $this->assertDatabaseHas('hotel_theme', [
+            'hotel_id' => $firstHotel->id,
+            'theme_id' => $firstTheme->id,
+            'is_default' => true,
+        ]);
+        $this->assertDatabaseHas('hotel_theme', [
+            'hotel_id' => $secondHotel->id,
+            'theme_id' => $secondTheme->id,
+            'is_default' => true,
+        ]);
     }
 
     public function test_superadmin_cannot_assign_media_or_theme_from_another_hotel(): void
@@ -87,10 +125,10 @@ class SuperadminHotelSettingsTest extends TestCase
         $secondHotel = $this->hotel('BOUND-B');
         $foreignLogo = $this->image($secondHotel, 'foreign-logo');
         $foreignTheme = Theme::query()->create([
-            'hotel_id' => $secondHotel->id,
             'name' => 'Foreign Theme',
             'is_default' => '1',
         ]);
+        $secondHotel->themes()->attach($foreignTheme->id, ['is_default' => true]);
 
         $response = $this->actingAs($superadmin)
             ->from(route('platform.hotels.edit', ['hotel' => $firstHotel, 'tab' => 'settings']))

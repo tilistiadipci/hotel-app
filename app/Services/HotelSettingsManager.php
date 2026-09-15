@@ -5,11 +5,49 @@ namespace App\Services;
 use App\Models\Hotel;
 use App\Models\Media;
 use App\Models\Setting;
-use App\Models\Theme;
 use Illuminate\Support\Facades\DB;
 
 class HotelSettingsManager
 {
+    public function __construct(private readonly MasterMediaCloner $mediaCloner = new MasterMediaCloner) {}
+
+    /**
+     * Seed a brand-new hotel's settings from the Master hotel's own settings
+     * (edited by superadmin through the normal hotel-settings screen), using
+     * definitions() only for the canonical key/label/type list and as a
+     * fallback default when the Master hotel doesn't have a value yet.
+     */
+    public function provisionFromMaster(Hotel $hotel, array $overrides = [], ?int $userId = null): void
+    {
+        $masterHotelId = Hotel::masterId();
+        $masterValues = $masterHotelId
+            ? Setting::query()->forHotel($masterHotelId)->pluck('value', 'key')
+            : collect();
+
+        $this->settingDefinitions()->each(function (array $definition, string $key) use ($hotel, $overrides, $userId, $masterValues): void {
+            $value = match (true) {
+                array_key_exists($key, $overrides) => $overrides[$key],
+                $masterValues->has($key) => $masterValues->get($key),
+                default => $definition['default'],
+            };
+
+            if ($definition['type'] === 'media' && ! empty($value)) {
+                $sourceMedia = Media::query()->withoutGlobalScope('hotel')->find((int) $value);
+                $media = $this->mediaCloner->clone($sourceMedia, $hotel, $definition['name']);
+                $value = $media?->id;
+            }
+
+            Setting::query()->create([
+                'hotel_id' => $hotel->id,
+                'key' => $key,
+                'name' => $definition['name'],
+                'value' => $value,
+                'created_by' => $userId,
+                'updated_by' => $userId,
+            ]);
+        });
+    }
+
     public function values(Hotel $hotel): array
     {
         $stored = Setting::query()->forHotel($hotel->id)->pluck('value', 'key')->all();
@@ -28,26 +66,38 @@ class HotelSettingsManager
                 ->where('type', 'image')
                 ->orderBy('name')
                 ->get(['id', 'name', 'original_filename']),
-            'hotelThemes' => Theme::query()->forHotel($hotel->id)
-                ->orderByDesc('is_default')
+            'hotelThemes' => $hotel->themes()
+                ->orderByDesc('hotel_theme.is_default')
                 ->orderBy('name')
-                ->get(['id', 'name', 'is_default']),
-            'hotelDefaultThemeId' => Theme::query()->forHotel($hotel->id)
-                ->where('is_default', '1')
-                ->value('id'),
+                ->get(['themes.id', 'themes.name']),
+            'hotelDefaultThemeId' => $hotel->themes()
+                ->wherePivot('is_default', true)
+                ->value('themes.id'),
         ];
     }
 
-    public function save(Hotel $hotel, array $values, ?int $themeId, ?int $userId): void
+    /**
+     * Save settings. Only keys actually present in $values are touched -
+     * the settings screen is split into one tab (and one <form>) per group,
+     * so a save from one tab must not reset the other groups' stored values.
+     * Pass $updateTheme = true only when the request actually included the
+     * theme picker (its own tab), otherwise every other tab's save would
+     * clear the hotel's default theme.
+     */
+    public function save(Hotel $hotel, array $values, ?int $themeId, ?int $userId, bool $updateTheme = false): void
     {
         $definitions = $this->settingDefinitions();
 
-        DB::transaction(function () use ($hotel, $values, $themeId, $userId, $definitions): void {
-            foreach ($definitions as $key => $definition) {
+        DB::transaction(function () use ($hotel, $values, $themeId, $userId, $updateTheme, $definitions): void {
+            foreach ($values as $key => $value) {
+                if (! $definitions->has($key)) {
+                    continue;
+                }
+
                 $setting = Setting::query()->forHotel($hotel->id)->withTrashed()->firstOrNew(['key' => $key]);
                 $setting->hotel_id = $hotel->id;
-                $setting->name = $definition['name'];
-                $setting->value = array_key_exists($key, $values) ? $values[$key] : $definition['default'];
+                $setting->name = $definitions->get($key)['name'];
+                $setting->value = $value;
                 $setting->updated_by = $userId;
                 $setting->deleted_at = null;
 
@@ -58,18 +108,23 @@ class HotelSettingsManager
                 $setting->save();
             }
 
-            Theme::query()->forHotel($hotel->id)->update([
-                'is_default' => '0',
-                'updated_by' => $userId,
+            if (! $updateTheme) {
+                return;
+            }
+
+            DB::table('hotel_theme')->where('hotel_id', $hotel->id)->update([
+                'is_default' => false,
                 'updated_at' => now(),
             ]);
 
             if ($themeId !== null) {
-                Theme::query()->forHotel($hotel->id)->whereKey($themeId)->update([
-                    'is_default' => '1',
-                    'updated_by' => $userId,
-                    'updated_at' => now(),
-                ]);
+                DB::table('hotel_theme')
+                    ->where('hotel_id', $hotel->id)
+                    ->where('theme_id', $themeId)
+                    ->update([
+                        'is_default' => true,
+                        'updated_at' => now(),
+                    ]);
             }
         });
     }

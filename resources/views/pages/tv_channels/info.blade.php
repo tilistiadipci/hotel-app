@@ -1,5 +1,11 @@
 ﻿@php
-    $imageUrl = getMediaImageUrl($channel->imageMedia->storage_path ?? 'images/no-image.png');
+    $remoteLogo = filter_var($channel->source_logo_url, FILTER_VALIDATE_URL)
+        && in_array(parse_url($channel->source_logo_url, PHP_URL_SCHEME), ['http', 'https'], true)
+            ? $channel->source_logo_url
+            : null;
+    $imageUrl = $channel->imageMedia
+        ? getMediaImageUrl($channel->imageMedia->storage_path)
+        : ($remoteLogo ?: getMediaImageUrl('images/no-image.png'));
     $items = [
         trans('common.name') => $channel->name,
         trans('common.type') => ucfirst($channel->type),

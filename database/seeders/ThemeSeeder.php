@@ -6,8 +6,9 @@ use App\Models\Media;
 use App\Models\Theme;
 use Carbon\Carbon;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 
 class ThemeSeeder extends Seeder
 {
@@ -15,8 +16,12 @@ class ThemeSeeder extends Seeder
     {
         $now = Carbon::now();
 
-        $images = DB::table('medias')->insert([
-            [
+        $media = Media::query()->withoutGlobalScope('hotel')
+            ->where('original_filename', 'default-theme.png')
+            ->first();
+
+        if (! $media) {
+            $mediaId = DB::table('medias')->insertGetId([
                 'uuid' => (string) Str::uuid(),
                 'name' => 'Default Theme',
                 'original_filename' => 'default-theme.png',
@@ -30,10 +35,9 @@ class ThemeSeeder extends Seeder
                 'height' => null,
                 'created_at' => $now,
                 'updated_at' => $now,
-            ]
-        ]);
-
-        $media = Media::where('original_filename', 'default-theme.png')->first();
+            ]);
+            $media = Media::query()->withoutGlobalScope('hotel')->find($mediaId);
+        }
 
         $themes = [
             [
@@ -63,6 +67,48 @@ class ThemeSeeder extends Seeder
                     'updated_at' => $now,
                 ]
             );
+        }
+
+        if (! Schema::hasTable('hotel_theme')) {
+            return;
+        }
+
+        $primaryHotelId = DB::table('hotels')
+            ->where('is_system', false)
+            ->whereNull('deleted_at')
+            ->orderBy('created_at')
+            ->value('id');
+        $defaultTheme = Theme::query()->where('name', 'Default Theme')->first();
+
+        foreach (Theme::query()->whereNull('deleted_at')->get() as $theme) {
+            if ($primaryHotelId && ! DB::table('hotel_theme')
+                ->where('hotel_id', $primaryHotelId)
+                ->where('theme_id', $theme->id)
+                ->exists()) {
+                DB::table('hotel_theme')->insert([
+                    'hotel_id' => $primaryHotelId,
+                    'theme_id' => $theme->id,
+                    'is_default' => ! DB::table('hotel_theme')->where('hotel_id', $primaryHotelId)->where('is_default', true)->exists(),
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
+        }
+
+        if ($defaultTheme) {
+            foreach (DB::table('hotels')->whereNull('deleted_at')->pluck('id') as $hotelId) {
+                if (DB::table('hotel_theme')->where('hotel_id', $hotelId)->where('theme_id', $defaultTheme->id)->exists()) {
+                    continue;
+                }
+
+                DB::table('hotel_theme')->insert([
+                    'hotel_id' => $hotelId,
+                    'theme_id' => $defaultTheme->id,
+                    'is_default' => ! DB::table('hotel_theme')->where('hotel_id', $hotelId)->where('is_default', true)->exists(),
+                    'created_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
         }
     }
 }

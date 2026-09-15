@@ -132,7 +132,7 @@
             {
                 name: 'phone',
                 render: function(data, type, row) {
-                    return row.profile.phone;
+                    return row.phone || row.profile.phone || '-';
                 }
             },
             {

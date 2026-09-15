@@ -20,6 +20,7 @@ class BookingPlayerDurationReportRepository extends BaseRepository
 
         return DataTables::of($query)
             ->addIndexColumn()
+            ->addColumn('hotel_name', fn ($row) => $row->hotel_name ?? '-')
             ->addColumn('player_name', function ($row) {
                 return $row->player_name ?? '-';
             })
@@ -43,11 +44,17 @@ class BookingPlayerDurationReportRepository extends BaseRepository
             ->limit($limit)
             ->get()
             ->map(function ($row) {
-                return [
+                $data = [
                     $row->player_name ?? '-',
                     $row->player_alias ?? '-',
                     $this->formatDuration((int) $row->duration_minutes),
                 ];
+
+                if ($row->hotel_name ?? null) {
+                    array_unshift($data, $row->hotel_name);
+                }
+
+                return $data;
             })
             ->values()
             ->all();
@@ -84,24 +91,37 @@ class BookingPlayerDurationReportRepository extends BaseRepository
 
     private function baseQuery(array $filters)
     {
+        $portfolioReport = array_key_exists('hotel_ids', $filters);
+        $playerLabel = $portfolioReport
+            ? 'CONCAT(hotels.name, " - ", COALESCE(NULLIF(players.alias, ""), players.name))'
+            : 'COALESCE(NULLIF(players.alias, ""), players.name)';
+
         $query = $this->query()
             ->join('players', 'players.id', '=', 'bookings.player_id')
+            ->when($portfolioReport, fn ($query) => $query->join('hotels', 'hotels.id', '=', 'bookings.hotel_id'))
             ->whereNotNull('bookings.checked_in_at')
             ->whereNotNull('bookings.checked_out_at')
             ->select([
                 'players.id as player_id',
                 'players.name as player_name',
                 'players.alias as player_alias',
-                DB::raw('COALESCE(NULLIF(players.alias, ""), players.name) as player_label'),
+                DB::raw($playerLabel.' as player_label'),
                 DB::raw('COALESCE(SUM(TIMESTAMPDIFF(MINUTE, bookings.checked_in_at, bookings.checked_out_at)), 0) as duration_minutes'),
             ])
             ->groupBy('players.id', 'players.name', 'players.alias');
 
+        if ($portfolioReport) {
+            $query->withoutGlobalScope('hotel')
+                ->whereIn('bookings.hotel_id', (array) $filters['hotel_ids'])
+                ->addSelect('hotels.name as hotel_name')
+                ->groupBy('bookings.hotel_id', 'hotels.name');
+        }
+
         $playerIds = $filters['player_ids'] ?? [];
-        if (!is_array($playerIds)) {
+        if (! is_array($playerIds)) {
             $playerIds = array_filter(explode(',', (string) $playerIds));
         }
-        if (!empty($playerIds)) {
+        if (! empty($playerIds)) {
             $query->whereIn('bookings.player_id', $playerIds);
         }
 

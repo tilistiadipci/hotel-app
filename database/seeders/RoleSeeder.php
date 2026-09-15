@@ -28,8 +28,15 @@ class RoleSeeder extends Seeder
                 'category' => 'operator',
                 'description' => 'Operator mengatur semua fitur aplikasi',
             ],
+            [
+                'name' => 'Manager',
+                'category' => 'manager',
+                'description' => 'Manager mengelola beberapa hotel yang ditugaskan',
+            ],
         ];
 
-        DB::table('roles')->insert($data);
+        foreach ($data as $role) {
+            DB::table('roles')->updateOrInsert(['category' => $role['category']], $role);
+        }
     }
 }

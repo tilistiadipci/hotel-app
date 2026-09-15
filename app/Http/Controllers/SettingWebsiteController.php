@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Media;
 use App\Repositories\SettingRepository;
-use App\Repositories\UserRepository;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -14,26 +13,19 @@ use Illuminate\Validation\Rule;
 
 class SettingWebsiteController extends Controller
 {
-    protected $userRepository;
-
     protected $settingRepository;
 
     protected $page = 'website';
 
-    public function __construct(UserRepository $userRepository, SettingRepository $settingRepository)
+    public function __construct(SettingRepository $settingRepository)
     {
-        $this->userRepository = $userRepository;
         $this->settingRepository = $settingRepository;
     }
 
     public function index()
     {
-        $id = auth()->user()->id;
-        $user = $this->userRepository->find($id);
-
-        if (! $user) {
-            return redirect()->route('pages.errors.404');
-        }
+        $user = auth()->user();
+        abort_unless($user, 401);
 
         $canManageAppMenus = $this->canManageAppMenus($user);
 

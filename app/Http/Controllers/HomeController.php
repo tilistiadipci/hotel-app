@@ -27,14 +27,16 @@ class HomeController extends Controller
      */
     public function index(Request $request)
     {
-        return $request->user()->hasRoleCategory('master', 'superadmin')
-            ? redirect()->route('platform.dashboard')
-            : redirect()->route('dashboard.index');
+        return match (true) {
+            $request->user()->hasRoleCategory('master', 'superadmin') => redirect()->route('platform.dashboard'),
+            $request->user()->hasRoleCategory('manager') => redirect()->route('manager.dashboard'),
+            default => redirect()->route('dashboard.index'),
+        };
     }
 
     public function changeLanguage(Request $request)
     {
-        abort_unless($request->user()?->hotel_id, 403);
+        abort_unless(app(\App\Tenancy\TenantContext::class)->id(), 403);
 
         $validated = $request->validate([
             'lang' => ['required', Rule::in(['en', 'id'])],

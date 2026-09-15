@@ -10,9 +10,18 @@ use App\Http\Controllers\GuideItemController;
 use App\Http\Controllers\HomeController;
 use App\Http\Controllers\HotelAdminController;
 use App\Http\Controllers\HotelController;
+use App\Http\Controllers\HotelRegistrationController;
 use App\Http\Controllers\HotelSettingController;
 use App\Http\Controllers\LandingPageController;
 use App\Http\Controllers\LicenseController;
+use App\Http\Controllers\ManagerController;
+use App\Http\Controllers\ManagerDashboardController;
+use App\Http\Controllers\ManagerHotelContextController;
+use App\Http\Controllers\ManagerHotelController;
+use App\Http\Controllers\ManagerHotelSettingsController;
+use App\Http\Controllers\ManagerPortfolioController;
+use App\Http\Controllers\ManagerPortfolioReportController;
+use App\Http\Controllers\ManagerTvChannelAccessController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\MenuCategoryController;
 use App\Http\Controllers\MenuController;
@@ -32,6 +41,9 @@ use App\Http\Controllers\RunningTextController;
 use App\Http\Controllers\SettingWebsiteController;
 use App\Http\Controllers\SongController;
 use App\Http\Controllers\SongPlaylistController;
+use App\Http\Controllers\SuperadminHotelContextController;
+use App\Http\Controllers\SuperadminMasterDataController;
+use App\Http\Controllers\SuperadminMediaLibraryController;
 use App\Http\Controllers\ThemeController;
 use App\Http\Controllers\TVChannelController;
 use App\Http\Controllers\UserController;
@@ -78,18 +90,52 @@ Route::middleware(['auth', 'role.category:master,superadmin'])
         Route::put('/landing-page', [LandingPageController::class, 'update'])->name('landing-page.update');
         Route::post('/hotels/license-key/generate', [HotelController::class, 'generateLicenseKey'])->name('hotels.license-key.generate');
         Route::put('/hotels/{hotel}/settings', [HotelSettingController::class, 'update'])->name('hotels.settings.update');
+        Route::put('/hotels/{hotel}/tv-channels', [HotelController::class, 'updateTvChannels'])->name('hotels.tv-channels.update');
         Route::resource('hotels', HotelController::class)->except('destroy');
         Route::resource('hotel-admins', HotelAdminController::class)
             ->parameters(['hotel-admins' => 'hotelAdmin'])
             ->except('show');
+        Route::resource('managers', ManagerController::class)->except('show');
+        Route::get('/registrations', [HotelRegistrationController::class, 'index'])->name('registrations.index');
+        Route::patch('/registrations/{registration}', [HotelRegistrationController::class, 'update'])->name('registrations.update');
+
+        // Master data (dicopy ke tiap hotel baru) - reuses the normal hotel
+        // settings/theme/tv-channels/media screens, pointed at the Master hotel.
+        Route::get('/master-settings', [SuperadminMasterDataController::class, 'settings'])->name('master-settings.index');
+        Route::get('/master-theme', [SuperadminMasterDataController::class, 'theme'])->name('master-theme.edit');
+        Route::get('/master-tv-channels', [SuperadminMasterDataController::class, 'tvChannels'])->name('master-tv-channels.index');
+        Route::get('/media-library', [SuperadminMediaLibraryController::class, 'index'])->name('media-library.index');
+        Route::post('/hotel-context', [SuperadminHotelContextController::class, 'update'])->name('hotel-context.update');
+    });
+
+Route::middleware(['auth', 'role.category:manager'])
+    ->prefix('manager')
+    ->name('manager.')
+    ->group(function () {
+        Route::get('/dashboard', [ManagerDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/portfolio', [ManagerPortfolioController::class, 'index'])->name('portfolio');
+        Route::get('/reports/checkins', [ManagerPortfolioReportController::class, 'checkins'])->name('reports.checkins.index');
+        Route::get('/reports/checkins/data', [ManagerPortfolioReportController::class, 'checkinsData'])->name('reports.checkins.data');
+        Route::get('/reports/checkins/export', [ManagerPortfolioReportController::class, 'checkinsExport'])->name('reports.checkins.export');
+        Route::get('/reports/player-usage', [ManagerPortfolioReportController::class, 'playerUsage'])->name('reports.player-usage.index');
+        Route::get('/reports/player-usage/data', [ManagerPortfolioReportController::class, 'playerUsageData'])->name('reports.player-usage.data');
+        Route::get('/reports/player-usage/export', [ManagerPortfolioReportController::class, 'playerUsageExport'])->name('reports.player-usage.export');
+        Route::get('/reports/player-usage/chart', [ManagerPortfolioReportController::class, 'playerUsageChart'])->name('reports.player-usage.chart');
+        Route::get('/tv-channels', [ManagerTvChannelAccessController::class, 'index'])->name('tv-channels.index');
+        Route::put('/tv-channels/{hotel}', [ManagerTvChannelAccessController::class, 'update'])->name('tv-channels.update');
+        Route::post('/hotels/{hotel}/activate', [ManagerHotelContextController::class, 'update'])->name('hotels.activate');
+        Route::get('/hotels/{hotel}/settings', [ManagerHotelSettingsController::class, 'edit'])->name('hotels.settings.edit');
+        Route::put('/hotels/{hotel}/settings', [ManagerHotelSettingsController::class, 'update'])->name('hotels.settings.update');
+        Route::patch('/hotels/{hotel}/status', [ManagerHotelController::class, 'updateStatus'])->name('hotels.status');
+        Route::post('/hotel-context/clear', [ManagerHotelContextController::class, 'clear'])->name('hotel-context.clear');
     });
 
 // change language
 Route::post('change-language', [HomeController::class, 'changeLanguage'])
-    ->middleware('hotel.resolve')
+    ->middleware(['manager.hotel.access', 'hotel.resolve'])
     ->name('change-language');
 
-Route::middleware(['auth', 'role.category:admin,operator,user', 'hotel.resolve', 'hotel.license'])->group(function () {
+Route::middleware(['auth', 'role.category:manager,admin,operator,user', 'manager.hotel.access', 'hotel.resolve', 'hotel.license'])->group(function () {
     Route::prefix('dashboard')
         ->name('dashboard.')
         ->group(function () {
@@ -124,7 +170,7 @@ Route::middleware(['auth', 'role.category:admin,operator,user', 'hotel.resolve',
         });
 
     // users (only admin & super admin/master)
-    Route::middleware('role.category:admin')->group(function () {
+    Route::middleware('role.category:manager,admin')->group(function () {
         Route::resource('users', UserController::class);
         Route::prefix('users')
             ->name('users.')
@@ -132,14 +178,6 @@ Route::middleware(['auth', 'role.category:admin,operator,user', 'hotel.resolve',
                 Route::post('/bulkDelete', [UserController::class, 'bulkDelete'])->name('bulkDelete');
                 Route::get('/{id}/detail/{part}', [UserController::class, 'detail'])->name('detail');
             });
-
-        // TV Channels
-        // Route::resource('tv-channels', TVChannelController::class);
-        // Route::prefix('tv-channels')
-        //     ->name('tv-channels.')
-        //     ->group(function () {
-        //         Route::post('/bulkDelete', [TVChannelController::class, 'bulkDelete'])->name('bulkDelete');
-        //     });
 
         // Songs
         Route::middleware('setting.active:menu_music_status')->group(function () {
@@ -271,31 +309,6 @@ Route::middleware(['auth', 'role.category:admin,operator,user', 'hotel.resolve',
                 });
         });
 
-        // Media Library
-        Route::prefix('media')
-            ->name('media.')
-            ->group(function () {
-                Route::get('/library', [MediaController::class, 'library'])->name('library');
-                Route::post('/bulkDelete', [MediaController::class, 'bulkDelete'])->name('bulkDelete');
-                Route::post('/bulkUpdate', [MediaController::class, 'bulkUpdate'])->name('bulkUpdate');
-                Route::match(['get', 'post'], '/upload-chunk', [MediaController::class, 'uploadChunk'])->name('uploadChunk');
-                Route::get('/sync-preview', [MediaController::class, 'syncPreview'])->name('syncPreview');
-                Route::post('/sync-item', [MediaController::class, 'syncItem'])->name('syncItem');
-                Route::post('/sync', [MediaController::class, 'sync'])->name('sync');
-                Route::post('/sync-clear', [MediaController::class, 'syncClear'])->name('syncClear');
-                Route::post('/sync-clear-issues', [MediaController::class, 'syncClearIssues'])->name('syncClearIssues');
-            });
-        Route::resource('media', MediaController::class)
-            ->parameters(['media' => 'uuid'])
-            ->only(['index', 'store', 'destroy']);
-
-        Route::prefix('themes')
-            ->name('themes.')
-            ->group(function () {
-                Route::post('/{theme}/set-default', [ThemeController::class, 'setDefault'])->name('set-default');
-            });
-        Route::resource('themes', ThemeController::class)->only(['index', 'edit', 'update']);
-
         Route::prefix('settings')
             ->name('settings')
             ->group(function () {
@@ -341,6 +354,49 @@ Route::middleware(['auth', 'role.category:admin,operator,user', 'hotel.resolve',
             Route::post('/status/{id}', [MenuTransactionController::class, 'updateStatus'])->name('.status');
             Route::post('/cancel/{id}', [MenuTransactionController::class, 'cancel'])->name('.cancel');
         });
+});
+
+// Media Library, Themes, and TV Channels are also reachable by superadmin
+// "acting as" a hotel (defaults to the Master hotel) - see
+// DefaultSuperadminHotelContext + SuperadminHotelContextController.
+Route::middleware(['auth', 'role.category:manager,admin,master,superadmin', 'hotel.context.default', 'manager.hotel.access', 'hotel.resolve', 'hotel.license'])->group(function () {
+    Route::prefix('media')
+        ->name('media.')
+        ->group(function () {
+            Route::get('/library', [MediaController::class, 'library'])->name('library');
+            Route::post('/bulkDelete', [MediaController::class, 'bulkDelete'])->name('bulkDelete');
+            Route::post('/bulkUpdate', [MediaController::class, 'bulkUpdate'])->name('bulkUpdate');
+            Route::match(['get', 'post'], '/upload-chunk', [MediaController::class, 'uploadChunk'])->name('uploadChunk');
+            Route::get('/sync-preview', [MediaController::class, 'syncPreview'])->name('syncPreview');
+            Route::post('/sync-item', [MediaController::class, 'syncItem'])->name('syncItem');
+            Route::post('/sync', [MediaController::class, 'sync'])->name('sync');
+            Route::post('/sync-clear', [MediaController::class, 'syncClear'])->name('syncClear');
+            Route::post('/sync-clear-issues', [MediaController::class, 'syncClearIssues'])->name('syncClearIssues');
+        });
+    Route::resource('media', MediaController::class)
+        ->parameters(['media' => 'uuid'])
+        ->only(['index', 'store', 'destroy']);
+
+    Route::prefix('themes')
+        ->name('themes.')
+        ->group(function () {
+            Route::post('/{theme}/set-default', [ThemeController::class, 'setDefault'])->name('set-default');
+        });
+    Route::resource('themes', ThemeController::class)->only(['index', 'edit', 'update']);
+
+    Route::prefix('tv-channels')
+        ->name('tv-channels.')
+        ->group(function () {
+            Route::get('/import', [TVChannelController::class, 'importForm'])->name('import');
+            Route::get('/import/preview', [TVChannelController::class, 'staleImportPreview'])->name('import.preview.stale');
+            Route::post('/import/preview', [TVChannelController::class, 'importPreview'])->name('import.preview');
+            Route::get('/import/preview/{token}', [TVChannelController::class, 'showImportPreview'])->name('import.preview.show');
+            Route::post('/import/store', [TVChannelController::class, 'importStore'])->name('import.store');
+            Route::get('/{uid}/assignment', [TVChannelController::class, 'editAssignment'])->name('assignment.edit');
+            Route::patch('/{uid}/assignment', [TVChannelController::class, 'updateAssignment'])->name('assignment.update');
+            Route::post('/bulkDelete', [TVChannelController::class, 'bulkDelete'])->name('bulkDelete');
+        });
+    Route::resource('tv-channels', TVChannelController::class);
 });
 
 Route::get('/error/404', [ErrorController::class, 'error404'])->name('error.404');

@@ -6,7 +6,7 @@
         trans('common.user.username') => $user->username,
         trans('common.email') => $user->email,
         trans('common.name') => $user->profile->name ?? '-',
-        trans('common.phone') => $user->profile->phone ?? '-',
+        trans('common.phone') => $user->phone ?? $user->profile->phone ?? '-',
         trans('common.address') => $user->profile->address ?? '-',
         trans('common.gender') => $user->profile->gender ?? '-',
         trans('common.user.role') => $user->role->name ?? '-',

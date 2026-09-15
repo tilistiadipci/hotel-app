@@ -4,7 +4,9 @@ namespace App\Repositories;
 
 use App\Models\Booking;
 use App\Models\Player;
+use App\Tenancy\TenantContext;
 use Illuminate\Support\Carbon;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Yajra\DataTables\Facades\DataTables;
 
@@ -18,7 +20,7 @@ class PlayerRepository extends BaseRepository
     public function create(array $attributes)
     {
         $attributes['is_active'] = $attributes['is_active'] ?? true;
-        $attributes['theme_id'] = $attributes['theme_id'] ?? 1;
+        $attributes['theme_id'] = $attributes['theme_id'] ?? $this->defaultThemeId();
         $attributes['token'] = $this->generateUniqueToken();
         $attributes['token_expires_at'] = $this->generateTokenExpiry();
 
@@ -28,7 +30,7 @@ class PlayerRepository extends BaseRepository
     public function updateByUid($uid, array $attributes)
     {
         $attributes['is_active'] = $attributes['is_active'] ?? true;
-        $attributes['theme_id'] = $attributes['theme_id'] ?? 1;
+        $attributes['theme_id'] = $attributes['theme_id'] ?? $this->defaultThemeId();
 
         $player = $this->findUid($uid);
         if ($player && array_key_exists('serial', $attributes) && (string) $attributes['serial'] !== (string) $player->serial) {
@@ -45,8 +47,10 @@ class PlayerRepository extends BaseRepository
         if ($record) {
             $record->deleted_by = auth()->id();
             $record->save();
+
             return $record->delete();
         }
+
         return false;
     }
 
@@ -72,7 +76,7 @@ class PlayerRepository extends BaseRepository
             ->addIndexColumn()
             ->addColumn('action', function ($row) {
                 return view('partials.datatable.action2', [
-                    'row' => $row
+                    'row' => $row,
                 ])->render();
             })
             ->addColumn('theme_name', function ($row) {
@@ -93,7 +97,7 @@ class PlayerRepository extends BaseRepository
     public function regenerateTokenByUid(string $uid): ?Player
     {
         $player = $this->findUidForUpdate($uid);
-        if (!$player) {
+        if (! $player) {
             return null;
         }
 
@@ -119,6 +123,17 @@ class PlayerRepository extends BaseRepository
         } while ($this->model->newQuery()->where('token', $token)->exists());
 
         return $token;
+    }
+
+    private function defaultThemeId(): ?int
+    {
+        $hotelId = app(TenantContext::class)->id();
+
+        return DB::table('hotel_theme')
+            ->where('hotel_id', $hotelId)
+            ->orderByDesc('is_default')
+            ->orderBy('theme_id')
+            ->value('theme_id');
     }
 
     private function generateTokenExpiry(): Carbon

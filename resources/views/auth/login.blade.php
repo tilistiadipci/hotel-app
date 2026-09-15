@@ -9,9 +9,9 @@
         .auth-brand { display:flex; align-items:center; gap:12px; margin-bottom:64px; color:var(--auth-ink); }
         .auth-brand-mark { width:44px; height:44px; display:grid; place-items:center; border-radius:13px; color:#fff; background:linear-gradient(135deg,#3678ed,#7048cf); box-shadow:0 10px 24px rgba(49,105,223,.25); }
         .auth-brand-copy strong,.auth-brand-copy small { display:block; }
-        .auth-brand-copy strong { font-size:18px; line-height:1.1; }
+        .auth-brand-copy strong { font-size:18px; line-height:1.1; font-style:normal!important; transform:none!important; font-weight:800; }
         .auth-brand-copy small { color:var(--auth-muted); letter-spacing:.08em; text-transform:uppercase; }
-        .auth-form-wrap { width:100%; max-width:430px; margin:auto; }
+        .auth-form-wrap { width:100%;  margin:auto; }
         .auth-kicker { color:var(--auth-primary); font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; margin-bottom:12px; }
         .auth-title { margin:0 0 10px; font-size:clamp(34px,4vw,48px); font-weight:700; letter-spacing:-.035em; color:var(--auth-ink); }
         .auth-subtitle { margin:0 0 38px; color:var(--auth-muted); font-size:15px; line-height:1.7; }
@@ -32,6 +32,9 @@
         .auth-spinner { display:none; margin-right:8px; }
         .auth-submit.is-loading .auth-spinner { display:inline-block; }
         .auth-footer { margin-top:56px; color:#9aa7b9; font-size:12px; text-align:center; }
+        .auth-alert { margin-bottom:22px; padding:12px 14px; border:1px solid #bce8d5; border-radius:11px; color:#13734f; background:#effbf6; font-size:13px; }
+        .auth-register-link { margin-top:20px; color:var(--auth-muted); font-size:13px; text-align:center; }
+        .auth-register-link a { color:var(--auth-primary); font-weight:700; }
         .auth-story-panel { position:relative; overflow:hidden; min-height:100vh; background:#17243b url("{{ asset('images/auth/hotel-lobby-pexels.jpg') }}") center/cover no-repeat; }
         .auth-story-panel::before { content:''; position:absolute; inset:0; background:linear-gradient(145deg,rgba(14,35,70,.9),rgba(35,80,143,.72) 48%,rgba(96,55,163,.82)); }
         .auth-story-panel::after { content:''; position:absolute; width:520px; height:520px; right:-210px; bottom:-220px; border:1px solid rgba(255,255,255,.24); border-radius:50%; box-shadow:0 0 0 90px rgba(255,255,255,.035),0 0 0 180px rgba(255,255,255,.025); }
@@ -73,6 +76,7 @@
                 <div class="auth-kicker">Secure CMS Access</div>
                 <h1 class="auth-title">Welcome back.</h1>
                 <p class="auth-subtitle">Sign in to manage hotel content, guest experiences, players, and operational services from one place.</p>
+                @if (session('success'))<div class="auth-alert"><i class="fa fa-check-circle mr-2"></i>{{ session('success') }}</div>@endif
                 <form id="ajaxLoginForm" method="POST" action="{{ route('login') }}" novalidate>
                     @csrf
                     <div class="auth-field">
@@ -97,6 +101,7 @@
                     </div>
                     <button type="submit" class="auth-submit"><i class="fa fa-circle-notch fa-spin auth-spinner"></i><span class="auth-submit-label">Sign in to dashboard</span></button>
                 </form>
+                <div class="auth-register-link">{{ __('platform.registration.no_account') }} <a href="{{ route('register') }}">{{ __('platform.registration.register_hotel') }}</a></div>
             </div>
             <div class="auth-footer">Copyright &copy; Bio Experience 2024-{{ date('Y') }}</div>
         </section>

@@ -8,8 +8,13 @@
         $isNearbyMenuActive = ($settings['menu_nearby_status'] ?? 'active') === 'active';
         $isShoppingMenuActive = ($settings['menu_shopping_status'] ?? 'active') === 'active';
         $isWarningBroadcastActive = ($settings['warning_broadcast_status'] ?? 'active') === 'active';
-        $canAccessAdminArea = $authUser?->hasRoleCategory('master', 'superadmin', 'admin') ?? false;
+        $canAccessAdminArea = $authUser?->hasRoleCategory('master', 'superadmin', 'manager', 'admin') ?? false;
         $isPlatformAdmin = $authUser?->hasRoleCategory('master', 'superadmin') ?? false;
+        $isManager = $authUser?->hasRoleCategory('manager') ?? false;
+        // Manager routes are the portfolio area. Every non-manager route below
+        // has already passed manager.hotel.access and hotel.resolve, so it is a
+        // selected hotel's CMS even if the session-backed cache is refreshed.
+        $isManagerPortfolio = $isManager && request()->routeIs('manager.*');
     @endphp
 
     <div class="app-header__logo text-center">
@@ -60,10 +65,44 @@
                 <li class="{{ $page == 'hotel-admins' ? 'mm-active' : '' }}">
                     <a href="{{ route('platform.hotel-admins.index') }}" class="{{ $page == 'hotel-admins' ? 'mm-active' : '' }}"><i class="metismenu-icon fa fa-users"></i> Admin Hotel</a>
                 </li>
+                <li class="{{ $page == 'managers' ? 'mm-active' : '' }}">
+                    <a href="{{ route('platform.managers.index') }}" class="{{ $page == 'managers' ? 'mm-active' : '' }}"><i class="metismenu-icon fa fa-user-tie"></i> Manager Hotel</a>
+                </li>
                 <li class="{{ $page == 'landing-page' ? 'mm-active' : '' }}">
                     <a href="{{ route('platform.landing-page.edit') }}" class="{{ $page == 'landing-page' ? 'mm-active' : '' }}"><i class="metismenu-icon fa fa-globe"></i> Landing Page</a>
                 </li>
+                <li class="{{ $page == 'registrations' ? 'mm-active' : '' }}">
+                    <a href="{{ route('platform.registrations.index') }}" class="{{ $page == 'registrations' ? 'mm-active' : '' }}"><i class="metismenu-icon fa fa-clipboard-check"></i> {{ __('platform.registration.admin_menu') }}</a>
+                </li>
+                <li class="app-sidebar__heading">Master Data Hotel Baru</li>
+                <li class="{{ $page == 'master-settings' ? 'mm-active' : '' }}">
+                    <a href="{{ route('platform.master-settings.index') }}" class="{{ $page == 'master-settings' ? 'mm-active' : '' }}"><i class="metismenu-icon fa fa-sliders-h"></i> Master Settings</a>
+                </li>
+                <li class="{{ $page == 'master-theme-details' ? 'mm-active' : '' }}">
+                    <a href="{{ route('platform.master-theme.edit') }}" class="{{ $page == 'master-theme-details' ? 'mm-active' : '' }}"><i class="metismenu-icon pe-7s-paint-bucket"></i> Master Theme Details</a>
+                </li>
+                <li class="{{ $page == 'tv channels' ? 'mm-active' : '' }}">
+                    <a href="{{ route('platform.master-tv-channels.index') }}" class="{{ $page == 'tv channels' ? 'mm-active' : '' }}"><i class="metismenu-icon fa fa-tv"></i> Master TV Channels</a>
+                </li>
+                <li class="{{ $page == 'media-library' ? 'mm-active' : '' }}">
+                    <a href="{{ route('platform.media-library.index') }}" class="{{ $page == 'media-library' ? 'mm-active' : '' }}"><i class="metismenu-icon fa fa-photo-video"></i> Media Library</a>
+                </li>
+                @elseif ($isManagerPortfolio)
+                <li class="app-sidebar__heading">Manager</li>
+                <li class="{{ $page == 'manager-dashboard' ? 'mm-active' : '' }}"><a href="{{ route('manager.dashboard') }}" class="{{ $page == 'manager-dashboard' ? 'mm-active' : '' }}"><i class="metismenu-icon fa fa-chart-line"></i> Dashboard Manager</a></li>
+                <li class="{{ $page == 'manager-portfolio' ? 'mm-active' : '' }}"><a href="{{ route('manager.portfolio') }}" class="{{ $page == 'manager-portfolio' ? 'mm-active' : '' }}"><i class="metismenu-icon fa fa-building"></i> Portfolio Hotel</a></li>
+                <li class="{{ $page == 'manager-report-checkins' ? 'mm-active' : '' }}"><a href="{{ route('manager.reports.checkins.index') }}" class="{{ $page == 'manager-report-checkins' ? 'mm-active' : '' }}"><i class="metismenu-icon fa fa-sign-in-alt"></i> Laporan Check-in</a></li>
+                <li class="{{ $page == 'manager-report-player-usage' ? 'mm-active' : '' }}"><a href="{{ route('manager.reports.player-usage.index') }}" class="{{ $page == 'manager-report-player-usage' ? 'mm-active' : '' }}"><i class="metismenu-icon fa fa-chart-bar"></i> Penggunaan Player</a></li>
+                <li class="{{ $page == 'manager-tv-channel-access' ? 'mm-active' : '' }}"><a href="{{ route('manager.tv-channels.index') }}" class="{{ $page == 'manager-tv-channel-access' ? 'mm-active' : '' }}"><i class="metismenu-icon fa fa-tv"></i> Akses TV Channels</a></li>
                 @else
+                @if($isManager)
+                <li class="app-sidebar__heading">Manager</li>
+                <li><a href="{{ route('manager.dashboard') }}"><i class="metismenu-icon fa fa-chart-line"></i> Dashboard Manager</a></li>
+                <li><a href="{{ route('manager.portfolio') }}"><i class="metismenu-icon fa fa-building"></i> Portfolio Hotel</a></li>
+                <li>
+                    <form method="POST" action="{{ route('manager.hotel-context.clear') }}" class="px-3 pb-2">@csrf<button type="submit" class="btn btn-sm btn-outline-primary btn-block"><i class="fa fa-exchange-alt mr-1"></i>Ganti Hotel</button></form>
+                </li>
+                @endif
                 <li class="app-sidebar__heading">General</li>
                 <li class="{{ $page == 'dashboard' ? 'mm-active' : '' }}">
                     <a href="{{ route('dashboard.index') }}" class="{{ $page == 'dashboard' ? 'mm-active' : '' }}">

@@ -116,10 +116,12 @@
                         @php
                             $isActive = $channel->is_active ?? old('is_active', 1);
                         @endphp
-                        <select name="is_active" id="is_active" class="form-control select2">
-                            <option value="1" {{ $isActive == 1 ? 'selected' : '' }}>{{ trans('common.active') }}</option>
-                            <option value="0" {{ $isActive == 0 ? 'selected' : '' }}>{{ trans('common.inactive') }}</option>
-                        </select>
+                        <input type="hidden" name="is_active" value="0">
+                        <div class="custom-control custom-switch mb-0">
+                            <input type="checkbox" class="custom-control-input" id="is_active" name="is_active"
+                                value="1" {{ $isActive == 1 ? 'checked' : '' }}>
+                            <label class="custom-control-label" for="is_active"></label>
+                        </div>
                     </div>
                 </div>
             </div>

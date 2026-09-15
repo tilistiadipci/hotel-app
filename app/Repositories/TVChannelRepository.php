@@ -3,6 +3,7 @@
 namespace App\Repositories;
 
 use App\Models\TvChannel;
+use App\Tenancy\TenantContext;
 use Yajra\DataTables\Facades\DataTables;
 
 class TVChannelRepository extends BaseRepository
@@ -14,7 +15,9 @@ class TVChannelRepository extends BaseRepository
 
     public function findUid($uid)
     {
-        return $this->model->where('uuid', $uid)->first();
+        $query = $this->accessibleQuery();
+
+        return $query->where('tv_channels.uuid', $uid)->first();
     }
 
     public function updateByUid($uid, array $attributes)
@@ -29,6 +32,7 @@ class TVChannelRepository extends BaseRepository
 
         if ($record) {
             $record->update($attributes);
+
             return $record;
         }
 
@@ -41,8 +45,10 @@ class TVChannelRepository extends BaseRepository
         if ($record) {
             $record->deleted_by = auth()->user()->id ?? null;
             $record->deleted_at = now();
+
             return $record->save();
         }
+
         return false;
     }
 
@@ -60,16 +66,84 @@ class TVChannelRepository extends BaseRepository
 
     public function getDatatable()
     {
-        $query = $this->query()->filter(request(['search', 'filters']));
+        $query = $this->accessibleQuery();
+        $search = request('search.value');
+        $filters = request('filters', []);
+        $isMasterCatalog = $this->isMasterCatalog();
+        $query->when($search, fn ($q) => $q->where(fn ($sub) => $sub
+            ->where('tv_channels.name', 'like', '%'.$search.'%')
+            ->when(! $isMasterCatalog, fn ($hotelQuery) => $hotelQuery->orWhere('hotel_tv_channel.custom_name', 'like', '%'.$search.'%'))
+            ->orWhere('tv_channels.slug', 'like', '%'.$search.'%')));
+        $query->when($filters['type'] ?? null, fn ($q, $type) => $isMasterCatalog
+            ? $q->where('tv_channels.type', $type)
+            : $q->whereRaw('COALESCE(hotel_tv_channel.custom_type, tv_channels.type) = ?', [$type]));
+        $query->when($filters['region'] ?? null, fn ($q, $region) => $isMasterCatalog
+            ? $q->where('tv_channels.region', $region)
+            : $q->whereRaw('COALESCE(hotel_tv_channel.custom_region, tv_channels.region) = ?', [$region]));
+        if (($filters['is_active'] ?? '') !== '') {
+            $query->where($this->isMasterCatalog() ? 'tv_channels.is_active' : 'hotel_tv_channel.is_active', (bool) $filters['is_active']);
+        }
 
         return DataTables::of($this->paginateDatatable($query))
             ->addIndexColumn()
-            ->addColumn('action', function ($row) {
-                return view('partials.datatable.action2', [
-                    'row' => $row
-                ])->render();
+            ->addColumn('logo', function ($row) {
+                $media = $this->isMasterCatalog() ? $row->imageMedia : ($row->hotelImageMedia ?: $row->imageMedia);
+                $logo = $media ? getMediaImageUrl($media->storage_path, 80, 80) : $row->source_logo_url;
+
+                return $logo
+                    ? '<img src="'.e($logo).'" alt="" style="width:38px;height:30px;object-fit:contain" loading="lazy">'
+                    : '<i class="fa fa-tv text-muted"></i>';
             })
-            ->rawColumns(['action'])
+            ->addColumn('action', function ($row) {
+                return $this->isMasterCatalog()
+                    ? view('partials.datatable.action2', ['row' => $row])->render()
+                    : view('pages.tv_channels.assignment-action', ['row' => $row])->render();
+            })
+            ->rawColumns(['logo', 'action'])
             ->make(true);
+    }
+
+    private function accessibleQuery()
+    {
+        $hotel = app(TenantContext::class)->hotel();
+
+        if ($hotel?->is_system) {
+            return TvChannel::query()->where('tv_channels.hotel_id', $hotel->id);
+        }
+
+        return TvChannel::query()->withoutGlobalScope('hotel')
+            ->join('hotel_tv_channel', 'hotel_tv_channel.tv_channel_id', '=', 'tv_channels.id')
+            ->where('hotel_tv_channel.hotel_id', $hotel?->id)
+            ->whereNull('tv_channels.deleted_at')
+            ->select('tv_channels.*',
+                'tv_channels.name as master_name',
+                'tv_channels.type as master_type',
+                'tv_channels.region as master_region',
+                'tv_channels.stream_url as master_stream_url',
+                'tv_channels.frequency as master_frequency',
+                'tv_channels.quality as master_quality',
+                'hotel_tv_channel.is_active as assignment_is_active',
+                'hotel_tv_channel.sort_order as assignment_sort_order',
+                'hotel_tv_channel.custom_name',
+                'hotel_tv_channel.custom_type',
+                'hotel_tv_channel.custom_region',
+                'hotel_tv_channel.custom_stream_url',
+                'hotel_tv_channel.custom_frequency',
+                'hotel_tv_channel.custom_quality',
+                'hotel_tv_channel.custom_image_id')
+            ->selectRaw('COALESCE(hotel_tv_channel.custom_name, tv_channels.name) as name')
+            ->selectRaw('COALESCE(hotel_tv_channel.custom_type, tv_channels.type) as type')
+            ->selectRaw('COALESCE(hotel_tv_channel.custom_region, tv_channels.region) as region')
+            ->selectRaw('COALESCE(hotel_tv_channel.custom_stream_url, tv_channels.stream_url) as stream_url')
+            ->selectRaw('COALESCE(hotel_tv_channel.custom_frequency, tv_channels.frequency) as frequency')
+            ->selectRaw('COALESCE(hotel_tv_channel.custom_quality, tv_channels.quality) as quality')
+            ->selectRaw('hotel_tv_channel.is_active as is_active')
+            ->orderBy('hotel_tv_channel.sort_order')
+            ->orderBy('tv_channels.name');
+    }
+
+    private function isMasterCatalog(): bool
+    {
+        return (bool) app(TenantContext::class)->hotel()?->is_system;
     }
 }

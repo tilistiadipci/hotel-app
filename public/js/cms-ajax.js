@@ -179,6 +179,20 @@
         });
     }
 
+    function sidebarStructureChanged(nextDocument) {
+        var nextSidebar = nextDocument.querySelector('.app-sidebar');
+        var currentSidebar = document.querySelector('.app-sidebar');
+        if (!nextSidebar || !currentSidebar) return false;
+
+        function signature(sidebar) {
+            return Array.prototype.map.call(sidebar.querySelectorAll('a[href]'), function (link) {
+                return link.getAttribute('href');
+            }).join('|');
+        }
+
+        return signature(currentSidebar) !== signature(nextSidebar);
+    }
+
     function showFlash(nextDocument) {
         var flash = nextDocument.getElementById('cms-ajax-flash');
         if (!flash || !window.toastr) return;
@@ -206,6 +220,14 @@
         var currentMain = document.querySelector('.app-main__outer');
 
         if (!nextMain || !currentMain || nextDocument.querySelector('.auth-shell')) {
+            window.location.assign(finalUrl);
+            return;
+        }
+
+        // Portfolio manager dan CMS hotel memiliki struktur navigasi berbeda.
+        // Reload penuh diperlukan agar sidebar, header, dan konfigurasi hotel
+        // semuanya mengikuti context yang baru dipilih.
+        if (sidebarStructureChanged(nextDocument)) {
             window.location.assign(finalUrl);
             return;
         }

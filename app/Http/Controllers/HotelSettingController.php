@@ -12,12 +12,32 @@ class HotelSettingController extends Controller
 {
     public function update(Request $request, Hotel $hotel, HotelSettingsManager $manager): RedirectResponse
     {
+        $this->save($request, $hotel, $manager);
+
+        $settingsGroup = $request->input('_settings_group');
+
+        if ($hotel->is_system) {
+            return redirect()->route('platform.master-settings.index', ['settings_group' => $settingsGroup])
+                ->with('success', trans('platform.hotel_settings.saved'));
+        }
+
+        return redirect()->route('platform.hotels.edit', ['hotel' => $hotel, 'tab' => 'settings', 'settings_group' => $settingsGroup])
+            ->with('success', trans('platform.hotel_settings.saved'));
+    }
+
+    /**
+     * Validate and persist the settings form submission for $hotel. Shared
+     * by the superadmin hotel-edit screen, the Master Settings screen, and
+     * the manager-facing hotel settings screen - each caller decides its
+     * own redirect after calling this.
+     */
+    public function save(Request $request, Hotel $hotel, HotelSettingsManager $manager): void
+    {
         $rules = ['theme_id' => [
             'nullable',
             'integer',
-            Rule::exists('themes', 'id')->where(fn ($query) => $query
-                ->where('hotel_id', $hotel->id)
-                ->whereNull('deleted_at')),
+            Rule::exists('hotel_theme', 'theme_id')->where(fn ($query) => $query
+                ->where('hotel_id', $hotel->id)),
         ]];
 
         foreach ($manager->definitions() as $group) {
@@ -56,14 +76,10 @@ class HotelSettingController extends Controller
 
         $validated = $request->validate($rules);
         $settings = $validated['settings'] ?? [];
-        $settings['general_app_logo'] = $settings['general_app_logo'] ?? '';
-        $settings['general_app_logo2'] = $settings['general_app_logo2'] ?? '';
+        $updateTheme = $request->has('theme_id');
 
-        $manager->save($hotel, $settings, isset($validated['theme_id']) ? (int) $validated['theme_id'] : null, auth()->id());
+        $manager->save($hotel, $settings, isset($validated['theme_id']) ? (int) $validated['theme_id'] : null, auth()->id(), $updateTheme);
         session()->forget('settings');
         session(['settings_refresh' => true]);
-
-        return redirect()->route('platform.hotels.edit', ['hotel' => $hotel, 'tab' => 'settings'])
-            ->with('success', trans('platform.hotel_settings.saved'));
     }
 }

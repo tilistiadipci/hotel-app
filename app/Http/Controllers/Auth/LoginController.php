@@ -53,7 +53,7 @@ class LoginController extends Controller
     public function logout()
     {
         Auth::logout();
-        session()->forget(['settings', 'active_hotel_id']);
+        session()->forget(['settings', 'active_hotel_id', 'active_hotel_name']);
 
         return redirect('/login');
     }
@@ -77,8 +77,11 @@ class LoginController extends Controller
         $redirectUrl = '/login';
 
         if (in_array($role->category, ['master', 'superadmin'], true)) {
-            session()->forget(['settings', 'active_hotel_id']);
+            session()->forget(['settings', 'active_hotel_id', 'active_hotel_name']);
             $redirectUrl = route('platform.dashboard');
+        } elseif ($role->category === 'manager') {
+            session()->forget(['settings', 'active_hotel_id', 'active_hotel_name']);
+            $redirectUrl = route('manager.dashboard');
         } elseif (in_array($role->category, ['admin', 'operator', 'user'], true)) {
             session()->forget('settings');
             $settings = $this->settingRepository->getSettings(true);

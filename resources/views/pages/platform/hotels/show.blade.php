@@ -157,6 +157,7 @@
                         <dl class="row hotel-info-list mb-0">
                             <dt class="col-sm-4">Kode</dt><dd class="col-sm-8">{{ $hotel->code }}</dd>
                             <dt class="col-sm-4">Slug</dt><dd class="col-sm-8">{{ $hotel->slug }}</dd>
+                            <dt class="col-sm-4">Alamat</dt><dd class="col-sm-8">{{ $hotel->address ?: '-' }}</dd>
                             <dt class="col-sm-4">Status</dt><dd class="col-sm-8"><span class="badge badge-{{ $hotel->is_active ? 'success' : 'secondary' }}">{{ $hotel->is_active ? 'Aktif' : 'Nonaktif' }}</span> <span class="badge badge-light">{{ ucfirst($hotel->status) }}</span></dd>
                             <dt class="col-sm-4">Timezone</dt><dd class="col-sm-8">{{ $hotel->timezone }}</dd>
                             <dt class="col-sm-4">Locale</dt><dd class="col-sm-8">{{ $hotel->locale }}</dd>

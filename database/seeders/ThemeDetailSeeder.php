@@ -5,12 +5,23 @@ namespace Database\Seeders;
 use App\Models\Theme;
 use App\Models\ThemeDetail;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class ThemeDetailSeeder extends Seeder
 {
     public function run(): void
     {
+        $hotelId = DB::table('hotels')
+            ->where('is_system', false)
+            ->whereNull('deleted_at')
+            ->orderBy('created_at')
+            ->value('id');
+
+        if (! $hotelId) {
+            return;
+        }
+
         $themes = [
             'Default Theme' => [
                 'header_show_date' => '1',
@@ -29,20 +40,19 @@ class ThemeDetailSeeder extends Seeder
         foreach ($themes as $themeName => $details) {
             $theme = Theme::query()->where('name', $themeName)->first();
 
-            if (!$theme) {
+            if (! $theme) {
                 continue;
             }
 
-            ThemeDetail::query()->where('theme_id', $theme->id)->delete();
-
             foreach ($details as $key => $value) {
-                ThemeDetail::query()->updateOrCreate(
+                ThemeDetail::query()->firstOrCreate(
                     [
+                        'hotel_id' => $hotelId,
                         'theme_id' => $theme->id,
                         'key' => $key,
                     ],
                     [
-                        'uuid' => Str::uuid()->toString(),
+                        'uuid' => (string) Str::uuid(),
                         'value' => $value,
                     ]
                 );

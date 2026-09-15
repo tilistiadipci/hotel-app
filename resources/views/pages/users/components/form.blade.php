@@ -129,7 +129,7 @@
                         @include('partials.forms.input', [
                             'elementId' => 'phone',
                             'required' => true,
-                            'value' => isset($user) ? $user->profile->phone : old('phone'),
+                            'value' => old('phone', $user->phone ?? ''),
                             'type' => 'text',
                         ])
                     </div>

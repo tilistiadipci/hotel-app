@@ -15,9 +15,10 @@
                 ])
 
                 <div class="page-title-actions">
-                    @include('partials.buttons.btn-create-new', [
-                        'url' => route('tv-channels.create'),
-                    ])
+                    @if ($isMasterCatalog)
+                        <a href="{{ route('tv-channels.import') }}" class="btn btn-success mr-2"><i class="fa fa-file-upload mr-1"></i>{{ __('platform.tv_catalog.import_m3u') }}</a>
+                        @include('partials.buttons.btn-create-new', ['url' => route('tv-channels.create')])
+                    @endif
                 </div>
             </div>
         </div>
@@ -36,9 +37,9 @@
                             <button class="btn btn-sm btn-light mr-2" id="resetFilterBtn" data-toggle="tooltip" title="{{ trans('common.reset') }}">
                                 <i class="fa fa-undo"></i>
                             </button>
-                            <button class="btn btn-sm btn-danger" id="applyBulkAction" data-toggle="tooltip" title="{{ trans('common.bulk_delete') }}">
+                            @if ($isMasterCatalog)<button class="btn btn-sm btn-danger" id="applyBulkAction" data-toggle="tooltip" title="{{ trans('common.bulk_delete') }}">
                                 <i class="fa fa-trash text-white"></i>
-                            </button>
+                            </button>@endif
                         </div>
                     </div>
                     <div class="card-body">
@@ -46,12 +47,13 @@
                             <thead>
                                 <tr>
                                     <th class="text-center" style="width:40px">
-                                        <label class="custom-checkbox mb-0">
+                                        @if ($isMasterCatalog)<label class="custom-checkbox mb-0">
                                             <input type="checkbox" id="checkAll" onclick="checkAll(this)">
                                             <span class="checkmark"></span>
-                                        </label>
+                                        </label>@endif
                                     </th>
                                     <th style="width:60px">No</th>
+                                    <th style="width:65px">Icon</th>
                                     <th>{{ trans('common.name') }}</th>
                                     <th>{{ trans('common.tv.type') }}</th>
                                     <th>{{ trans('common.tv.region') }}</th>
@@ -73,6 +75,7 @@
 
 @section('js')
     <script>
+        const isMasterCatalog = @json($isMasterCatalog);
         function attachFilters(d) {
             d.filters = {
                 name: $('#filterName').val(),
@@ -104,7 +107,7 @@
                 className: 'text-center',
                 width: '4%',
                 render: function(data, type, row) {
-                    return `<input type="checkbox" class="data-check" name="checkbox" value="${row.uuid}">`;
+                    return isMasterCatalog ? `<input type="checkbox" class="data-check" name="checkbox" value="${row.uuid}">` : '';
                 }
             },
             {
@@ -118,10 +121,17 @@
                 }
             },
             {
+                data: 'logo',
+                name: 'logo',
+                orderable: false,
+                searchable: false,
+                className: 'text-center',
+            },
+            {
                 data: 'name',
                 name: 'name',
                 render: function(data, type, row) {
-                    let url = `{{ url('tv-channels') }}/${row.uuid}/edit`
+                    let url = isMasterCatalog ? `{{ url('tv-channels') }}/${row.uuid}/edit` : `{{ url('tv-channels') }}/${row.uuid}/assignment`
                     return `<a href="${url}">${row.name || ''}</a>`
                 }
             },

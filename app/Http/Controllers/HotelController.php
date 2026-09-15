@@ -11,14 +11,19 @@ use App\Models\MenuTenant;
 use App\Models\MenuTransaction;
 use App\Models\Player;
 use App\Models\Setting;
+use App\Models\Theme;
+use App\Models\ThemeDetail;
 use App\Models\User;
+use App\Services\HotelLicenseCapacity;
 use App\Services\HotelLicenseKeyGenerator;
 use App\Services\HotelLicenseLifecycle;
 use App\Services\HotelSettingsManager;
+use App\Services\MasterMediaCloner;
 use App\Tenancy\HotelMediaPath;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Yajra\DataTables\Facades\DataTables;
@@ -31,6 +36,7 @@ class HotelController extends Controller
 
         if ($request->ajax()) {
             $query = Hotel::query()
+                ->excludingSystem()
                 ->with(['configuration', 'latestLicense'])
                 ->withCount(['users', 'menuTenants', 'players']);
 
@@ -56,7 +62,7 @@ class HotelController extends Controller
 
     public function create()
     {
-        return view('pages.platform.hotels.create', ['page' => 'hotels', 'icon' => 'fa fa-hotel']);
+        return view('pages.platform.hotels.create', $this->hotelFormData());
     }
 
     public function generateLicenseKey(Request $request, HotelLicenseKeyGenerator $generator)
@@ -85,10 +91,25 @@ class HotelController extends Controller
                 'license_key_hash' => bcrypt($plainLicenseKey),
                 'license_key_fingerprint' => HotelLicense::fingerprintFor($plainLicenseKey),
             ]);
-            app(HotelSettingsManager::class)->save($hotel, [
+            app(HotelSettingsManager::class)->provisionFromMaster($hotel, [
                 'default_language' => $hotel->locale === 'en_US' ? 'en_US' : 'id_ID',
                 'general_app_name' => $hotel->name,
-            ], null, auth()->id());
+            ], auth()->id());
+            $defaultThemeId = Theme::query()
+                ->where(function ($query) {
+                    $query->where('id', 1)->orWhere('name', 'Default Theme');
+                })
+                ->orderByRaw('CASE WHEN id = 1 THEN 0 ELSE 1 END')
+                ->value('id');
+
+            if ($defaultThemeId) {
+                $hotel->themes()->syncWithoutDetaching([
+                    $defaultThemeId => ['is_default' => true],
+                ]);
+                $this->provisionThemeDetails($hotel, $defaultThemeId);
+            }
+            $this->syncManagers($hotel, $data);
+            $this->createInitialAdmin($hotel, $data);
             $hotel->update(['trial_ends_at' => $licenseData['plan_code'] === 'trial' ? $licenseData['expires_at'] : null]);
         });
 
@@ -184,9 +205,65 @@ class HotelController extends Controller
         $hotel->load('configuration');
         $license = $hotel->licenses()->latest('starts_at')->first();
 
-        return view('pages.platform.hotels.edit', compact('hotel', 'license')
+        $masterTvChannels = collect();
+        if ($masterId = Hotel::masterId()) {
+            $masterTvChannels = \App\Models\TvChannel::query()->withoutGlobalScope('hotel')
+                ->where('hotel_id', $masterId)->whereNull('deleted_at')
+                ->orderBy('group_title')->orderBy('sort_order')->orderBy('name')->get();
+        }
+        $assignedTvChannelIds = DB::table('hotel_tv_channel')->where('hotel_id', $hotel->id)->pluck('tv_channel_id')->map(fn ($id) => (int) $id)->all();
+        $assignedManagerIds = $hotel->managers()->pluck('users.id')->map(fn ($id) => (int) $id)->all();
+
+        return view('pages.platform.hotels.edit', compact('hotel', 'license', 'masterTvChannels', 'assignedTvChannelIds', 'assignedManagerIds')
             + app(HotelSettingsManager::class)->viewData($hotel)
-            + ['page' => 'hotels', 'icon' => 'fa fa-hotel']);
+            + $this->hotelFormData($hotel));
+    }
+
+    public function updateTvChannels(Request $request, Hotel $hotel)
+    {
+        $masterId = Hotel::masterId();
+        abort_unless($masterId, 422);
+
+        $data = $request->validate([
+            'channel_ids' => ['nullable', 'array'],
+            'channel_ids.*' => [
+                'integer',
+                Rule::exists('tv_channels', 'id')->where(fn ($query) => $query->where('hotel_id', $masterId)->whereNull('deleted_at')),
+            ],
+        ]);
+
+        $existing = DB::table('hotel_tv_channel')->where('hotel_id', $hotel->id)->get()->keyBy('tv_channel_id');
+        $channels = \App\Models\TvChannel::query()->withoutGlobalScope('hotel')
+            ->where('hotel_id', $masterId)->whereIn('id', $data['channel_ids'] ?? [])->get();
+        $sync = [];
+        foreach ($channels as $channel) {
+            $current = $existing->get($channel->id);
+            $sync[$channel->id] = [
+                'is_active' => $current?->is_active ?? true,
+                'sort_order' => $current?->sort_order ?? $channel->sort_order,
+                'custom_name' => $current?->custom_name,
+            ];
+        }
+
+        // The form only manages shared catalog channels. Preserve any legacy
+        // private channel assignments that still belong to this hotel.
+        $privateIds = \App\Models\TvChannel::query()->withoutGlobalScope('hotel')
+            ->where('hotel_id', $hotel->id)
+            ->whereNull('deleted_at')
+            ->whereIn('id', $existing->keys())
+            ->pluck('id');
+        foreach ($privateIds as $privateId) {
+            $current = $existing->get($privateId);
+            $sync[$privateId] = [
+                'is_active' => (bool) $current->is_active,
+                'sort_order' => (int) $current->sort_order,
+                'custom_name' => $current->custom_name,
+            ];
+        }
+        $hotel->tvChannels()->sync($sync);
+
+        return redirect()->route('platform.hotels.edit', ['hotel' => $hotel, 'tab' => 'tv-channels'])
+            ->with('success', __('platform.tv_catalog.assignment_saved'));
     }
 
     public function update(Request $request, Hotel $hotel)
@@ -216,6 +293,7 @@ class HotelController extends Controller
                 $hotel->licenses()->create($licenseData);
             }
 
+            $this->syncManagers($hotel, $data);
             $hotel->update(['trial_ends_at' => $licenseData['plan_code'] === 'trial' ? $licenseData['expires_at'] : null]);
         });
 
@@ -244,6 +322,7 @@ class HotelController extends Controller
 
         return $request->validate([
             'name' => ['required', 'string', 'max:150'],
+            'address' => ['nullable', 'string', 'max:2000'],
             'code' => ['required', 'string', 'max:50', Rule::unique('hotels')->ignore($hotel?->id)],
             'slug' => ['nullable', 'string', 'max:170', Rule::unique('hotels')->ignore($hotel?->id)],
             'timezone' => ['required', 'timezone'],
@@ -271,16 +350,131 @@ class HotelController extends Controller
             'license_max_players' => ['nullable', 'integer', 'min:1'],
             'license_max_users' => ['nullable', 'integer', 'min:1'],
             'license_key' => ['nullable', 'string', 'size:6', 'regex:/^[A-Z0-9]{6}$/'],
+            'manager_ids' => ['nullable', 'array'],
+            'manager_ids.*' => [
+                'integer',
+                Rule::exists('users', 'id')->where(fn ($query) => $query
+                    ->where('role_id', \App\Models\Role::query()->where('category', 'manager')->value('id'))
+                    ->whereNull('deleted_at')),
+            ],
+            'admin_name' => ['nullable', 'required_with:admin_username,admin_email,admin_phone,admin_password', 'string', 'max:200'],
+            'admin_username' => ['nullable', 'required_with:admin_name,admin_email,admin_phone,admin_password', 'string', 'max:255', Rule::unique('users', 'username')],
+            'admin_email' => ['nullable', 'required_with:admin_name,admin_username,admin_phone,admin_password', 'email', 'max:255', Rule::unique('users', 'email')],
+            'admin_phone' => ['nullable', 'required_with:admin_name,admin_username,admin_email,admin_password', 'string', 'min:6', 'max:30'],
+            'admin_password' => ['nullable', 'required_with:admin_name,admin_username,admin_email,admin_phone', 'string', 'min:8', 'confirmed'],
         ]);
+    }
+
+    private function provisionThemeDetails(Hotel $hotel, int $themeId): void
+    {
+        $masterHotelId = Hotel::masterId();
+
+        if (! $masterHotelId) {
+            return;
+        }
+
+        $cloner = app(MasterMediaCloner::class);
+
+        ThemeDetail::query()->forHotel($masterHotelId)->where('theme_id', $themeId)
+            ->orderBy('id')->get()
+            ->each(function (ThemeDetail $master) use ($hotel, $themeId, $cloner): void {
+                $value = $master->value;
+                $isImageKey = (bool) preg_match('/^image(_id)?_\d+$/', (string) $master->key);
+
+                if ($isImageKey && ! empty($value)) {
+                    $mediaIds = collect($this->extractMediaIds($value))
+                        ->map(fn ($id) => Media::query()->withoutGlobalScope('hotel')->find((int) $id))
+                        ->map(fn (?Media $media) => $cloner->clone($media, $hotel, $master->key)?->id)
+                        ->filter()
+                        ->values();
+
+                    $value = match (true) {
+                        $mediaIds->isEmpty() => null,
+                        $mediaIds->count() === 1 => (string) $mediaIds->first(),
+                        default => json_encode($mediaIds->map(fn ($id) => (string) $id)->all(), JSON_UNESCAPED_SLASHES),
+                    };
+                }
+
+                ThemeDetail::query()->create([
+                    'hotel_id' => $hotel->id,
+                    'theme_id' => $themeId,
+                    'key' => $master->key,
+                    'value' => $value,
+                ]);
+            });
+    }
+
+    private function extractMediaIds(string $value): array
+    {
+        $value = trim($value);
+
+        if ($value === '') {
+            return [];
+        }
+
+        if (ctype_digit($value)) {
+            return [$value];
+        }
+
+        $decoded = json_decode($value, true);
+
+        return is_array($decoded)
+            ? collect($decoded)->map(fn ($id) => trim((string) $id))->filter(fn ($id) => ctype_digit($id))->values()->all()
+            : [];
     }
 
     private function hotelPayload(array $data): array
     {
         return [
-            'name' => $data['name'], 'code' => $data['code'],
+            'name' => $data['name'], 'address' => $data['address'] ?? null, 'code' => $data['code'],
             'slug' => $data['slug'], 'timezone' => $data['timezone'],
             'locale' => $data['locale'], 'currency' => $data['currency'],
             'status' => $data['status'], 'is_active' => $data['is_active'],
+        ];
+    }
+
+    private function syncManagers(Hotel $hotel, array $data): void
+    {
+        $assignments = collect($data['manager_ids'] ?? [])->mapWithKeys(fn ($managerId) => [
+            $managerId => ['is_active' => true, 'assigned_by' => auth()->id()],
+        ])->all();
+        $hotel->managers()->sync($assignments);
+    }
+
+    private function createInitialAdmin(Hotel $hotel, array $data): void
+    {
+        if (empty($data['admin_email'])) {
+            return;
+        }
+
+        app(HotelLicenseCapacity::class)->assertCanAddUser($hotel->id);
+        $roleId = \App\Models\Role::query()->where('category', 'admin')->value('id');
+        abort_unless($roleId, 422, 'Role admin belum tersedia.');
+
+        $admin = User::query()->withoutGlobalScope('hotel')->create([
+            'hotel_id' => $hotel->id,
+            'role_id' => $roleId,
+            'username' => $data['admin_username'],
+            'email' => $data['admin_email'],
+            'phone' => $data['admin_phone'],
+            'password' => Hash::make($data['admin_password']),
+            'is_active' => true,
+        ]);
+        $admin->profile()->create([
+            'name' => $data['admin_name'],
+            'phone' => $data['admin_phone'],
+        ]);
+    }
+
+    private function hotelFormData(?Hotel $hotel = null): array
+    {
+        return [
+            'page' => 'hotels',
+            'icon' => 'fa fa-hotel',
+            'managerOptions' => User::query()->withoutGlobalScope('hotel')
+                ->whereHas('role', fn ($query) => $query->where('category', 'manager'))
+                ->where('is_active', true)->with('profile')->orderBy('username')->get(),
+            'assignedManagerIds' => $hotel?->managers()->pluck('users.id')->map(fn ($id) => (int) $id)->all() ?? [],
         ];
     }
 
@@ -320,7 +514,7 @@ class HotelController extends Controller
             'starts_at' => $startsAt,
             'expires_at' => $isTrial
                 ? $startsAt->copy()->addDays((int) $plan['duration_days'])
-                : ($data['license_expires_at'] ? Carbon::parse($data['license_expires_at'])->endOfDay() : null),
+                : (! empty($data['license_expires_at']) ? Carbon::parse($data['license_expires_at'])->endOfDay() : null),
             'max_players' => $data['license_plan'] === 'custom' ? ($data['license_max_players'] ?: null) : $plan['max_players'],
             'max_users' => $data['license_plan'] === 'custom' ? ($data['license_max_users'] ?: null) : $plan['max_users'],
         ];

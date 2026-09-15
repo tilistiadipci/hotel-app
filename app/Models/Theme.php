@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
-class Theme extends TenantModel
+class Theme extends Model
 {
     use HasFactory, SoftDeletes;
 
@@ -29,6 +29,13 @@ class Theme extends TenantModel
 
     public function imageMedia()
     {
-        return $this->belongsTo(Media::class, 'image_id');
+        return $this->belongsTo(Media::class, 'image_id')->withoutGlobalScope('hotel');
+    }
+
+    public function hotels()
+    {
+        return $this->belongsToMany(Hotel::class, 'hotel_theme')
+            ->withPivot('is_default')
+            ->withTimestamps();
     }
 }

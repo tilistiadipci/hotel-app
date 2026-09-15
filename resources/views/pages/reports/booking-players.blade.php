@@ -1,26 +1,35 @@
 @extends('templates.index')
 
+@php
+    $managerPortfolio = $managerPortfolio ?? false;
+    $indexRoute = $managerPortfolio ? 'manager.reports.checkins.index' : 'reports.booking-players.index';
+    $dataRoute = $managerPortfolio ? 'manager.reports.checkins.data' : 'reports.booking-players.data';
+    $exportRoute = $managerPortfolio ? 'manager.reports.checkins.export' : 'reports.booking-players.export';
+    $reportTitle = $managerPortfolio ? 'Laporan Check-in Seluruh Hotel' : trans('common.report_booking_players.title');
+@endphp
+
 @section('content')
     <div class="app-main__inner">
         <div class="app-page-title">
             <div class="page-title-wrapper">
                 @include('templates.parts.breadcrumb', [
-                    'title' => trans('common.report_booking_players.title'),
+                    'title' => $reportTitle,
                     'icon' => $icon,
                     'breadcrumbs' => [
-                        ['href' => '#', 'label' => trans('common.report_booking_players.title')],
+                        ['href' => $managerPortfolio ? route('manager.portfolio') : '#', 'label' => $managerPortfolio ? 'Portfolio Hotel' : $reportTitle],
+                        ...($managerPortfolio ? [['href' => '#', 'label' => $reportTitle]] : []),
                     ],
                 ])
 
                 <div class="page-title-actions">
-                    <form action="{{ route('reports.booking-players.index') }}" method="GET" class="form-inline" data-no-loading="1">
+                    <form action="{{ route($indexRoute) }}" method="GET" class="form-inline" data-no-loading="1">
                         <div class="form-group">
                             <select name="player_ids[]" id="playerIds" class="form-control select2" multiple
                                 data-placeholder="{{ trans('common.report_booking_players.filter_players') }}">
                                 @foreach ($players as $player)
                                     <option value="{{ $player->id }}"
                                         {{ in_array($player->id, $selectedPlayerIds ?? [], true) ? 'selected' : '' }}>
-                                        {{ $player->name }}{{ $player->alias ? " ({$player->alias})" : '' }}
+                                        @if($managerPortfolio){{ $player->hotel?->name }} - @endif{{ $player->name }}{{ $player->alias ? " ({$player->alias})" : '' }}
                                     </option>
                                 @endforeach
                             </select>
@@ -39,7 +48,7 @@
                         <button type="submit" class="btn btn-primary btn-sm ml-2">
                             <i class="fa fa-filter"></i> {{ trans('common.filter') }}
                         </button>
-                        <a href="{{ route('reports.booking-players.index') }}" class="btn btn-light btn-sm ml-2">
+                        <a href="{{ route($indexRoute) }}" class="btn btn-light btn-sm ml-2">
                             <i class="fa fa-undo"></i> {{ trans('common.reset') }}
                         </a>
                     </form>
@@ -66,6 +75,7 @@
                                 <thead>
                                     <tr>
                                         <th style="width: 60px;">No</th>
+                                        @if($managerPortfolio)<th>Hotel</th>@endif
                                         <th>{{ trans('common.report_booking_players.player_name') }}</th>
                                         <th>{{ trans('common.report_booking_players.player_alias') }}</th>
                                         <th>{{ trans('common.report_booking_players.guest_name') }}</th>
@@ -164,7 +174,7 @@
                 lengthMenu: [10, 20, 50, 100, 200],
                 pageLength: 10,
                 ajax: {
-                    url: "{{ route('reports.booking-players.data') }}",
+                    url: "{{ route($dataRoute) }}",
                     data: function(d) {
                         d.daterange = $input.val();
                         d.player_ids = $('#playerIds').val() || [];
@@ -172,6 +182,7 @@
                 },
                 columns: [
                     { data: 'DT_RowIndex', name: 'DT_RowIndex', orderable: false, searchable: false, width: '20px', className: 'text-center' },
+                    @if($managerPortfolio){ data: 'hotel_name', name: 'hotels.name' },@endif
                     { data: 'player_name', name: 'player_name' },
                     { data: 'player_alias', name: 'player_alias' },
                     { data: 'guest_name', name: 'guest_name' },
@@ -186,7 +197,7 @@
             });
 
             async function fetchChunk(offset, limit) {
-                return $.get("{{ route('reports.booking-players.export') }}", {
+                return $.get("{{ route($exportRoute) }}", {
                     daterange: $input.val(),
                     player_ids: $('#playerIds').val() || [],
                     offset: offset,
@@ -196,7 +207,7 @@
 
             $('#exportExcel').on('click', async function() {
                 loadingSwal();
-                const reportTitle = "{{ trans('common.report_booking_players.title') }}";
+                const reportTitle = @json($reportTitle);
                 const rangeLabel = "{{ trans('common.report_booking_players.generated_range') }}";
                 const generatedAtLabel = "{{ trans('common.report_booking_players.generated_at') }}";
                 const generatedByLabel = "{{ trans('common.report_booking_players.generated_by') }}";
@@ -212,6 +223,7 @@
                     [],
                 ];
                 const headers = [
+                    @if($managerPortfolio)"Hotel",@endif
                     "{{ trans('common.report_booking_players.player_name') }}",
                     "{{ trans('common.report_booking_players.player_alias') }}",
                     "{{ trans('common.report_booking_players.guest_name') }}",

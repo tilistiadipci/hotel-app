@@ -16,7 +16,11 @@ class RoleRepository extends BaseRepository
         $query = parent::where()->whereNotIn('category', ['master', 'superadmin']);
 
         if (auth()->user()?->hasRoleCategory('admin')) {
-            $query->where('category', '!=', 'admin');
+            $query->whereNotIn('category', ['admin', 'manager']);
+        }
+
+        if (auth()->user()?->hasRoleCategory('manager')) {
+            $query->whereIn('category', ['admin', 'operator', 'user']);
         }
 
         return $query->get();

@@ -26,7 +26,7 @@ class UserRepository extends BaseRepository
     {
         $query = $this->model->where('role_id', '!=', 1);
 
-        if (!empty($with)) {
+        if (! empty($with)) {
             return $query->with($with)->get();
         }
 
@@ -47,19 +47,19 @@ class UserRepository extends BaseRepository
     public function getUserAndProfile($with = [], $withoutAdmin = true)
     {
         $query = $this->model->query()
-                ->select(
-                    'users.*',
-                    'users.id as id',
-                    'user_profiles.id as profile_id',
-                    'user_profiles.name as name',
-                )
-                ->join('user_profiles', 'users.id', '=', 'user_profiles.user_id');
+            ->select(
+                'users.*',
+                'users.id as id',
+                'user_profiles.id as profile_id',
+                'user_profiles.name as name',
+            )
+            ->join('user_profiles', 'users.id', '=', 'user_profiles.user_id');
 
         if ($withoutAdmin) {
             $query->where('role_id', '!=', 1);
         }
 
-        if (!empty($with)) {
+        if (! empty($with)) {
             $query->with($with);
         }
 
@@ -75,33 +75,34 @@ class UserRepository extends BaseRepository
             ->filter(request(['search', 'filters']));
 
         return DataTables::of($this->paginateDatatable($query))
-                ->addIndexColumn()
-                ->addColumn('tenants', function ($row) {
-                    return $row->menuTenants->pluck('name')->implode(', ');
-                })
-                ->addColumn('action', function($row){
-                    return view('partials.datatable.action2', [
-                        'row' => $row
-                    ])->render();
-                })
-                ->rawColumns(['action'])
-                ->make(true);
+            ->addIndexColumn()
+            ->addColumn('tenants', function ($row) {
+                return $row->menuTenants->pluck('name')->implode(', ');
+            })
+            ->addColumn('action', function ($row) {
+                return view('partials.datatable.action2', [
+                    'row' => $row,
+                ])->render();
+            })
+            ->rawColumns(['action'])
+            ->make(true);
     }
 
     public function create(array $data)
     {
         $password = Hash::make($data['password'] ?? '12345678');
-        if (empty($data['password']) || $data['password'] == "") {
+        if (empty($data['password']) || $data['password'] == '') {
             $password = Hash::make('12345678');
         }
 
         $user = parent::create([
             'username' => $data['username'],
             'email' => $data['email'],
+            'phone' => $data['phone'] ?? null,
             'password' => $password,
             'role_id' => $data['role_id'],
             'menu_tenant_id' => $data['menu_tenant_id'] ?? null,
-            'is_active' => $data['is_active']
+            'is_active' => $data['is_active'],
         ]);
 
         UserProfile::create([
@@ -111,7 +112,7 @@ class UserRepository extends BaseRepository
             'address' => $data['address'] ?? null,
             'gender' => $data['gender'] ?? null,
             'image_id' => $data['image_id'] ?? null,
-            'user_id' => $user->id
+            'user_id' => $user->id,
         ]);
 
         $this->syncMenuTenants($user, $data);
@@ -124,9 +125,10 @@ class UserRepository extends BaseRepository
 
         $data = [
             'username' => $request['username'],
+            'phone' => $request['phone'] ?? null,
             'role_id' => $request['role_id'],
             'menu_tenant_id' => $request['menu_tenant_id'] ?? null,
-            'is_active' => $request['is_active']
+            'is_active' => $request['is_active'],
         ];
 
         if (! empty($request['password'])) {
@@ -137,7 +139,7 @@ class UserRepository extends BaseRepository
         $user = User::where('email', $request['email'])->first();
 
         // update email jika tidak ada yang user yang pakai
-        if (!$user) {
+        if (! $user) {
             $data['email'] = $request['email'];
         }
 
@@ -203,7 +205,10 @@ class UserRepository extends BaseRepository
             'address' => $request['address'],
             'phone' => $request['phone'],
             'image_id' => $request['image_id'] ?? $request['existing_image_id'] ?? null,
-            'gender' => $request['gender']
+            'gender' => $request['gender'],
+        ]);
+        User::query()->withoutGlobalScope('hotel')->whereKey($user->id)->update([
+            'phone' => $request['phone'],
         ]);
 
         return true;
@@ -230,12 +235,13 @@ class UserRepository extends BaseRepository
                 $user->menu_tenant_id = null;
                 $user->save();
             }
+
             return;
         }
 
         $user->menuTenants()->sync($tenantIds);
 
-        $primaryTenantId = !empty($tenantIds) ? $tenantIds[0] : null;
+        $primaryTenantId = ! empty($tenantIds) ? $tenantIds[0] : null;
         if ((int) ($user->menu_tenant_id ?? 0) !== (int) ($primaryTenantId ?? 0)) {
             $user->menu_tenant_id = $primaryTenantId;
             $user->save();

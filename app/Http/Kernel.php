@@ -67,6 +67,8 @@ class Kernel extends HttpKernel
         'role.category' => \App\Http\Middleware\EnsureRoleCategory::class,
         'setting.active' => \App\Http\Middleware\EnsureSettingIsActive::class,
         'hotel.resolve' => \App\Http\Middleware\ResolveHotel::class,
+        'hotel.context.default' => \App\Http\Middleware\DefaultSuperadminHotelContext::class,
+        'manager.hotel.access' => \App\Http\Middleware\EnsureManagerHotelAccess::class,
         'hotel.license' => \App\Http\Middleware\EnsureHotelLicenseActive::class,
         'hotel.license.header' => \App\Http\Middleware\EnsureHotelLicenseHeader::class,
     ];

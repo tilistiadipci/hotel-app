@@ -1,10 +1,27 @@
+@php
+    $focusMode = $focusMode ?? false;
+    $isPlatformAdminHeader = auth()->user()?->hasRoleCategory('master', 'superadmin') ?? false;
+    $isManagerHeader = auth()->user()?->hasRoleCategory('manager') ?? false;
+    $activeManagerHotel = request()->attributes->get('active_hotel');
+    $managerContextLabel = request()->routeIs('manager.*')
+        ? 'Portfolio Hotel'
+        : ($activeManagerHotel?->name ?? session('active_hotel_name', 'Portfolio Hotel'));
+    $focusBackRoute = $isPlatformAdminHeader ? 'platform.dashboard' : 'dashboard.index';
+@endphp
 <div class="app-header header-shadow">
     <div class="app-header__logo text-center">
-        <div class="d-flex align-items-center text-center" style="gap: 10px;">
-            <div class="font-weight-bold text-dark text-center" style="font-size: 18px; line-height: 1.2;">
-                {{ session('settings.general_app_name', config('app.name')) }}
+        @if ($focusMode)
+            <a href="{{ route($focusBackRoute) }}" class="d-flex align-items-center text-dark" style="gap: 8px; font-weight: 600;">
+                <i class="fa fa-arrow-left"></i>
+                <span>Kembali ke Dashboard</span>
+            </a>
+        @else
+            <div class="d-flex align-items-center text-center" style="gap: 10px;">
+                <div class="font-weight-bold text-dark text-center" style="font-size: 18px; line-height: 1.2;">
+                    {{ session('settings.general_app_name', config('app.name')) }}
+                </div>
             </div>
-        </div>
+        @endif
     </div>
     <div class="app-header__menu">
         <span>
@@ -21,6 +38,11 @@
             </div>
         </div>
         <div class="app-header-right">
+            @if($isManagerHeader)
+                <a href="{{ route('manager.portfolio') }}" class="btn btn-outline-primary btn-sm mr-3">
+                    <i class="fa fa-building mr-1"></i>{{ $managerContextLabel }}
+                </a>
+            @endif
             {{-- <div class="header-dots">
                 <div class="dropdown">
                     <button type="button" data-toggle="dropdown" class="p-0 btn btn-link">

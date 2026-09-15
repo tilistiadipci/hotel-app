@@ -327,9 +327,15 @@ class UserController extends Controller
         $validated = $request->validate($rules, $messages);
 
         $role = $this->roleRepository->find($validated['role_id'] ?? null);
-        if (auth()->user()?->hasRoleCategory('admin') && in_array($role->category ?? null, ['master', 'superadmin', 'admin'], true)) {
+        if (auth()->user()?->hasRoleCategory('admin') && in_array($role->category ?? null, ['master', 'superadmin', 'manager', 'admin'], true)) {
             throw ValidationException::withMessages([
                 'role_id' => 'Admin hotel hanya dapat membuat user operasional untuk hotelnya.',
+            ]);
+        }
+
+        if (auth()->user()?->hasRoleCategory('manager') && ! in_array($role->category ?? null, ['admin', 'operator', 'user'], true)) {
+            throw ValidationException::withMessages([
+                'role_id' => 'Manager hanya dapat membuat admin, operator, atau user untuk hotel aktif.',
             ]);
         }
 

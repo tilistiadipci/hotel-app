@@ -7,10 +7,9 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Illuminate\Support\Str;
 use Laravel\Sanctum\HasApiTokens;
 use LogicException;
-use Illuminate\Support\Str;
-
 
 class User extends Authenticatable
 {
@@ -20,6 +19,7 @@ class User extends Authenticatable
         'uid',
         'username',
         'email',
+        'phone',
         'password',
         'last_login_at',
         'login_count',
@@ -40,21 +40,27 @@ class User extends Authenticatable
         'login_count' => 'integer',
     ];
 
-
     protected static function booted()
     {
         static::creating(function ($user) {
             $user->uuid = (string) Str::uuid();
+
+            $category = Role::query()->find($user->role_id)?->category;
+            if (in_array($category, ['master', 'superadmin', 'manager'], true)) {
+                // BelongsToHotel fills the active tenant during the creating
+                // event. Platform users and managers must remain global.
+                $user->hotel_id = null;
+            }
         });
 
         static::saving(function (self $user): void {
             $category = Role::query()->find($user->role_id)?->category;
 
-            if (in_array($category, ['master', 'superadmin'], true) || $user->hotel_id) {
+            if (in_array($category, ['master', 'superadmin', 'manager'], true) || $user->hotel_id) {
                 return;
             }
 
-            $hotelIds = Hotel::query()->where('is_active', true)->limit(2)->pluck('id');
+            $hotelIds = Hotel::query()->where('is_active', true)->where('is_system', false)->limit(2)->pluck('id');
 
             if ($hotelIds->count() === 1) {
                 $user->hotel_id = $hotelIds->first();
@@ -71,8 +77,8 @@ class User extends Authenticatable
         // global search from DataTables
         $query->when($filters['search']['value'] ?? false, function ($query, $search) {
             return $query->where(function ($query) use ($search) {
-                $query->where('username', 'like', '%' . $search . '%')
-                    ->orWhere('email', 'like', '%' . $search . '%');
+                $query->where('username', 'like', '%'.$search.'%')
+                    ->orWhere('email', 'like', '%'.$search.'%');
             });
         });
 
@@ -80,12 +86,12 @@ class User extends Authenticatable
 
         // filter by username
         $query->when($filter['username'] ?? false, function ($query, $username) {
-            $query->where('username', 'like', '%' . $username . '%');
+            $query->where('username', 'like', '%'.$username.'%');
         });
 
         // filter by email
         $query->when($filter['email'] ?? false, function ($query, $email) {
-            $query->where('email', 'like', '%' . $email . '%');
+            $query->where('email', 'like', '%'.$email.'%');
         });
 
         // filter by role name
@@ -113,6 +119,13 @@ class User extends Authenticatable
     public function hotel()
     {
         return $this->belongsTo(Hotel::class);
+    }
+
+    public function managedHotels()
+    {
+        return $this->belongsToMany(Hotel::class, 'hotel_manager', 'manager_id', 'hotel_id')
+            ->withPivot(['is_active', 'assigned_by'])
+            ->withTimestamps();
     }
 
     public function profile()

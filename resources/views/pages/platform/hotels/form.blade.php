@@ -2,6 +2,7 @@
     $configuration = isset($hotel) ? $hotel->configuration : null;
     $currentLicense = $license ?? null;
     $licensePlans = config('hotel_plans');
+    $selectedManagerIds = collect(old('manager_ids', $assignedManagerIds ?? []))->map(fn ($id) => (string) $id)->all();
 @endphp
 
 <form method="POST"
@@ -47,6 +48,15 @@
         @endforeach
 
         <div class="position-relative row form-group">
+            <label for="address" class="col-sm-3 col-form-label text-sm-right">Alamat Hotel</label>
+            <div class="col-sm-9">
+                <textarea id="address" name="address" rows="3" class="form-control @error('address') is-invalid @enderror">{{ old('address', $hotel->address ?? '') }}</textarea>
+                @error('address')<div class="invalid-feedback">{{ $message }}</div>
+                @else<small class="text-muted font-italic">Alamat lengkap cabang hotel.</small>@enderror
+            </div>
+        </div>
+
+        <div class="position-relative row form-group">
             <label for="status" class="col-sm-3 col-form-label text-sm-right">Status</label>
             <div class="col-sm-9">
                 <select id="status" name="status" class="form-control @error('status') is-invalid @enderror">
@@ -69,6 +79,34 @@
                 @else<small class="text-primary font-italic">* Wajib diisi</small>@enderror
             </div>
         </div>
+
+        <h5 class="mt-5">Manager Hotel</h5>
+        <hr class="mb-4">
+        <div class="position-relative row form-group">
+            <label for="manager_ids" class="col-sm-3 col-form-label text-sm-right">Manager</label>
+            <div class="col-sm-9">
+                <select id="manager_ids" name="manager_ids[]" class="form-control select2 @error('manager_ids') is-invalid @enderror" multiple>
+                    @foreach($managerOptions as $managerOption)
+                        <option value="{{ $managerOption->id }}" @selected(in_array((string) $managerOption->id, $selectedManagerIds, true))>
+                            {{ $managerOption->profile?->name ?: $managerOption->username }} — {{ $managerOption->email }}
+                        </option>
+                    @endforeach
+                </select>
+                @error('manager_ids')<div class="invalid-feedback d-block">{{ $message }}</div>
+                @else<small class="text-muted font-italic">Manager terpilih dapat membuka dan mengelola hotel ini dari CMS Manager.</small>@enderror
+            </div>
+        </div>
+
+        @unless(isset($hotel))
+        <h5 class="mt-5">Admin Hotel Pertama <small class="text-muted">(Opsional)</small></h5>
+        <hr class="mb-4">
+        <div class="alert alert-light border ml-sm-auto col-sm-9">Isi bagian ini jika akun admin hotel ingin langsung dibuat bersamaan dengan hotel. Kosongkan seluruhnya jika admin akan dibuat nanti.</div>
+        @foreach([['admin_name','Nama Admin','text'],['admin_username','Username Admin','text'],['admin_email','Email Admin','email'],['admin_phone','Nomor HP Admin','text']] as [$field,$label,$type])
+        <div class="position-relative row form-group"><label for="{{ $field }}" class="col-sm-3 col-form-label text-sm-right">{{ $label }}</label><div class="col-sm-9"><input id="{{ $field }}" name="{{ $field }}" type="{{ $type }}" class="form-control @error($field) is-invalid @enderror" value="{{ old($field) }}">@error($field)<div class="invalid-feedback">{{ $message }}</div>@enderror</div></div>
+        @endforeach
+        <div class="position-relative row form-group"><label for="admin_password" class="col-sm-3 col-form-label text-sm-right">Password Admin</label><div class="col-sm-9"><input id="admin_password" name="admin_password" type="password" class="form-control @error('admin_password') is-invalid @enderror">@error('admin_password')<div class="invalid-feedback">{{ $message }}</div>@enderror</div></div>
+        <div class="position-relative row form-group"><label for="admin_password_confirmation" class="col-sm-3 col-form-label text-sm-right">Konfirmasi Password</label><div class="col-sm-9"><input id="admin_password_confirmation" name="admin_password_confirmation" type="password" class="form-control"></div></div>
+        @endunless
 
         <h5 class="mt-5">Lisensi dan Akses Client</h5>
         <hr class="mb-4">

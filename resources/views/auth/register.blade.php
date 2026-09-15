@@ -1,143 +1,123 @@
 @extends('auth.layouts.app')
 
+@section('css')
+    <style>
+        :root { --auth-ink:#17243b; --auth-muted:#718096; --auth-primary:#3169df; }
+        body { margin:0; background:#eef3fa; color:var(--auth-ink); }
+        .registration-shell { min-height:100vh; display:grid; grid-template-columns:minmax(480px,.9fr) minmax(520px,1.1fr); }
+        .registration-panel { display:flex; flex-direction:column; justify-content:center; padding:48px clamp(30px,6vw,92px); background:#fff; }
+        .registration-wrap { width:100%; max-width:540px; margin:auto; }
+        .registration-brand { display:flex; align-items:center; gap:12px; margin-bottom:45px; color:var(--auth-ink); text-decoration:none; }
+        .registration-brand-mark { width:44px; height:44px; display:grid; place-items:center; border-radius:13px; color:#fff; background:linear-gradient(135deg,#3678ed,#7048cf); box-shadow:0 10px 24px rgba(49,105,223,.25); }
+        .registration-brand-copy strong,.registration-brand-copy small { display:block; font-style:normal!important; transform:none!important; }
+        .registration-brand-copy strong { font-size:18px; line-height:1.1; font-weight:800; }
+        .registration-brand-copy small { color:var(--auth-muted); letter-spacing:.08em; text-transform:uppercase; }
+        .registration-kicker { color:var(--auth-primary); font-size:12px; font-weight:700; letter-spacing:.14em; text-transform:uppercase; margin-bottom:10px; }
+        .registration-title { margin:0 0 10px; color:var(--auth-ink); font-size:clamp(32px,4vw,44px); font-weight:700; letter-spacing:-.035em; }
+        .registration-subtitle { margin:0 0 30px; color:var(--auth-muted); line-height:1.7; }
+        .registration-grid { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+        .registration-field-wide { grid-column:1/-1; }
+        .registration-field label { display:block; margin-bottom:8px; color:#34435a; font-weight:600; }
+        .registration-section-title { grid-column:1/-1; margin-top:8px; padding-bottom:9px; border-bottom:1px solid #e8edf5; color:#243754; font-size:14px; font-weight:800; }
+        .registration-required { color:#dc3545; }
+        .registration-input { width:100%; height:52px; border:1px solid #dce4ef; border-radius:13px; padding:0 15px; background:#f8fafd; color:var(--auth-ink); box-sizing:border-box; transition:.2s; }
+        textarea.registration-input { height:auto; min-height:90px; padding-top:13px; resize:vertical; }
+        .registration-input:focus { outline:0; border-color:#6c98ef; background:#fff; box-shadow:0 0 0 4px rgba(49,105,223,.1); }
+        .registration-input.is-invalid { border-color:#dc3545; }
+        .registration-error { display:block; margin-top:5px; color:#dc3545; font-size:12px; }
+        .registration-submit { width:100%; height:54px; margin-top:25px; border:0; border-radius:13px; color:#fff; background:linear-gradient(135deg,var(--auth-primary),#6555d9); box-shadow:0 12px 28px rgba(49,105,223,.24); font-weight:700; cursor:pointer; }
+        .registration-login { margin-top:20px; color:var(--auth-muted); text-align:center; }
+        .registration-login a { color:var(--auth-primary); font-weight:700; }
+        .registration-story { position:relative; overflow:hidden; min-height:100vh; background:#17243b url("{{ asset('images/auth/hotel-lobby-pexels.jpg') }}") center/cover no-repeat; }
+        .registration-story::before { content:''; position:absolute; inset:0; background:linear-gradient(145deg,rgba(14,35,70,.92),rgba(35,80,143,.74) 48%,rgba(96,55,163,.84)); }
+        .registration-story-content { position:relative; z-index:1; min-height:100vh; display:flex; flex-direction:column; justify-content:flex-end; padding:clamp(48px,8vw,110px); color:#fff; }
+        .registration-story-content h2 { max-width:650px; margin:0 0 18px; color:#fff; font-size:clamp(38px,5vw,64px); line-height:1.06; letter-spacing:-.04em; }
+        .registration-story-content p { max-width:590px; margin:0; color:rgba(255,255,255,.82); font-size:16px; line-height:1.75; }
+        @media(max-width:991px){.registration-shell{grid-template-columns:1fr}.registration-story{display:none}.registration-panel{padding:42px 26px}}
+        @media(max-width:575px){.registration-grid{grid-template-columns:1fr}.registration-field-wide{grid-column:auto}.registration-title{font-size:34px}}
+    </style>
+@endsection
+
 @section('content')
-    <div class="h-100">
-        <div class="h-100 no-gutters row">
-            <div class="h-100 d-md-flex d-sm-block bg-white justify-content-center align-items-center col-md-12 col-lg-7">
-                <div class="mx-auto app-login-box col-sm-12 col-md-10 col-lg-9">
-                    <h4>
-                        <div>Create Owner</div>
-                    </h4>
-                    <div>
-                        <form class="" method="POST" action="{{ route('register') }}">
-                            @csrf
-                            <div class="form-row">
-                                <div class="col-md-6">
-                                    <div class="position-relative form-group"><label for="email" class="">Email</label><input name="email"
-                                            id="email" placeholder="Email here..." type="email"
-                                            class="form-control"><small class="text-primary d-block mt-1" style="font-style: italic">* {{ trans('common.required') }}</small></div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="position-relative form-group"><label for="name"
-                                            class="">Name</label><input name="name" id="name"
-                                            placeholder="Name here..." type="text" class="form-control"></div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="position-relative form-group"><label for="examplePassword"
-                                            class="">Password</label><input
-                                            name="password" id="examplePassword" placeholder="Password here..."
-                                            type="password" class="form-control"><small class="text-primary d-block mt-1" style="font-style: italic">* {{ trans('common.required') }}</small></div>
-                                </div>
-                                <div class="col-md-6">
-                                    <div class="position-relative form-group"><label for="domainName"
-                                            class="">Domain Name</label><input
-                                            name="domain" id="domainName" placeholder="Domain name here..."
-                                            type="text" class="form-control"><small class="text-primary d-block mt-1" style="font-style: italic">* {{ trans('common.required') }}</small></div>
-                                </div>
-                            </div>
-                            <div class="mt-3 position-relative form-check"><input name="check" id="exampleCheck"
-                                    type="checkbox" class="form-check-input"><label for="exampleCheck"
-                                    class="form-check-label">Accept our <a href="javascript:void(0);">Terms
-                                        and Conditions</a>.</label></div>
-                            <div class="mt-4 d-flex align-items-center">
-                                <h5 class="mb-0">Already have an account? <a href="javascript:void(0);"
-                                        class="text-primary">Sign in</a></h5>
-                                <div class="ml-auto">
-                                    <button
-                                        class="btn-wide btn-pill btn-shadow btn-hover-shine btn btn-primary btn-lg">Create
-                                        Account</button>
-                                </div>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-            </div>
-            <div class="d-lg-flex d-xs-none col-lg-5">
-                <div class="slider-light">
-                    <div class="slick-slider slick-initialized">
-                        <div>
-                            <div class="position-relative h-100 d-flex justify-content-center align-items-center bg-premium-dark"
-                                tabindex="-1">
-                                <div class="slide-img-bg" style="background-image: url('../template/assets/images/originals/citynights.jpg');"></div>
-                                <div class="slider-content">
-                                    <h3>Scalable, Modular, Consistent</h3>
-                                    <p>Easily exclude the components you don't require. Lightweight, consistent Bootstrap
-                                        based styles across all elements and components</p>
-                                </div>
-                            </div>
+    <main class="registration-shell">
+        <section class="registration-panel">
+            <div class="registration-wrap">
+                <a class="registration-brand" href="{{ route('landing.show') }}">
+                    <span class="registration-brand-mark"><i class="fa fa-building"></i></span>
+                    <span class="registration-brand-copy"><strong>{{ config('app.name', 'Hotel App') }}</strong><small>{{ __('platform.registration.brand_subtitle') }}</small></span>
+                </a>
+                <div class="registration-kicker">{{ __('platform.registration.kicker') }}</div>
+                <h1 class="registration-title">{{ __('platform.registration.title') }}</h1>
+                <p class="registration-subtitle">{{ __('platform.registration.subtitle') }}</p>
+                <form method="POST" action="{{ route('register') }}">
+                    @csrf
+                    <div class="registration-grid">
+                        <div class="registration-section-title">{{ __('platform.registration.hotel_data') }}</div>
+                        <div class="registration-field registration-field-wide">
+                            <label for="hotel_name">{{ __('platform.registration.hotel_name') }} <span class="registration-required">*</span></label>
+                            <input id="hotel_name" name="hotel_name" value="{{ old('hotel_name') }}" class="registration-input @error('hotel_name') is-invalid @enderror" required autofocus>
+                            @error('hotel_name')<span class="registration-error">{{ $message }}</span>@enderror
+                        </div>
+                        <div class="registration-field registration-field-wide">
+                            <label for="hotel_address">{{ __('platform.registration.hotel_address') }} <span class="registration-required">*</span></label>
+                            <textarea id="hotel_address" name="hotel_address" class="registration-input @error('hotel_address') is-invalid @enderror" required>{{ old('hotel_address') }}</textarea>
+                            @error('hotel_address')<span class="registration-error">{{ $message }}</span>@enderror
+                        </div>
+                        <div class="registration-section-title">{{ __('platform.registration.admin_account_data') }}</div>
+                        <div class="registration-field registration-field-wide">
+                            <label for="person_in_charge">{{ __('platform.registration.person_in_charge') }} <span class="registration-required">*</span></label>
+                            <input id="person_in_charge" name="person_in_charge" value="{{ old('person_in_charge') }}" class="registration-input @error('person_in_charge') is-invalid @enderror" required>
+                            @error('person_in_charge')<span class="registration-error">{{ $message }}</span>@enderror
+                        </div>
+                        <div class="registration-field registration-field-wide">
+                            <label for="username">{{ __('platform.registration.username') }} <span class="registration-required">*</span></label>
+                            <input id="username" name="username" value="{{ old('username') }}" autocomplete="username" class="registration-input @error('username') is-invalid @enderror" required>
+                            @error('username')<span class="registration-error">{{ $message }}</span>@enderror
+                        </div>
+                        <div class="registration-field">
+                            <label for="email">{{ __('platform.registration.email') }} <span class="registration-required">*</span></label>
+                            <input id="email" name="email" type="email" value="{{ old('email') }}" class="registration-input @error('email') is-invalid @enderror" required>
+                            @error('email')<span class="registration-error">{{ $message }}</span>@enderror
+                        </div>
+                        <div class="registration-field">
+                            <label for="whatsapp">{{ __('platform.registration.whatsapp') }} <span class="registration-required">*</span></label>
+                            <input id="whatsapp" name="whatsapp" value="{{ old('whatsapp') }}" placeholder="+628123456789" class="registration-input @error('whatsapp') is-invalid @enderror" required>
+                            @error('whatsapp')<span class="registration-error">{{ $message }}</span>@enderror
+                        </div>
+                        <div class="registration-field">
+                            <label for="gender">{{ __('platform.registration.gender') }}</label>
+                            <select id="gender" name="gender" class="registration-input @error('gender') is-invalid @enderror">
+                                <option value="">{{ __('platform.registration.choose_gender') }}</option>
+                                <option value="male" @selected(old('gender') === 'male')>{{ __('platform.registration.male') }}</option>
+                                <option value="female" @selected(old('gender') === 'female')>{{ __('platform.registration.female') }}</option>
+                            </select>
+                            @error('gender')<span class="registration-error">{{ $message }}</span>@enderror
+                        </div>
+                        <div class="registration-field registration-field-wide">
+                            <label for="admin_address">{{ __('platform.registration.admin_address') }}</label>
+                            <textarea id="admin_address" name="admin_address" class="registration-input @error('admin_address') is-invalid @enderror">{{ old('admin_address') }}</textarea>
+                            @error('admin_address')<span class="registration-error">{{ $message }}</span>@enderror
+                        </div>
+                        <div class="registration-field">
+                            <label for="password">{{ __('platform.registration.password') }} <span class="registration-required">*</span></label>
+                            <input id="password" name="password" type="password" autocomplete="new-password" class="registration-input @error('password') is-invalid @enderror" required>
+                            @error('password')<span class="registration-error">{{ $message }}</span>@enderror
+                        </div>
+                        <div class="registration-field">
+                            <label for="password_confirmation">{{ __('platform.registration.password_confirmation') }} <span class="registration-required">*</span></label>
+                            <input id="password_confirmation" name="password_confirmation" type="password" autocomplete="new-password" class="registration-input" required>
                         </div>
                     </div>
-                </div>
+                    <button type="submit" class="registration-submit">{{ __('platform.registration.submit') }}</button>
+                </form>
+                <div class="registration-login">{{ __('platform.registration.have_account') }} <a href="{{ route('login') }}">{{ __('platform.registration.login') }}</a></div>
             </div>
-        </div>
-    </div>
-    {{-- <div class="container">
-    <div class="row justify-content-center">
-        <div class="col-md-8">
-            <div class="card">
-                <div class="card-header">{{ __('Login') }}</div>
-
-                <div class="card-body">
-                    <form method="POST" action="{{ route('login') }}">
-                        @csrf
-
-                        <div class="row mb-3">
-                            <label for="email" class="col-md-4 col-form-label text-md-end">{{ __('Email Address') }}</label>
-
-                            <div class="col-md-6">
-                                <input id="email" type="email" class="form-control @error('email') is-invalid @enderror" name="email" value="{{ old('email') }}" required autocomplete="email" autofocus>
-
-                                @error('email')
-                                    <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $message }}</strong>
-                                    </span>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <div class="row mb-3">
-                            <label for="password" class="col-md-4 col-form-label text-md-end">{{ __('Password') }}</label>
-
-                            <div class="col-md-6">
-                                <input id="password" type="password" class="form-control @error('password') is-invalid @enderror" name="password" required autocomplete="current-password">
-
-                                @error('password')
-                                    <span class="invalid-feedback" role="alert">
-                                        <strong>{{ $message }}</strong>
-                                    </span>
-                                @enderror
-                            </div>
-                        </div>
-
-                        <div class="row mb-3">
-                            <div class="col-md-6 offset-md-4">
-                                <div class="form-check">
-                                    <input class="form-check-input" type="checkbox" name="remember" id="remember" {{ old('remember') ? 'checked' : '' }}>
-
-                                    <label class="form-check-label" for="remember">
-                                        {{ __('Remember Me') }}
-                                    </label>
-                                </div>
-                            </div>
-                        </div>
-
-                        <div class="row mb-0">
-                            <div class="col-md-8 offset-md-4">
-                                <button type="submit" class="btn btn-primary">
-                                    {{ __('Login') }}
-                                </button>
-
-                                @if (Route::has('password.request'))
-                                    <a class="btn btn-link" href="{{ route('password.request') }}">
-                                        {{ __('Forgot Your Password?') }}
-                                    </a>
-                                @endif
-                            </div>
-                        </div>
-                    </form>
-                </div>
+        </section>
+        <aside class="registration-story">
+            <div class="registration-story-content">
+                <h2>{{ __('platform.registration.story_title') }}</h2>
+                <p>{{ __('platform.registration.story_text') }}</p>
             </div>
-        </div>
-    </div>
-</div> --}}
+        </aside>
+    </main>
 @endsection

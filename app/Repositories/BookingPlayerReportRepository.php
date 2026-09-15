@@ -26,6 +26,7 @@ class BookingPlayerReportRepository extends BaseRepository
 
         return DataTables::of($query)
             ->addIndexColumn()
+            ->addColumn('hotel_name', fn ($row) => $row->hotel_name ?? $row->hotel?->name ?? '-')
             ->addColumn('player_name', function ($row) {
                 return $row->player?->name ?? '-';
             })
@@ -55,13 +56,19 @@ class BookingPlayerReportRepository extends BaseRepository
             ->limit($limit)
             ->get()
             ->map(function ($row) {
-                return [
+                $data = [
                     $row->player?->name ?? '-',
                     $row->player?->alias ?? '-',
                     $row->guest_name ?? '-',
                     optional($row->checked_in_at)->format('d/m/Y H:i') ?? '-',
                     optional($row->checked_out_at)->format('d/m/Y H:i') ?? '-',
                 ];
+
+                if ($row->portfolio_report ?? false) {
+                    array_unshift($data, $row->hotel_name ?? $row->hotel?->name ?? '-');
+                }
+
+                return $data;
             })
             ->values()
             ->all();
@@ -79,14 +86,24 @@ class BookingPlayerReportRepository extends BaseRepository
     private function baseQuery(array $filters)
     {
         $query = $this->query()
-            ->with(['player'])
+            ->with(['player', 'hotel'])
             ->whereNotNull('checked_in_at');
 
+        if (array_key_exists('hotel_ids', $filters)) {
+            $query->withoutGlobalScope('hotel')
+                ->join('hotels', 'hotels.id', '=', 'bookings.hotel_id')
+                ->whereIn('bookings.hotel_id', (array) $filters['hotel_ids']);
+
+            if ($filters['include_hotel'] ?? false) {
+                $query->select('bookings.*', 'hotels.name as hotel_name')->selectRaw('1 as portfolio_report');
+            }
+        }
+
         $playerIds = $filters['player_ids'] ?? [];
-        if (!is_array($playerIds)) {
+        if (! is_array($playerIds)) {
             $playerIds = array_filter(explode(',', (string) $playerIds));
         }
-        if (!empty($playerIds)) {
+        if (! empty($playerIds)) {
             $query->whereIn('player_id', $playerIds);
         }
 

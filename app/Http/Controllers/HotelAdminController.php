@@ -36,7 +36,7 @@ class HotelAdminController extends Controller
     {
         return view('pages.platform.hotel_admins.create', [
             'page' => 'hotel-admins', 'icon' => 'fa fa-user-shield',
-            'hotels' => Hotel::query()->where('is_active', true)->orderBy('name')->get(),
+            'hotels' => Hotel::query()->excludingSystem()->where('is_active', true)->orderBy('name')->get(),
             'selectedHotelId' => $request->query('hotel_id'),
         ]);
     }
@@ -56,7 +56,7 @@ class HotelAdminController extends Controller
 
         return view('pages.platform.hotel_admins.edit', [
             'page' => 'hotel-admins', 'icon' => 'fa fa-user-shield', 'user' => $hotelAdmin,
-            'hotels' => Hotel::query()->where('is_active', true)->orderBy('name')->get(),
+            'hotels' => Hotel::query()->excludingSystem()->where('is_active', true)->orderBy('name')->get(),
             'selectedHotelId' => $hotelAdmin->hotel_id,
         ]);
     }
@@ -85,7 +85,7 @@ class HotelAdminController extends Controller
             'hotel_id' => ['required', 'exists:hotels,id'], 'name' => ['required', 'string', 'max:200'],
             'username' => ['required', 'string', 'max:255', Rule::unique('users')->ignore($user?->id)],
             'email' => ['required', 'email', 'max:255', Rule::unique('users')->ignore($user?->id)],
-            'phone' => ['nullable', 'string', 'max:30'], 'address' => ['nullable', 'string', 'max:255'],
+            'phone' => ['required', 'string', 'min:6', 'max:30'], 'address' => ['nullable', 'string', 'max:255'],
             'gender' => ['nullable', Rule::in(['male', 'female'])],
             'password' => [$user ? 'nullable' : 'required', 'string', 'min:8', 'confirmed'],
             'is_active' => ['required', 'boolean'],
@@ -101,7 +101,7 @@ class HotelAdminController extends Controller
         return DB::transaction(function () use ($data, $user) {
             $roleId = Role::query()->where('category', 'admin')->value('id');
             abort_unless($roleId, 422, 'Role admin belum tersedia.');
-            $payload = collect($data)->only(['hotel_id', 'username', 'email', 'is_active'])->all() + ['role_id' => $roleId];
+            $payload = collect($data)->only(['hotel_id', 'username', 'email', 'phone', 'is_active'])->all() + ['role_id' => $roleId];
             if (! empty($data['password'])) {
                 $payload['password'] = Hash::make($data['password']);
             }

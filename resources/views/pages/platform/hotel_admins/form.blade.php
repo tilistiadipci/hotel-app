@@ -52,8 +52,8 @@
         <div class="position-relative row form-group">
             <label for="phone" class="col-sm-3 col-form-label text-sm-right">Telepon</label>
             <div class="col-sm-9">
-                <input id="phone" name="phone" autocomplete="tel" class="form-control @error('phone') is-invalid @enderror" value="{{ old('phone', isset($user) ? $user->profile?->phone : '') }}">
-                @error('phone')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                <input id="phone" name="phone" autocomplete="tel" class="form-control @error('phone') is-invalid @enderror" value="{{ old('phone', $user->phone ?? '') }}">
+                @error('phone')<div class="invalid-feedback">{{ $message }}</div>@else<small class="text-primary font-italic">* Wajib diisi.</small>@enderror
             </div>
         </div>
 

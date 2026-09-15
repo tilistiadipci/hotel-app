@@ -58,6 +58,28 @@
             text-transform: uppercase;
         }
 
+        .focus-mode .app-main__outer {
+            padding-left: 0 !important;
+        }
+
+        .focus-mode .app-header__menu {
+            display: none;
+        }
+
+        .focus-mode .app-header__logo {
+            justify-content: flex-start;
+            padding-left: 16px;
+            width: auto;
+        }
+
+        .focus-mode .app-header {
+            font-size: 13px;
+        }
+
+        .focus-mode .app-main__outer {
+            font-size: 13px;
+        }
+
         .data-table {
             width: 100% !important;
             border-collapse: collapse;
@@ -379,7 +401,8 @@
         data-success="{{ Session::get('success', '') }}"
         data-error="{{ Session::get('error', '') }}"
         data-warning="{{ Session::get('warning', '') }}"></div>
-    <div class="app-container app-theme-white body-tabs-shadow fixed-header fixed-sidebar">
+    @php($focusMode = $focusMode ?? false)
+    <div class="app-container app-theme-white body-tabs-shadow fixed-header fixed-sidebar {{ $focusMode ? 'focus-mode' : '' }}">
         <!--Header START-->
         @include('templates.parts.header-top')
         <!--Header END-->
@@ -391,7 +414,9 @@
 
         <div class="app-main" style="margin-bottom: 100px">
 
-            @include('templates.parts.sidebar')
+            @unless ($focusMode)
+                @include('templates.parts.sidebar')
+            @endunless
 
             <div class="app-main__outer">
 
