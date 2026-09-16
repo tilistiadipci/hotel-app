@@ -1,5 +1,5 @@
 @if ($selectedTransaction)
-    <div class="card mb-3">
+    <div class="card mb-3 transaction-detail-card">
         <div class="card-body">
             <div class="d-flex flex-wrap justify-content-between align-items-start mb-4">
                 <div class="mb-3 mb-md-0">
@@ -244,12 +244,13 @@
         </div>
     </div>
 @else
-    <div class="card">
-        <div class="card-body">
+    <div class="card transaction-detail-card">
+        <div class="card-body transaction-empty-body">
             @include('partials.components.empty-state', [
                 'icon' => 'fa-hand-pointer',
                 'title' => trans('common.empty_state.transaction_select_title'),
                 'description' => trans('common.empty_state.transaction_select_description'),
+                'class' => 'transaction-empty-state',
             ])
         </div>
     </div>

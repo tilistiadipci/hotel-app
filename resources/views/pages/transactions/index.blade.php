@@ -91,9 +91,9 @@
             </div>
         </div>
 
-        <div class="row">
-            <div class="col-lg-5">
-                <div class="card mb-3">
+        <div class="row transaction-workspace" id="transaction-workspace">
+            <div class="col-lg-5 transaction-workspace__column">
+                <div class="card mb-3 transaction-list-card">
                     <div class="card-header">Transaction List</div>
                     <div class="card-body p-2 transaction-panel">
                         <div id="transaction-list-overlay" class="transaction-loading-overlay d-none">
@@ -114,7 +114,7 @@
                 </div>
             </div>
 
-            <div class="col-lg-7">
+            <div class="col-lg-7 transaction-workspace__column">
                 <div id="transaction-detail-container" class="transaction-panel">
                     <div id="transaction-detail-overlay" class="transaction-loading-overlay d-none">
                         <div class="transaction-loading-spinner">
@@ -129,6 +129,19 @@
                 </div>
             </div>
         </div>
+
+        <template id="transaction-detail-empty-template">
+            <div class="card transaction-detail-card">
+                <div class="card-body transaction-empty-body">
+                    @include('partials.components.empty-state', [
+                        'icon' => 'fa-hand-pointer',
+                        'title' => trans('common.empty_state.transaction_select_title'),
+                        'description' => trans('common.empty_state.transaction_select_description'),
+                        'class' => 'transaction-empty-state',
+                    ])
+                </div>
+            </div>
+        </template>
     </div>
 @endsection
 
@@ -136,7 +149,9 @@
     @parent
     <style>
         #transaction-list-container {
-            max-height: 72vh;
+            display: flex;
+            flex-direction: column;
+            min-height: 0;
             overflow-y: auto;
             padding-right: 4px;
             outline: none;
@@ -191,6 +206,59 @@
 
         .transaction-panel {
             position: relative;
+        }
+
+        .transaction-list-card,
+        #transaction-detail-container,
+        #transaction-detail-content,
+        .transaction-detail-card {
+            width: 100%;
+        }
+
+        .transaction-list-card {
+            display: flex;
+            flex-direction: column;
+        }
+
+        .transaction-list-card > .card-body {
+            display: flex;
+            flex: 1 1 auto;
+            min-height: 0;
+            flex-direction: column;
+        }
+
+        #transaction-list-container {
+            flex: 1 1 auto;
+        }
+
+        #transaction-detail-container {
+            overflow-y: auto;
+        }
+
+        #transaction-detail-content,
+        .transaction-detail-card,
+        .transaction-empty-body,
+        .transaction-empty-state {
+            min-height: 100%;
+        }
+
+        .transaction-detail-card {
+            margin-bottom: 0 !important;
+        }
+
+        .transaction-empty-body {
+            display: flex;
+            padding: 1rem;
+        }
+
+        .transaction-empty-state {
+            flex: 1 1 auto;
+            border: 0;
+            background: transparent;
+        }
+
+        #transaction-list-container > .transaction-empty-state {
+            height: 100%;
         }
 
         .transaction-loading-overlay {
@@ -303,6 +371,29 @@
                 flex: 1 1 30%;
             }
         }
+
+        @media (min-width: 992px) {
+            .transaction-workspace,
+            .transaction-workspace__column,
+            .transaction-list-card,
+            #transaction-detail-container {
+                height: var(--transaction-workspace-height, 520px);
+            }
+
+            .transaction-workspace__column {
+                display: flex;
+            }
+        }
+
+        @media (max-width: 991.98px) {
+            #transaction-list-container {
+                max-height: 60vh;
+            }
+
+            #transaction-detail-container {
+                min-height: 360px;
+            }
+        }
     </style>
 @endsection
 
@@ -312,8 +403,10 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             const listContainer = document.getElementById('transaction-list-container');
+            const workspace = document.getElementById('transaction-workspace');
             const detailContainer = document.getElementById('transaction-detail-container');
             const detailContent = document.getElementById('transaction-detail-content');
+            const detailEmptyTemplate = document.getElementById('transaction-detail-empty-template');
             const loadingIndicator = document.getElementById('transaction-list-loading');
             const tenantFilterButtons = document.querySelectorAll('.tenant-filter');
             const filterButtons = document.querySelectorAll('.transaction-filter');
@@ -329,6 +422,21 @@
             let activeStatus = '{{ $activeStatus }}';
             let activePaymentMethod = '{{ $activePaymentMethod }}';
             let selectedTransactionId = '{{ $selectedTransaction?->id }}';
+
+            function resizeTransactionWorkspace() {
+                if (!workspace || window.innerWidth < 992) {
+                    workspace?.style.removeProperty('--transaction-workspace-height');
+                    return;
+                }
+
+                const footer = document.querySelector('.app-wrapper-footer');
+                const footerHeight = footer ? footer.getBoundingClientRect().height : 0;
+                const availableHeight = Math.max(420, window.innerHeight - workspace.getBoundingClientRect().top - footerHeight - 16);
+                workspace.style.setProperty('--transaction-workspace-height', availableHeight + 'px');
+            }
+
+            resizeTransactionWorkspace();
+            window.addEventListener('resize', resizeTransactionWorkspace);
 
             function toggleListOverlay(show) {
                 listOverlay.classList.toggle('d-none', !show);
@@ -887,13 +995,7 @@
                         return loadTransactionDetail(currentSelectedId, false);
                     }
 
-                    detailContent.innerHTML = `
-                        <div class="card">
-                            <div class="card-body text-center text-muted py-5">
-                                No transaction selected.
-                            </div>
-                        </div>
-                    `;
+                    detailContent.innerHTML = detailEmptyTemplate.innerHTML;
                     bindStatusButtons();
                     return null;
                 })

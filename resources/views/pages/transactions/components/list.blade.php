@@ -31,6 +31,6 @@
         'icon' => 'fa-receipt',
         'title' => trans('common.empty_state.transaction_title'),
         'description' => trans('common.empty_state.transaction_description'),
-        'class' => 'cms-empty-state--compact',
+        'class' => 'transaction-empty-state',
     ])
 @endforelse
