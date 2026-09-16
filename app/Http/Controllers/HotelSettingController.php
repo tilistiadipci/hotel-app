@@ -6,6 +6,7 @@ use App\Models\Hotel;
 use App\Services\HotelSettingsManager;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Validation\Rule;
 
 class HotelSettingController extends Controller
@@ -39,6 +40,15 @@ class HotelSettingController extends Controller
             Rule::exists('hotel_theme', 'theme_id')->where(fn ($query) => $query
                 ->where('hotel_id', $hotel->id)),
         ]];
+
+        if ($request->has('adm4')) {
+            $rules['adm4'] = [
+                'nullable',
+                'string',
+                'max:13',
+                Rule::exists('master_kelurahan_desa', 'id'),
+            ];
+        }
 
         foreach ($manager->definitions() as $group) {
             foreach ($group['fields'] as $key => $field) {
@@ -79,6 +89,11 @@ class HotelSettingController extends Controller
         $updateTheme = $request->has('theme_id');
 
         $manager->save($hotel, $settings, isset($validated['theme_id']) ? (int) $validated['theme_id'] : null, auth()->id(), $updateTheme);
+
+        if (array_key_exists('adm4', $validated) && ! $hotel->is_system) {
+            $hotel->update(['adm4' => $validated['adm4']]);
+            Cache::forget("tenant:hotel:{$hotel->id}");
+        }
         session()->forget('settings');
         session(['settings_refresh' => true]);
     }

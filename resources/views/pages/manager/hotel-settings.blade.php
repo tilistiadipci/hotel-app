@@ -18,3 +18,8 @@
         @include('pages.platform.hotels.settings-form')
     </div>
 @endsection
+
+@section('js')
+    @parent
+    @include('partials.components.wilayah_select_script')
+@endsection

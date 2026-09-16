@@ -23,6 +23,7 @@ use App\Http\Controllers\ManagerPortfolioController;
 use App\Http\Controllers\ManagerPortfolioReportController;
 use App\Http\Controllers\ManagerTvChannelAccessController;
 use App\Http\Controllers\MediaController;
+use App\Http\Controllers\WilayahIndonesiaController;
 use App\Http\Controllers\MqttDocumentationController;
 use App\Http\Controllers\MenuCategoryController;
 use App\Http\Controllers\MenuController;
@@ -320,6 +321,9 @@ Route::middleware(['auth', 'role.category:manager,admin,operator,user', 'manager
                 Route::get('/', [SettingWebsiteController::class, 'index'])->name('.index');
                 Route::post('/update', [SettingWebsiteController::class, 'update'])->name('.update');
             });
+
+        Route::get('/wilayah-indonesia/search', [WilayahIndonesiaController::class, 'search'])
+            ->name('wilayah-indonesia.search');
 
         Route::prefix('reports')
             ->name('reports.')

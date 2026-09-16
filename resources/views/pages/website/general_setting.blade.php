@@ -62,6 +62,30 @@
             </form>
         </div>
 
+        @if (!empty($hotel) && !$hotel->is_system)
+            <div class="card mb-3">
+                <div class="card-header">
+                    <i class="fa fa-map-marker-alt mr-2"></i> Wilayah &amp; Cuaca Hotel
+                </div>
+                <form method="POST" action="{{ route('settings.update') }}">
+                    @csrf
+                    <input type="hidden" name="section" value="location">
+                    <div class="card-body">
+                        @include('partials.components.wilayah_select', [
+                            'id' => 'hotel_adm4',
+                            'value' => $hotel->adm4,
+                            'selected' => $hotelWilayah,
+                        ])
+                    </div>
+                    <div class="card-footer text-right">
+                        <button type="submit" class="btn btn-primary">
+                            <i class="fa fa-save mr-1"></i> {{ trans('common.save') }}
+                        </button>
+                    </div>
+                </form>
+            </div>
+        @endif
+
         <div class="card mb-3">
             <div class="card-header">
                 <i class="fa fa-cog mr-2"></i> General App Settings
@@ -295,7 +319,7 @@
                             </div>
                         </div>
 
-                        <div class="form-group mb-0">
+                        {{-- <div class="form-group mb-0">
                             <label for="firebase_credentials_json">
                                 {{ trans('common.settings_page.firebase_json') }}
                             </label>
@@ -304,7 +328,7 @@
                             <small class="text-muted d-block mt-2">
                                 {{ trans('common.settings_page.firebase_json_desc', ['path' => $firebaseCredentialsPath ?? '-']) }}
                             </small>
-                        </div>
+                        </div> --}}
 
                         @error('alert_notification')
                             <div class="text-danger small mt-2">{{ $message }}</div>
@@ -319,7 +343,7 @@
 
                     <div class="card-footer text-right">
                         <button type="submit" class="btn btn-primary">
-                            <i class="fa fa-refresh mr-1"></i> {{ trans('common.sync') }}
+                            <i class="fa fa-save mr-1"></i> {{ trans('common.save') }}
                         </button>
                     </div>
                 </form>

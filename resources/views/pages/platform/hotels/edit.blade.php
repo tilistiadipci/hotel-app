@@ -77,4 +77,5 @@ $('#channelSearch').on('input',function(){
     $('.channel-group').each(function(){$(this).toggle($(this).find('.channel-option:visible').length>0);});
 });
 </script>
+@include('partials.components.wilayah_select_script')
 @endsection

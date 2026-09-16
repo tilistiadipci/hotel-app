@@ -24,6 +24,13 @@
                     <i class="fa fa-image mr-1"></i> {{ trans('platform.hotel_settings.groups.branding') }} &amp; {{ trans('platform.hotel_settings.groups.theme') }}
                 </a>
             </li>
+            @if (!$hotel->is_system)
+                <li class="nav-item">
+                    <a class="nav-link {{ $activeSettingsGroup === 'location' ? 'active' : '' }}" data-toggle="tab" href="#settingsGroup-location" role="tab">
+                        <i class="fa fa-map-marker-alt mr-1"></i> Wilayah &amp; Cuaca
+                    </a>
+                </li>
+            @endif
             @foreach ($hotelSettingGroups as $groupKey => $group)
                 <li class="nav-item">
                     <a class="nav-link {{ $activeSettingsGroup === $groupKey ? 'active' : '' }}" data-toggle="tab" href="#settingsGroup-{{ $groupKey }}" role="tab">
@@ -88,6 +95,28 @@
                 </div>
             </form>
         </div>
+
+        @if (!$hotel->is_system)
+            <div class="tab-pane fade {{ $activeSettingsGroup === 'location' ? 'show active' : '' }}" id="settingsGroup-location" role="tabpanel">
+                <form method="POST" action="{{ $settingsActionUrl }}">
+                    @csrf
+                    @method('PUT')
+                    <input type="hidden" name="_hotel_edit_tab" value="settings">
+                    <input type="hidden" name="_settings_group" value="location">
+                    <div class="card-body">
+                        @include('partials.components.wilayah_select', [
+                            'id' => 'settings_hotel_adm4',
+                            'value' => $hotel->adm4,
+                            'selected' => $hotelWilayah,
+                        ])
+                    </div>
+                    <div class="card-footer text-right">
+                        <a href="{{ $settingsCancelUrl }}" class="btn btn-secondary">{{ trans('common.cancel') }}</a>
+                        <button type="submit" class="btn btn-primary"><i class="fa fa-save mr-1"></i>{{ trans('common.save') }}</button>
+                    </div>
+                </form>
+            </div>
+        @endif
 
         {{-- One tab (and one independent form/save) per settings group --}}
         @foreach ($hotelSettingGroups as $groupKey => $group)

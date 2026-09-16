@@ -114,6 +114,7 @@
 @section('js')
     @parent
     @include('partials.components.media_picker_script')
+    @include('partials.components.wilayah_select_script')
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             document.querySelectorAll('.transaction-charge-toggle').forEach(function(toggle) {

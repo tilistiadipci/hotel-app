@@ -73,6 +73,7 @@ class HotelSettingsManager
             'hotelDefaultThemeId' => $hotel->themes()
                 ->wherePivot('is_default', true)
                 ->value('themes.id'),
+            'hotelWilayah' => app(WilayahIndonesiaService::class)->find($hotel->adm4),
         ];
     }
 

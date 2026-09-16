@@ -4,10 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Models\Media;
 use App\Repositories\SettingRepository;
+use App\Services\WilayahIndonesiaService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\App;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\File;
 use Illuminate\Validation\Rule;
 
@@ -22,7 +24,7 @@ class SettingWebsiteController extends Controller
         $this->settingRepository = $settingRepository;
     }
 
-    public function index()
+    public function index(WilayahIndonesiaService $wilayah)
     {
         $user = auth()->user();
         abort_unless($user, 401);
@@ -49,6 +51,8 @@ class SettingWebsiteController extends Controller
             }
         }
 
+        $hotel = request()->attributes->get('active_hotel');
+
         return view('pages.website.index', [
             'user' => $user->load('profile'),
             'profile' => true,
@@ -62,6 +66,8 @@ class SettingWebsiteController extends Controller
             'generalAppLogo2Url' => $generalAppLogo2Media ? getMediaImageUrl($generalAppLogo2Media->storage_path, 200, 200) : null,
             'firebaseCredentialsFileJson' => $this->getFirebaseCredentialsJsonFromStorage(),
             'firebaseCredentialsPath' => storage_path(config('services.firebase.credentials')),
+            'hotel' => $hotel,
+            'hotelWilayah' => $wilayah->find($hotel?->adm4),
         ]);
     }
 
@@ -70,8 +76,19 @@ class SettingWebsiteController extends Controller
         $section = $request->input('section');
         $restrictedSections = ['customize_menu_active', 'on_mobile'];
 
-        if (! in_array($section, ['language', 'notifications', 'transaction_charge', 'general', 'customize_menu', 'customize_menu_active', 'on_mobile', 'others'], true)) {
+        if (! in_array($section, ['language', 'location', 'notifications', 'transaction_charge', 'general', 'customize_menu', 'customize_menu_active', 'on_mobile', 'others'], true)) {
             return redirect()->route('settings.index')->with('error', 'Invalid settings section.');
+        }
+
+        if ($section === 'location') {
+            $validated = $request->validate([
+                'adm4' => ['nullable', 'string', 'max:13', Rule::exists('master_kelurahan_desa', 'id')],
+            ]);
+            $hotel = $request->attributes->get('active_hotel');
+            abort_unless($hotel && ! $hotel->is_system, 403);
+
+            $hotel->update(['adm4' => $validated['adm4'] ?? null]);
+            Cache::forget("tenant:hotel:{$hotel->id}");
         }
 
         if (in_array($section, $restrictedSections, true) && ! $this->canManageAppMenus(auth()->user())) {

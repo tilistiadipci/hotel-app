@@ -122,4 +122,9 @@ class Hotel extends Model
     {
         return $this->hasMany(HotelVisitLog::class);
     }
+
+    public function wilayah()
+    {
+        return $this->belongsTo(MasterKelurahanDesa::class, 'adm4');
+    }
 }
