@@ -478,7 +478,16 @@
 @section('js')
     @parent
     <script>
-        document.addEventListener('DOMContentLoaded', function() {
+        (function() {
+            if (window.bookingPageAbortController) {
+                window.bookingPageAbortController.abort();
+            }
+
+            const bookingPageAbortController = new AbortController();
+            const bookingPageListenerOptions = { signal: bookingPageAbortController.signal };
+            window.bookingPageAbortController = bookingPageAbortController;
+
+            function initBookingPage() {
             const bookingModal = document.getElementById('bookingModal');
             const checkoutBillModal = document.getElementById('checkoutBillModal');
             const bookingForm = document.getElementById('bookingForm');
@@ -498,6 +507,10 @@
             let currentCheckoutUrl = '';
             let currentBillDetailUrl = '';
             let currentCheckoutHasPendingBill = false;
+
+            if (!bookingModal || !checkoutBillModal || !bookingForm) {
+                return;
+            }
 
             function openModal(modal) {
                 modal.classList.add('is-open');
@@ -631,27 +644,27 @@
             document.querySelectorAll('.booking-card').forEach(function(card) {
                 card.addEventListener('click', function() {
                     handleBookingCardAction(card);
-                });
+                }, bookingPageListenerOptions);
 
                 card.addEventListener('keydown', function(event) {
                     if (event.key === 'Enter' || event.key === ' ') {
                         event.preventDefault();
                         handleBookingCardAction(card);
                     }
-                });
+                }, bookingPageListenerOptions);
             });
 
             modalCloseButtons.forEach(function(button) {
                 button.addEventListener('click', function() {
                     closeAllModals();
-                });
+                }, bookingPageListenerOptions);
             });
 
             document.addEventListener('keydown', function(event) {
                 if (event.key === 'Escape' && (bookingModal.classList.contains('is-open') || checkoutBillModal.classList.contains('is-open'))) {
                     closeAllModals();
                 }
-            });
+            }, bookingPageListenerOptions);
 
             bookingForm?.addEventListener('submit', function(event) {
                 event.preventDefault();
@@ -672,11 +685,11 @@
                         toastr["error"](xhr.responseJSON?.message || "{{ trans('common.error.500') }}", "Error");
                     }
                 });
-            });
+            }, bookingPageListenerOptions);
 
             checkoutBillConfirmPaid?.addEventListener('change', function() {
                 checkoutBillSubmit.disabled = currentCheckoutHasPendingBill ? !this.checked : false;
-            });
+            }, bookingPageListenerOptions);
 
             checkoutBillSubmit?.addEventListener('click', function() {
                 if (!currentCheckoutUrl) {
@@ -689,7 +702,7 @@
                 }
 
                 submitCheckout(currentCheckoutUrl, currentCheckoutHasPendingBill);
-            });
+            }, bookingPageListenerOptions);
 
             checkoutBillTotalLink?.addEventListener('click', function() {
                 if (!currentBillDetailUrl) {
@@ -697,7 +710,24 @@
                 }
 
                 window.open(currentBillDetailUrl, '_blank');
-            });
-        });
+            }, bookingPageListenerOptions);
+            }
+
+            document.addEventListener('cms:before-page-change', function() {
+                bookingPageAbortController.abort();
+                if (window.bookingPageAbortController === bookingPageAbortController) {
+                    window.bookingPageAbortController = null;
+                }
+            }, { once: true, signal: bookingPageAbortController.signal });
+
+            if (document.readyState === 'loading') {
+                document.addEventListener('DOMContentLoaded', initBookingPage, {
+                    once: true,
+                    signal: bookingPageAbortController.signal
+                });
+            } else {
+                initBookingPage();
+            }
+        })();
     </script>
 @endsection
