@@ -7,6 +7,18 @@ use PhpMqtt\Client\Repositories\MemoryRepository;
 
 return [
 
+    // Nilai asli dari .env. Digunakan ulang ketika sebuah hotel tidak
+    // mengaktifkan konfigurasi broker khusus miliknya.
+    'environment_defaults' => [
+        'host' => env('MQTT_HOST', '192.168.18.24'),
+        'port' => (int) env('MQTT_PORT', 1884),
+        'client_id' => env('MQTT_CLIENT_ID'),
+        'username' => env('MQTT_AUTH_USERNAME'),
+        'password' => env('MQTT_AUTH_PASSWORD'),
+        'qos' => (int) env('MQTT_QOS', 1),
+        'tls' => (bool) env('MQTT_TLS_ENABLED', false),
+    ],
+
     /*
     |--------------------------------------------------------------------------
     | Default MQTT Connection

@@ -244,6 +244,7 @@
         <hr class="mb-4">
 
         @php
+            $useCustomMqtt = (bool) old('use_custom_mqtt', $configuration->use_custom_mqtt ?? false);
             $mqttFields = [
                 ['mqtt_host', 'Host', 'text', old('mqtt_host', $configuration->mqtt_host ?? ''), false],
                 ['mqtt_port', 'Port', 'number', old('mqtt_port', $configuration->mqtt_port ?? 1883), true],
@@ -251,6 +252,21 @@
                 ['mqtt_username', 'Username', 'text', old('mqtt_username', $configuration->mqtt_username ?? ''), false],
             ];
         @endphp
+
+        <div class="position-relative row form-group">
+            <label for="use_custom_mqtt" class="col-sm-3 col-form-label text-sm-right">MQTT Khusus Hotel</label>
+            <div class="col-sm-9">
+                <div class="custom-control custom-switch pt-2">
+                    <input type="hidden" name="use_custom_mqtt" value="0">
+                    <input type="checkbox" class="custom-control-input @error('use_custom_mqtt') is-invalid @enderror"
+                        id="use_custom_mqtt" name="use_custom_mqtt" value="1" @checked($useCustomMqtt)>
+                    <label class="custom-control-label" for="use_custom_mqtt">Aktifkan</label>
+                    @error('use_custom_mqtt')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror
+                </div>
+            </div>
+        </div>
+
+        <fieldset id="customMqttFields">
 
         @foreach ($mqttFields as [$field, $label, $type, $value, $required])
             <div class="position-relative row form-group">
@@ -301,6 +317,7 @@
                 @error('mqtt_tls')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
         </div>
+        </fieldset>
     </div>
 
     <div class="card-footer d-block text-right">
@@ -331,6 +348,16 @@ $(function () {
     const $maxPlayers = $('#license_max_players');
     const $maxUsers = $('#license_max_users');
     const $licenseKey = $('#license_key');
+    const $mqttSource = $('#use_custom_mqtt');
+    const $customMqttFields = $('#customMqttFields');
+
+    function applyMqttSource() {
+        const useCustom = $mqttSource.is(':checked');
+        $customMqttFields.prop('disabled', !useCustom);
+        $customMqttFields.toggle(useCustom);
+    }
+
+    $mqttSource.on('change', applyMqttSource);
 
     function addDays(dateValue, days) {
         if (!dateValue) return '';
@@ -384,6 +411,7 @@ $(function () {
     });
 
     applyPlan(false);
+    applyMqttSource();
 });
 </script>
 @endsection

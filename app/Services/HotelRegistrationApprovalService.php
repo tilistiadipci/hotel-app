@@ -61,6 +61,7 @@ class HotelRegistrationApprovalService
             $hotel->configuration()->create([
                 'media_disk' => 'media',
                 'media_root' => app(HotelMediaPath::class)->uniqueRoot($hotel->name),
+                'use_custom_mqtt' => false,
                 'mqtt_port' => (int) config('mqtt-client.connections.default.port', 1883),
                 'mqtt_qos' => 1,
                 'mqtt_tls' => false,

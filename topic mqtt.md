@@ -8,6 +8,15 @@ hotel-app/hotels/{hotel_code}
 
 Gunakan `hotels.code` untuk `{hotel_code}` dan `players.serial` untuk `{player_serial}`.
 
+## Konfigurasi Broker
+
+Setiap hotel memiliki pilihan sumber konfigurasi MQTT:
+
+- **Default `.env`**: menggunakan `MQTT_HOST`, `MQTT_PORT`, `MQTT_CLIENT_ID`, `MQTT_AUTH_USERNAME`, `MQTT_AUTH_PASSWORD`, `MQTT_QOS`, dan `MQTT_TLS_ENABLED` dari aplikasi.
+- **Khusus hotel**: menggunakan host, port, client ID, autentikasi, QoS, dan TLS yang disimpan pada konfigurasi hotel.
+
+Hotel yang dibuat melalui registrasi memakai konfigurasi `.env` secara default. Konfigurasi khusus hanya digunakan setelah opsi **Gunakan konfigurasi khusus hotel** diaktifkan oleh superadmin.
+
 ## Daftar Topic
 
 | Topic | Backend | Player/Hotel | Fungsi |
@@ -124,11 +133,58 @@ hotel-app/hotels/{hotel_code}/players/all/update
 {
   "type": "tv_channels",
   "action": "sync",
+  "hotel_code": "BIO-HOTEL",
+  "player_serial": "BIO-TV-001",
   "timestamp": "2026-09-15T13:10:00+07:00"
 }
 ```
 
-Nilai `type` dapat berupa `tv_channels`, `menus`, `theme`, `configuration`, `application`, atau `all`.
+Field `hotel_code` dan `player_serial` selalu dikirim agar satu handler dapat memvalidasi tujuan pesan. Untuk topic broadcast, nilai `player_serial` adalah `all`.
+
+Nilai `type` yang didukung:
+
+| Type | Pemicu di backend | Tindakan player |
+|---|---|---|
+| `checkin` | Tamu berhasil check-in | Ambil ulang status booking/tamu dan perbarui tampilan kamar |
+| `checkout` | Tamu berhasil check-out | Bersihkan sesi tamu dan ambil ulang status booking |
+| `tv_channels` | Akses atau master TV channel berubah | Sinkronkan daftar TV channel dari API |
+| `menus` | Menu hotel/pantry berubah | Sinkronkan menu dari API |
+| `theme` | Tema atau detail tema berubah | Ambil konfigurasi tema terbaru |
+| `configuration` | Pengaturan hotel/player berubah | Ambil konfigurasi terbaru |
+| `application` | Versi/aplikasi player berubah | Jalankan pemeriksaan pembaruan aplikasi |
+| `all` | Sinkronisasi penuh diminta | Sinkronkan seluruh data player |
+
+### Event check-in
+
+Setelah transaksi database check-in berhasil, backend melakukan publish ke player yang dipilih:
+
+```text
+hotel-app/hotels/{hotel_code}/players/{player_serial}/update
+```
+
+```json
+{
+  "type": "checkin",
+  "action": "sync",
+  "hotel_code": "BIO-HOTEL",
+  "player_serial": "BIO-TV-001",
+  "timestamp": "2026-09-15T13:10:00+07:00"
+}
+```
+
+### Event check-out
+
+```json
+{
+  "type": "checkout",
+  "action": "sync",
+  "hotel_code": "BIO-HOTEL",
+  "player_serial": "BIO-TV-001",
+  "timestamp": "2026-09-15T14:30:00+07:00"
+}
+```
+
+Preview check-out tidak menerbitkan MQTT. Pesan baru dikirim setelah check-out benar-benar tersimpan.
 
 MQTT cukup memberi tahu bahwa ada perubahan. Player kemudian mengambil data terbaru melalui API HTTP/HTTPS.
 
@@ -206,6 +262,8 @@ hotel-app/hotels/{hotel_code}/players/{player_serial}/notification
 hotel-app/hotels/{hotel_code}/players/all/update
 hotel-app/hotels/{hotel_code}/players/all/notification
 ```
+
+Player sebaiknya subscribe ke topic serial miliknya dan topic `all`. Topic serial menerima event khusus seperti check-in/check-out, sedangkan topic `all` menerima perubahan bersama seperti daftar TV channel.
 
 ## Contoh Bio Experience Hotel
 

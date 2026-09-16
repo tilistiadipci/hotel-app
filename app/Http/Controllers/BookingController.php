@@ -3,9 +3,12 @@
 namespace App\Http\Controllers;
 
 use App\Repositories\BookingRepository;
+use App\Repositories\PlayerMqttRepository;
 use App\Repositories\PlayerRepository;
+use App\Models\Player;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Throwable;
 
 class BookingController extends Controller
 {
@@ -14,7 +17,8 @@ class BookingController extends Controller
 
     public function __construct(
         private readonly BookingRepository $bookingRepository,
-        private readonly PlayerRepository $playerRepository
+        private readonly PlayerRepository $playerRepository,
+        private readonly PlayerMqttRepository $playerMqttRepository,
     ) {
     }
 
@@ -42,7 +46,8 @@ class BookingController extends Controller
         ]);
 
         try {
-            $response = DB::transaction(function () use ($playerUuid, $validated) {
+            $mqttPlayer = null;
+            $response = DB::transaction(function () use ($playerUuid, $validated, &$mqttPlayer) {
                 $player = $this->playerRepository->findUidForUpdate($playerUuid);
                 if (!$player) {
                     return response()->json([
@@ -59,12 +64,17 @@ class BookingController extends Controller
                 }
 
                 $this->bookingRepository->createForPlayer($player, $validated['guest_name']);
+                $mqttPlayer = $player;
 
                 return response()->json([
                     'status' => true,
                     'message' => trans('common.success.create'),
                 ]);
             });
+
+            if ($mqttPlayer) {
+                $this->publishPlayerUpdate($mqttPlayer, 'checkin');
+            }
 
             return $response;
         } catch (\Exception $e) {
@@ -75,7 +85,8 @@ class BookingController extends Controller
     public function checkout(string $playerUuid)
     {
         try {
-            $response = DB::transaction(function () use ($playerUuid) {
+            $mqttPlayer = null;
+            $response = DB::transaction(function () use ($playerUuid, &$mqttPlayer) {
                 $player = $this->playerRepository->findUidForUpdate($playerUuid);
                 if (!$player) {
                     return response()->json([
@@ -131,12 +142,17 @@ class BookingController extends Controller
                 }
 
                 $this->bookingRepository->checkout($booking);
+                $mqttPlayer = $player;
 
                 return response()->json([
                     'status' => true,
                     'message' => trans('common.success.update'),
                 ]);
             });
+
+            if ($mqttPlayer) {
+                $this->publishPlayerUpdate($mqttPlayer, 'checkout');
+            }
 
             return $response;
         } catch (\Exception $e) {
@@ -165,5 +181,14 @@ class BookingController extends Controller
             'groupedTransactions' => $groupedTransactions,
             'grandTotal' => (float) $transactions->sum('grand_total'),
         ]);
+    }
+
+    private function publishPlayerUpdate(Player $player, string $type): void
+    {
+        try {
+            $this->playerMqttRepository->publishPlayerUpdate($player, $type);
+        } catch (Throwable $exception) {
+            report($exception);
+        }
     }
 }

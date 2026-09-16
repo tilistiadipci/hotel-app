@@ -108,6 +108,10 @@ class HotelRegistrationTest extends TestCase
             'name' => 'Hotel Approval Test',
             'is_active' => true,
         ]);
+        $this->assertDatabaseHas('hotel_configurations', [
+            'hotel_id' => $registration->hotel_id,
+            'use_custom_mqtt' => false,
+        ]);
         $manager = User::query()->withoutGlobalScope('hotel')->findOrFail($registration->manager_user_id);
         $this->assertNull($manager->hotel_id);
         $this->assertSame('manager', $manager->role->category);

@@ -15,17 +15,31 @@ class HotelConfigurationManager
             return;
         }
 
-        config([
+        $environment = config('mqtt-client.environment_defaults');
+        $mqttConfiguration = $settings->use_custom_mqtt
+            ? [
+                'mqtt-client.connections.default.host' => $settings->mqtt_host,
+                'mqtt-client.connections.default.port' => $settings->mqtt_port,
+                'mqtt-client.connections.default.client_id' => $settings->mqtt_client_id,
+                'mqtt-client.connections.default.qos' => $settings->mqtt_qos,
+                'mqtt-client.connections.default.connection_settings.auth.username' => $settings->mqtt_username,
+                'mqtt-client.connections.default.connection_settings.auth.password' => $settings->mqtt_password,
+                'mqtt-client.connections.default.connection_settings.tls.enabled' => $settings->mqtt_tls,
+            ]
+            : [
+                'mqtt-client.connections.default.host' => $environment['host'],
+                'mqtt-client.connections.default.port' => $environment['port'],
+                'mqtt-client.connections.default.client_id' => $environment['client_id'],
+                'mqtt-client.connections.default.qos' => $environment['qos'],
+                'mqtt-client.connections.default.connection_settings.auth.username' => $environment['username'],
+                'mqtt-client.connections.default.connection_settings.auth.password' => $environment['password'],
+                'mqtt-client.connections.default.connection_settings.tls.enabled' => $environment['tls'],
+            ];
+
+        config($mqttConfiguration + [
             'filesystems.disks.media.driver' => 'local',
             'filesystems.disks.media.root' => app(HotelMediaPath::class)->absoluteRoot($settings->media_root),
             'filesystems.disks.media.visibility' => 'public',
-            'mqtt-client.connections.default.host' => $settings->mqtt_host,
-            'mqtt-client.connections.default.port' => $settings->mqtt_port,
-            'mqtt-client.connections.default.client_id' => $settings->mqtt_client_id,
-            'mqtt-client.connections.default.qos' => $settings->mqtt_qos,
-            'mqtt-client.connections.default.connection_settings.auth.username' => $settings->mqtt_username,
-            'mqtt-client.connections.default.connection_settings.auth.password' => $settings->mqtt_password,
-            'mqtt-client.connections.default.connection_settings.tls.enabled' => $settings->mqtt_tls,
         ]);
 
         // Laravel caches resolved filesystem instances. Forget the previous

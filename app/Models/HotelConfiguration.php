@@ -11,6 +11,7 @@ class HotelConfiguration extends Model
     protected $hidden = ['mqtt_password'];
 
     protected $casts = [
+        'use_custom_mqtt' => 'boolean',
         'mqtt_username' => 'encrypted',
         'mqtt_password' => 'encrypted',
         'mqtt_tls' => 'boolean',

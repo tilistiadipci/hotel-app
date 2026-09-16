@@ -173,11 +173,22 @@
                     <div class="card-body">
                         <dl class="row hotel-info-list mb-0">
                             <dt class="col-sm-4">Root media</dt><dd class="col-sm-8"><code>{{ $configuration?->media_root ?? '-' }}</code></dd>
-                            <dt class="col-sm-4">MQTT broker</dt><dd class="col-sm-8">{{ $configuration?->mqtt_host ? $configuration->mqtt_host.':'.$configuration->mqtt_port : 'Belum diatur' }}</dd>
-                            <dt class="col-sm-4">Client ID</dt><dd class="col-sm-8">{{ $configuration?->mqtt_client_id ?: '-' }}</dd>
-                            <dt class="col-sm-4">Username</dt><dd class="col-sm-8">{{ $configuration?->mqtt_username ?: '-' }}</dd>
-                            <dt class="col-sm-4">Password</dt><dd class="col-sm-8"><span class="badge badge-{{ $configuration?->mqtt_password ? 'success' : 'secondary' }}">{{ $configuration?->mqtt_password ? 'Sudah diatur' : 'Belum diatur' }}</span></dd>
-                            <dt class="col-sm-4">QoS / TLS</dt><dd class="col-sm-8">QoS {{ $configuration?->mqtt_qos ?? '-' }} · TLS {{ $configuration?->mqtt_tls ? 'Aktif' : 'Tidak aktif' }}</dd>
+                            @php
+                                $customMqtt = (bool) $configuration?->use_custom_mqtt;
+                                $mqttDefaults = config('mqtt-client.environment_defaults');
+                                $effectiveMqttHost = $customMqtt ? $configuration?->mqtt_host : $mqttDefaults['host'];
+                                $effectiveMqttPort = $customMqtt ? $configuration?->mqtt_port : $mqttDefaults['port'];
+                                $effectiveMqttClient = $customMqtt ? $configuration?->mqtt_client_id : $mqttDefaults['client_id'];
+                                $effectiveMqttUsername = $customMqtt ? $configuration?->mqtt_username : $mqttDefaults['username'];
+                                $effectiveMqttQos = $customMqtt ? $configuration?->mqtt_qos : $mqttDefaults['qos'];
+                                $effectiveMqttTls = $customMqtt ? $configuration?->mqtt_tls : $mqttDefaults['tls'];
+                            @endphp
+                            <dt class="col-sm-4">Sumber MQTT</dt><dd class="col-sm-8"><span class="badge badge-{{ $customMqtt ? 'primary' : 'secondary' }}">{{ $customMqtt ? 'Khusus Hotel' : 'Default .env' }}</span></dd>
+                            <dt class="col-sm-4">MQTT broker</dt><dd class="col-sm-8">{{ $effectiveMqttHost }}:{{ $effectiveMqttPort }}</dd>
+                            <dt class="col-sm-4">Client ID</dt><dd class="col-sm-8">{{ $effectiveMqttClient ?: '-' }}</dd>
+                            <dt class="col-sm-4">Username</dt><dd class="col-sm-8">{{ $effectiveMqttUsername ?: '-' }}</dd>
+                            <dt class="col-sm-4">Password</dt><dd class="col-sm-8"><span class="badge badge-success">{{ $customMqtt ? ($configuration?->mqtt_password ? 'Sudah diatur' : 'Tidak diatur') : 'Menggunakan .env' }}</span></dd>
+                            <dt class="col-sm-4">QoS / TLS</dt><dd class="col-sm-8">QoS {{ $effectiveMqttQos }} · TLS {{ $effectiveMqttTls ? 'Aktif' : 'Tidak aktif' }}</dd>
                         </dl>
                     </div>
                 </div>

@@ -325,6 +325,7 @@ class HotelController extends Controller
             'license_key' => $request->filled('license_key')
                 ? strtoupper(trim((string) $request->input('license_key')))
                 : null,
+            'use_custom_mqtt' => $request->boolean('use_custom_mqtt'),
         ]);
 
         return $request->validate([
@@ -337,12 +338,13 @@ class HotelController extends Controller
             'currency' => ['required', 'string', 'size:3'],
             'status' => ['required', Rule::in(['active', 'suspended'])],
             'is_active' => ['required', 'boolean'],
-            'mqtt_host' => ['nullable', 'string', 'max:255'],
-            'mqtt_port' => ['required', 'integer', 'between:1,65535'],
+            'use_custom_mqtt' => ['required', 'boolean'],
+            'mqtt_host' => ['nullable', 'required_if:use_custom_mqtt,1', 'string', 'max:255'],
+            'mqtt_port' => ['nullable', 'required_if:use_custom_mqtt,1', 'integer', 'between:1,65535'],
             'mqtt_client_id' => ['nullable', 'string', 'max:255'],
             'mqtt_username' => ['nullable', 'string', 'max:255'],
             'mqtt_password' => ['nullable', 'string', 'max:255'],
-            'mqtt_qos' => ['required', Rule::in([0, 1, 2])],
+            'mqtt_qos' => ['nullable', 'required_if:use_custom_mqtt,1', Rule::in([0, 1, 2])],
             'mqtt_tls' => ['nullable', 'boolean'],
             'license_plan' => ['required', Rule::exists('master_paket', 'kode')->where(fn ($query) => $query
                 ->where('aktif', true)
@@ -521,11 +523,14 @@ class HotelController extends Controller
 
         return [
             'media_disk' => 'media', 'media_root' => $mediaRoot,
-            'mqtt_host' => $data['mqtt_host'] ?? null, 'mqtt_port' => $data['mqtt_port'],
-            'mqtt_client_id' => $data['mqtt_client_id'] ?? null,
-            'mqtt_username' => $data['mqtt_username'] ?? null,
+            'use_custom_mqtt' => $data['use_custom_mqtt'],
+            'mqtt_host' => $data['mqtt_host'] ?? $existing?->mqtt_host,
+            'mqtt_port' => $data['mqtt_port'] ?? $existing?->mqtt_port ?? (int) config('mqtt-client.environment_defaults.port', 1883),
+            'mqtt_client_id' => $data['mqtt_client_id'] ?? $existing?->mqtt_client_id,
+            'mqtt_username' => $data['mqtt_username'] ?? $existing?->mqtt_username,
             'mqtt_password' => ($data['mqtt_password'] ?? null) ?: $existing?->mqtt_password,
-            'mqtt_qos' => $data['mqtt_qos'], 'mqtt_tls' => $data['mqtt_tls'] ?? false,
+            'mqtt_qos' => $data['mqtt_qos'] ?? $existing?->mqtt_qos ?? (int) config('mqtt-client.environment_defaults.qos', 1),
+            'mqtt_tls' => $data['mqtt_tls'] ?? $existing?->mqtt_tls ?? false,
         ];
     }
 

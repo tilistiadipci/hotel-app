@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Hotel;
+use App\Repositories\PlayerMqttRepository;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Throwable;
@@ -15,7 +16,7 @@ class TvChannelChangeNotifier
 {
     public function __construct(
         private TvChannelCacheService $cache,
-        private MqttService $mqtt,
+        private PlayerMqttRepository $playerMqtt,
     ) {
     }
 
@@ -37,7 +38,7 @@ class TvChannelChangeNotifier
 
         $this->cache->flush();
 
-        $this->hotelCodes($hotelIds)->each(fn (string $code) => $this->publishSync($code));
+        $this->hotels($hotelIds)->each(fn (Hotel $hotel) => $this->publishSync($hotel));
     }
 
     /**
@@ -51,25 +52,18 @@ class TvChannelChangeNotifier
             ->pluck('hotel_id');
     }
 
-    private function hotelCodes(Collection $hotelIds): Collection
+    private function hotels(Collection $hotelIds): Collection
     {
         return Hotel::query()
+            ->with('configuration')
             ->whereIn('id', $hotelIds)
-            ->pluck('code');
+            ->get();
     }
 
-    private function publishSync(string $hotelCode): void
+    private function publishSync(Hotel $hotel): void
     {
         try {
-            $this->mqtt->publish(
-                "hotel-app/hotels/{$hotelCode}/players/all/update",
-                json_encode([
-                    'type' => 'tv_channels',
-                    'action' => 'sync',
-                    'timestamp' => now()->toIso8601String(),
-                ]),
-                false
-            );
+            $this->playerMqtt->publishHotelUpdate($hotel, 'tv_channels');
         } catch (Throwable $e) {
             report($e);
         }

@@ -44,6 +44,10 @@ class SuperadminHotelSettingsTest extends TestCase
             'theme_id' => $defaultTheme->id,
             'is_default' => true,
         ]);
+        $this->assertDatabaseHas('hotel_configurations', [
+            'hotel_id' => $hotel->id,
+            'use_custom_mqtt' => false,
+        ]);
     }
 
     public function test_edit_hotel_page_contains_the_scoped_settings_tab(): void
