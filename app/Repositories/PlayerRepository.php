@@ -77,6 +77,7 @@ class PlayerRepository extends BaseRepository
             ->addColumn('action', function ($row) {
                 return view('partials.datatable.action2', [
                     'row' => $row,
+                    'playerContent' => true,
                 ])->render();
             })
             ->addColumn('theme_name', function ($row) {

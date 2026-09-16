@@ -14,6 +14,7 @@ class Player extends TenantModel
 
     protected $casts = [
         'is_active' => 'boolean',
+        'use_custom_content' => 'boolean',
         'token_expires_at' => 'datetime',
     ];
 
@@ -88,5 +89,10 @@ class Player extends TenantModel
     {
         return $this->belongsToMany(MenuTenant::class, 'menu_tenant_player')
             ->withTimestamps();
+    }
+
+    public function menuSettings()
+    {
+        return $this->hasMany(PlayerMenuSetting::class);
     }
 }

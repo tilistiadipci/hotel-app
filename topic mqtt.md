@@ -148,7 +148,7 @@ Nilai `type` yang didukung:
 | `checkin` | Tamu berhasil check-in | Ambil ulang status booking/tamu dan perbarui tampilan kamar |
 | `checkout` | Tamu berhasil check-out | Bersihkan sesi tamu dan ambil ulang status booking |
 | `tv_channels` | Akses atau master TV channel berubah | Sinkronkan daftar TV channel dari API |
-| `menus` | Menu hotel/pantry berubah | Sinkronkan menu dari API |
+| `menus` | Menu global hotel atau content khusus player berubah | Ambil ulang `GET /api/player/configuration` |
 | `theme` | Tema atau detail tema berubah | Ambil konfigurasi tema terbaru |
 | `configuration` | Pengaturan hotel/player berubah | Ambil konfigurasi terbaru |
 | `application` | Versi/aplikasi player berubah | Jalankan pemeriksaan pembaruan aplikasi |
@@ -187,6 +187,68 @@ hotel-app/hotels/{hotel_code}/players/{player_serial}/update
 Preview check-out tidak menerbitkan MQTT. Pesan baru dikirim setelah check-out benar-benar tersimpan.
 
 MQTT cukup memberi tahu bahwa ada perubahan. Player kemudian mengambil data terbaru melalui API HTTP/HTTPS.
+
+### Mengambil content/menu efektif player
+
+```http
+GET /api/player/configuration
+X-Hotel-Code: BIO-HOTEL
+X-Hotel-License: ******
+X-Player-Token: token-player
+```
+
+Response `content.menus` sudah merupakan hasil akhir. Jika `content.uses_custom` bernilai `false`, daftar tersebut berasal dari General Settings hotel. Jika bernilai `true`, label, ikon, status, urutan, dan penempatan menu memakai konfigurasi khusus player. `icon_url` berisi URL ikon upload jika tersedia; jika `null`, player menggunakan nama ikon bawaan pada `icon`. Untuk submenu, `parent_menu_key` dan `parent_menu` menunjukkan menu utama induknya.
+
+```json
+{
+  "status": true,
+  "content": {
+    "uses_custom": true,
+    "menus": [
+      {
+        "key": "music",
+        "name": "Music / Songs",
+        "label": "Musik Kamar",
+        "icon": "music",
+        "icon_path": "images/player-menu-icons/player-uuid/music-file.webp",
+        "icon_url": "http://localhost:3000/api/media?type=image&path=images%2Fplayer-menu-icons%2Fplayer-uuid%2Fmusic-file.webp&hotel=BIO-HOTEL",
+        "placement": "main",
+        "parent_menu_key": null,
+        "parent_menu": null,
+        "is_active": true,
+        "sort_order": 3,
+        "source": "player"
+      },
+      {
+        "key": "netflix",
+        "name": "Netflix",
+        "label": "Netflix",
+        "icon": "netflix",
+        "icon_path": null,
+        "icon_url": null,
+        "placement": "submenu",
+        "parent_menu_key": "streaming_tv",
+        "parent_menu": {
+          "key": "streaming_tv",
+          "label": "TV Streaming"
+        },
+        "is_active": true,
+        "sort_order": 8,
+        "source": "player"
+      }
+    ]
+  },
+  "theme": {
+    "id": "uuid-theme",
+    "name": "Default Theme",
+    "description": "Theme default hotel",
+    "image_url": "http://localhost:3000/api/media?type=image&path=default%2Ftheme-1.png&hotel=BIO-HOTEL",
+    "details": {
+      "background_theme_color": "#ffffff"
+    }
+  }
+}
+```
 
 ## 5. Alarm, Warning, dan Notifikasi
 

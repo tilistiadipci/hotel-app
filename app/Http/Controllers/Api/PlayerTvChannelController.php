@@ -3,16 +3,20 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
-use App\Models\Player;
 use App\Models\TvChannel;
+use App\Services\PlayerContentManager;
+use App\Services\PlayerTokenAuthenticator;
 use App\Services\TvChannelCacheService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class PlayerTvChannelController extends Controller
 {
-    public function __construct(private TvChannelCacheService $channelCache)
-    {
+    public function __construct(
+        private readonly TvChannelCacheService $channelCache,
+        private readonly PlayerTokenAuthenticator $authenticator,
+        private readonly PlayerContentManager $content,
+    ) {
     }
 
     public function index(Request $request): JsonResponse
@@ -24,13 +28,7 @@ class PlayerTvChannelController extends Controller
             return response()->json(['status' => false, 'message' => 'Header X-Player-Token wajib dikirim.'], 401);
         }
 
-        $player = Player::query()
-            ->withoutGlobalScope('hotel')
-            ->where('hotel_id', $hotel->id)
-            ->where('token', $token)
-            ->where('is_active', true)
-            ->where(fn ($query) => $query->whereNull('token_expires_at')->orWhere('token_expires_at', '>', now()))
-            ->first();
+        $player = $this->authenticator->find($hotel, $token);
 
         if (! $player) {
             return response()->json(['status' => false, 'message' => 'Token player tidak valid atau sudah kedaluwarsa.'], 401);
@@ -90,6 +88,10 @@ class PlayerTvChannelController extends Controller
             'status' => true,
             'hotel' => ['code' => $hotel->code, 'name' => $hotel->name],
             'player' => ['id' => $player->uuid, 'name' => $player->name, 'alias' => $player->alias],
+            'content' => [
+                'uses_custom' => (bool) $player->use_custom_content,
+                'menus' => $this->content->effective($player)->values(),
+            ],
             'data' => $channels,
         ]);
     }

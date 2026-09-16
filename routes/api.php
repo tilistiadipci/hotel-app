@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\Api\PlayerTvChannelController;
+use App\Http\Controllers\Api\PlayerConfigurationController;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 
@@ -22,3 +23,7 @@ Route::middleware(['auth:sanctum', 'hotel.license.header'])->get('/user', functi
 Route::middleware('hotel.license.header')
     ->get('/player/tv-channels', [PlayerTvChannelController::class, 'index'])
     ->name('api.player.tv-channels.index');
+
+Route::middleware('hotel.license.header')
+    ->get('/player/configuration', [PlayerConfigurationController::class, 'show'])
+    ->name('api.player.configuration.show');

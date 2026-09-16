@@ -37,6 +37,7 @@ use App\Http\Controllers\PlaceCategoryController;
 use App\Http\Controllers\PlaceController;
 use App\Http\Controllers\PlatformDashboardController;
 use App\Http\Controllers\PlayerController;
+use App\Http\Controllers\PlayerContentController;
 use App\Http\Controllers\PlayerGroupController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicLandingPageController;
@@ -220,6 +221,8 @@ Route::middleware(['auth', 'role.category:manager,admin,operator,user', 'manager
             ->group(function () {
                 Route::post('/bulkDelete', [PlayerController::class, 'bulkDelete'])->name('bulkDelete');
                 Route::post('/{player}/token', [PlayerController::class, 'regenerateToken'])->name('token');
+                Route::get('/{player}/content', [PlayerContentController::class, 'edit'])->name('content.edit');
+                Route::put('/{player}/content', [PlayerContentController::class, 'update'])->name('content.update');
             });
 
         // Player Groups
