@@ -4,9 +4,11 @@ namespace App\Services;
 
 use App\Models\Hotel;
 use App\Models\HotelLicense;
+use App\Models\MasterPaket;
 use App\Models\Registration;
 use App\Models\Role;
 use App\Models\Theme;
+use App\Models\TvChannel;
 use App\Models\User;
 use App\Tenancy\HotelMediaPath;
 use Illuminate\Support\Facades\DB;
@@ -16,9 +18,13 @@ use Illuminate\Validation\ValidationException;
 
 class HotelRegistrationApprovalService
 {
-    public function approve(Registration $registration, User $reviewer, ?string $notes = null): Registration
-    {
-        return DB::transaction(function () use ($registration, $reviewer, $notes) {
+    public function approve(
+        Registration $registration,
+        User $reviewer,
+        ?string $notes = null,
+        array $hotelData = []
+    ): Registration {
+        return DB::transaction(function () use ($registration, $reviewer, $notes, $hotelData) {
             $registration = Registration::query()->lockForUpdate()->findOrFail($registration->id);
             if ($registration->status !== Registration::STATUS_PENDING) {
                 throw ValidationException::withMessages(['status' => 'Registrasi ini sudah pernah diproses.']);
@@ -26,20 +32,30 @@ class HotelRegistrationApprovalService
 
             $this->ensureReady($registration);
             $this->ensureAccountAvailable($registration);
-            $trialDays = (int) config('hotel_plans.trial.duration_days', 14);
-            $code = $this->uniqueCode($registration->hotel_name);
+            $paket = MasterPaket::query()->lockForUpdate()->aktif()->where('paket_default_registrasi', true)->first();
+            if (! $paket) {
+                throw ValidationException::withMessages(['status' => 'Paket default registrasi belum diatur.']);
+            }
+            $channelIds = $paket->tvChannels()->withoutGlobalScope('hotel')
+                ->where('tv_channels.is_active', true)->whereNull('tv_channels.deleted_at')->pluck('tv_channels.id')->all();
+            if (empty($channelIds)) {
+                throw ValidationException::withMessages(['status' => 'Paket default registrasi belum memiliki TV channel aktif.']);
+            }
+            $hotelName = trim((string) ($hotelData['hotel_name'] ?? $registration->hotel_name));
+            $hotelAddress = trim((string) ($hotelData['hotel_address'] ?? $registration->hotel_address));
+            $code = $this->uniqueCode($hotelName);
 
             $hotel = Hotel::query()->create([
-                'name' => $registration->hotel_name,
-                'address' => $registration->hotel_address,
+                'name' => $hotelName,
+                'address' => $hotelAddress,
                 'code' => $code,
-                'slug' => $this->uniqueSlug($registration->hotel_name),
+                'slug' => $this->uniqueSlug($hotelName),
                 'timezone' => 'Asia/Jakarta',
                 'locale' => 'id_ID',
                 'currency' => 'IDR',
                 'status' => 'active',
                 'is_active' => true,
-                'trial_ends_at' => now()->addDays($trialDays),
+                'trial_ends_at' => $paket->durasi_hari ? now()->addDays($paket->durasi_hari)->endOfDay() : null,
             ]);
 
             $hotel->configuration()->create([
@@ -52,12 +68,13 @@ class HotelRegistrationApprovalService
 
             $plainLicenseKey = app(HotelLicenseKeyGenerator::class)->generate($hotel->code);
             $hotel->licenses()->create([
-                'plan_code' => 'trial',
-                'status' => HotelLicense::STATUS_TRIAL,
+                'plan_code' => $paket->kode,
+                'master_paket_id' => $paket->id,
+                'status' => $paket->kode === 'trial' ? HotelLicense::STATUS_TRIAL : HotelLicense::STATUS_ACTIVE,
                 'starts_at' => now(),
-                'expires_at' => now()->addDays($trialDays)->endOfDay(),
-                'max_players' => config('hotel_plans.trial.max_players'),
-                'max_users' => config('hotel_plans.trial.max_users'),
+                'expires_at' => $paket->durasi_hari ? now()->addDays($paket->durasi_hari)->endOfDay() : null,
+                'max_players' => $paket->maksimal_player,
+                'max_users' => $paket->maksimal_user,
                 'license_key_hash' => Hash::make($plainLicenseKey),
                 'license_key_fingerprint' => HotelLicense::fingerprintFor($plainLicenseKey),
             ]);
@@ -75,13 +92,13 @@ class HotelRegistrationApprovalService
                 $hotel->themes()->syncWithoutDetaching([$defaultThemeId => ['is_default' => true]]);
             }
 
-            $roleId = Role::query()->where('category', 'admin')->value('id');
+            $roleId = Role::query()->where('category', 'manager')->value('id');
             if (! $roleId) {
-                throw ValidationException::withMessages(['status' => 'Role admin hotel belum tersedia.']);
+                throw ValidationException::withMessages(['status' => 'Role manager hotel belum tersedia.']);
             }
 
-            $admin = User::query()->withoutGlobalScope('hotel')->create([
-                'hotel_id' => $hotel->id,
+            $manager = User::query()->withoutGlobalScope('hotel')->create([
+                'hotel_id' => null,
                 'role_id' => $roleId,
                 'username' => $registration->username,
                 'email' => $registration->email,
@@ -89,24 +106,63 @@ class HotelRegistrationApprovalService
                 'password' => $registration->password,
                 'is_active' => true,
             ]);
-            $admin->profile()->create([
+            $manager->profile()->create([
                 'name' => $registration->person_in_charge,
                 'phone' => $registration->whatsapp,
-                'address' => $registration->admin_address,
+                'address' => $registration->manager_address ?: $registration->admin_address,
                 'gender' => $registration->gender,
             ]);
+            $manager->managedHotels()->attach($hotel->id, [
+                'is_active' => true,
+                'assigned_by' => $reviewer->id,
+            ]);
+
+            $this->assignTvChannels($hotel, $channelIds);
 
             $registration->update([
+                'hotel_name' => $hotelName,
+                'hotel_address' => $hotelAddress,
                 'status' => Registration::STATUS_CONFIRMED,
                 'admin_notes' => $notes,
                 'confirmed_by' => $reviewer->id,
                 'reviewed_at' => now(),
                 'hotel_id' => $hotel->id,
-                'admin_user_id' => $admin->id,
+                'manager_user_id' => $manager->id,
             ]);
 
             return $registration->refresh();
         });
+    }
+
+    private function assignTvChannels(Hotel $hotel, array $channelIds): void
+    {
+        $masterId = Hotel::masterId();
+        if (! $masterId || empty($channelIds)) {
+            throw ValidationException::withMessages([
+                'status' => 'Paket default registrasi harus memiliki minimal satu TV channel.',
+            ]);
+        }
+
+        $ids = collect($channelIds)->map(fn ($id) => (int) $id)->unique()->values();
+        $channels = TvChannel::query()->withoutGlobalScope('hotel')
+            ->where('hotel_id', $masterId)
+            ->where('is_active', true)
+            ->whereNull('deleted_at')
+            ->whereIn('id', $ids)
+            ->get();
+
+        if ($channels->count() !== $ids->count()) {
+            throw ValidationException::withMessages([
+                'status' => 'TV channel pada paket default registrasi tidak valid.',
+            ]);
+        }
+
+        $hotel->tvChannels()->sync($channels->mapWithKeys(fn (TvChannel $channel) => [
+            $channel->id => [
+                'is_active' => true,
+                'sort_order' => $channel->sort_order,
+            ],
+        ])->all());
     }
 
     private function ensureReady(Registration $registration): void

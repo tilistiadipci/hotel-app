@@ -54,4 +54,9 @@ class Registration extends Model
     {
         return $this->belongsTo(User::class, 'admin_user_id');
     }
+
+    public function managerUser()
+    {
+        return $this->belongsTo(User::class, 'manager_user_id');
+    }
 }

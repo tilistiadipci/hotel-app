@@ -81,4 +81,9 @@ class TvChannel extends TenantModel
             ])
             ->withTimestamps();
     }
+
+    public function masterPaket()
+    {
+        return $this->belongsToMany(MasterPaket::class, 'master_paket_tv_channel')->withTimestamps();
+    }
 }

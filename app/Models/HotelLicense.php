@@ -41,6 +41,11 @@ class HotelLicense extends Model
         return $this->belongsTo(Hotel::class);
     }
 
+    public function masterPaket()
+    {
+        return $this->belongsTo(MasterPaket::class, 'master_paket_id');
+    }
+
     public function isUsable(): bool
     {
         if (! in_array($this->status, [self::STATUS_ACTIVE, self::STATUS_TRIAL], true)) {

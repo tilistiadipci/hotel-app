@@ -19,12 +19,12 @@ use App\Http\Controllers\ManagerDashboardController;
 use App\Http\Controllers\ManagerHotelContextController;
 use App\Http\Controllers\ManagerHotelController;
 use App\Http\Controllers\ManagerHotelSettingsController;
+use App\Http\Controllers\ManagerHotelUserController;
 use App\Http\Controllers\ManagerPortfolioController;
 use App\Http\Controllers\ManagerPortfolioReportController;
 use App\Http\Controllers\ManagerTvChannelAccessController;
+use App\Http\Controllers\MasterPaketController;
 use App\Http\Controllers\MediaController;
-use App\Http\Controllers\WilayahIndonesiaController;
-use App\Http\Controllers\MqttDocumentationController;
 use App\Http\Controllers\MenuCategoryController;
 use App\Http\Controllers\MenuController;
 use App\Http\Controllers\MenuTenantController;
@@ -32,6 +32,7 @@ use App\Http\Controllers\MenuTransactionController;
 use App\Http\Controllers\MenuTransactionReportController;
 use App\Http\Controllers\MovieCategoryController;
 use App\Http\Controllers\MovieController;
+use App\Http\Controllers\MqttDocumentationController;
 use App\Http\Controllers\PlaceCategoryController;
 use App\Http\Controllers\PlaceController;
 use App\Http\Controllers\PlatformDashboardController;
@@ -50,6 +51,7 @@ use App\Http\Controllers\ThemeController;
 use App\Http\Controllers\TVChannelController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WarningController;
+use App\Http\Controllers\WilayahIndonesiaController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -102,7 +104,11 @@ Route::middleware(['auth', 'role.category:master,superadmin'])
             ->parameters(['hotel-admins' => 'hotelAdmin'])
             ->except('show');
         Route::resource('managers', ManagerController::class)->except('show');
+        Route::resource('master-paket', MasterPaketController::class)
+            ->parameters(['master-paket' => 'masterPaket'])
+            ->except('show');
         Route::get('/registrations', [HotelRegistrationController::class, 'index'])->name('registrations.index');
+        Route::get('/registrations/{registration}/review', [HotelRegistrationController::class, 'review'])->name('registrations.review');
         Route::patch('/registrations/{registration}', [HotelRegistrationController::class, 'update'])->name('registrations.update');
 
         // Master data (dicopy ke tiap hotel baru) - reuses the normal hotel
@@ -120,6 +126,9 @@ Route::middleware(['auth', 'role.category:manager'])
     ->group(function () {
         Route::get('/dashboard', [ManagerDashboardController::class, 'index'])->name('dashboard');
         Route::get('/portfolio', [ManagerPortfolioController::class, 'index'])->name('portfolio');
+        Route::resource('hotel-users', ManagerHotelUserController::class)
+            ->parameters(['hotel-users' => 'hotelUser'])
+            ->except('show');
         Route::get('/reports/checkins', [ManagerPortfolioReportController::class, 'checkins'])->name('reports.checkins.index');
         Route::get('/reports/checkins/data', [ManagerPortfolioReportController::class, 'checkinsData'])->name('reports.checkins.data');
         Route::get('/reports/checkins/export', [ManagerPortfolioReportController::class, 'checkinsExport'])->name('reports.checkins.export');

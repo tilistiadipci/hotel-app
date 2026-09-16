@@ -1,7 +1,6 @@
 @php
     $configuration = isset($hotel) ? $hotel->configuration : null;
     $currentLicense = $license ?? null;
-    $licensePlans = config('hotel_plans');
     $selectedManagerIds = collect(old('manager_ids', $assignedManagerIds ?? []))->map(fn ($id) => (string) $id)->all();
 @endphp
 
@@ -169,11 +168,11 @@
         <div class="position-relative row form-group">
             <label for="license_expires_at" class="col-sm-3 col-form-label text-sm-right">Berakhir Pada</label>
             <div class="col-sm-9">
-                <input id="license_expires_at" name="license_expires_at" type="date"
+                <input id="license_expires_at" name="license_expires_at" type="date" readonly
                     class="form-control @error('license_expires_at') is-invalid @enderror"
                     value="{{ old('license_expires_at', $currentLicense?->expires_at?->format('Y-m-d') ?? '') }}">
                 @error('license_expires_at')<div class="invalid-feedback">{{ $message }}</div>
-                @else<small class="text-muted font-italic">Kosongkan jika lisensi tidak memiliki tanggal kedaluwarsa.</small>@enderror
+                @else<small class="text-muted font-italic">Tanggal dihitung otomatis dari masa berlaku pada Master Paket.</small>@enderror
             </div>
         </div>
 
@@ -182,9 +181,9 @@
             <div class="col-sm-9">
                 <input id="license_max_players" name="license_max_players" type="number" min="1"
                     class="form-control @error('license_max_players') is-invalid @enderror"
-                    value="{{ old('license_max_players', $currentLicense->max_players ?? '') }}">
+                    value="{{ old('license_max_players', $currentLicense->max_players ?? '') }}" readonly>
                 @error('license_max_players')<div class="invalid-feedback">{{ $message }}</div>
-                @else<small class="text-muted font-italic">Kosongkan jika jumlah player tidak dibatasi.</small>@enderror
+                @else<small class="text-muted font-italic">Diatur melalui menu Master Paket.</small>@enderror
             </div>
         </div>
 
@@ -193,9 +192,9 @@
             <div class="col-sm-9">
                 <input id="license_max_users" name="license_max_users" type="number" min="1"
                     class="form-control @error('license_max_users') is-invalid @enderror"
-                    value="{{ old('license_max_users', $currentLicense->max_users ?? '') }}">
+                    value="{{ old('license_max_users', $currentLicense->max_users ?? '') }}" readonly>
                 @error('license_max_users')<div class="invalid-feedback">{{ $message }}</div>
-                @else<small class="text-muted font-italic">Kosongkan jika jumlah user hotel tidak dibatasi.</small>@enderror
+                @else<small class="text-muted font-italic">Diatur melalui menu Master Paket.</small>@enderror
             </div>
         </div>
 
@@ -346,26 +345,22 @@ $(function () {
         if (!selected) return;
 
         $('#licensePlanInfo').text(selected.description);
-        const custom = code === 'custom';
-        $maxPlayers.prop('readonly', !custom);
-        $maxUsers.prop('readonly', !custom);
-
-        if (!custom) {
-            if (replaceValues || !$maxPlayers.val()) $maxPlayers.val(selected.max_players || '');
-            if (replaceValues || !$maxUsers.val()) $maxUsers.val(selected.max_users || '');
-        }
+        $maxPlayers.prop('readonly', true);
+        $maxUsers.prop('readonly', true);
+        if (replaceValues || !$maxPlayers.val()) $maxPlayers.val(selected.max_players || '');
+        if (replaceValues || !$maxUsers.val()) $maxUsers.val(selected.max_users || '');
 
         if (code === 'trial') {
             if ($status.val() === 'active' || $status.val() === 'trial') $status.val('trial');
             $expiresAt.prop('readonly', true).val(addDays($startsAt.val(), selected.duration_days));
         } else {
-            $expiresAt.prop('readonly', false);
+            $expiresAt.prop('readonly', true).val(selected.duration_days ? addDays($startsAt.val(), selected.duration_days) : '');
             if ($status.val() === 'trial') $status.val('active');
         }
     }
 
     $plan.on('change', function () { applyPlan(true); });
-    $startsAt.on('change', function () { if ($plan.val() === 'trial') applyPlan(true); });
+    $startsAt.on('change', function () { applyPlan(true); });
     $licenseKey.on('input', function () {
         this.value = this.value.toUpperCase().replace(/[^A-Z0-9]/g, '').slice(0, 6);
     });

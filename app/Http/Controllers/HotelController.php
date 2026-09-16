@@ -7,6 +7,7 @@ use App\Models\Hotel;
 use App\Models\HotelLicense;
 use App\Models\HotelVisitLog;
 use App\Models\Media;
+use App\Models\MasterPaket;
 use App\Models\MenuTenant;
 use App\Models\MenuTransaction;
 use App\Models\Player;
@@ -91,6 +92,7 @@ class HotelController extends Controller
                 'license_key_hash' => bcrypt($plainLicenseKey),
                 'license_key_fingerprint' => HotelLicense::fingerprintFor($plainLicenseKey),
             ]);
+            $this->syncPackageTvChannels($hotel, $licenseData['master_paket_id']);
             app(HotelSettingsManager::class)->provisionFromMaster($hotel, [
                 'default_language' => $hotel->locale === 'en_US' ? 'en_US' : 'id_ID',
                 'general_app_name' => $hotel->name,
@@ -276,6 +278,7 @@ class HotelController extends Controller
             $hotel->configuration()->updateOrCreate([], $this->configurationPayload($data, $hotel));
 
             $license = $hotel->licenses()->latest('starts_at')->first();
+            $packageChanged = ! $license || $license->plan_code !== $data['license_plan'];
             if ((! $license || ! $license->license_key_hash || ! $license->license_key_fingerprint) && ! $plainLicenseKey) {
                 $plainLicenseKey = app(HotelLicenseKeyGenerator::class)->generate($hotel->code);
             }
@@ -291,6 +294,10 @@ class HotelController extends Controller
                 $license->update($licenseData);
             } else {
                 $hotel->licenses()->create($licenseData);
+            }
+
+            if ($packageChanged) {
+                $this->syncPackageTvChannels($hotel, $licenseData['master_paket_id']);
             }
 
             $this->syncManagers($hotel, $data);
@@ -337,7 +344,9 @@ class HotelController extends Controller
             'mqtt_password' => ['nullable', 'string', 'max:255'],
             'mqtt_qos' => ['required', Rule::in([0, 1, 2])],
             'mqtt_tls' => ['nullable', 'boolean'],
-            'license_plan' => ['required', Rule::in(array_keys(config('hotel_plans')))],
+            'license_plan' => ['required', Rule::exists('master_paket', 'kode')->where(fn ($query) => $query
+                ->where('aktif', true)
+                ->when($hotel?->latestLicense?->plan_code, fn ($query, $code) => $query->orWhere('kode', $code)))],
             'license_status' => ['required', Rule::in([
                 HotelLicense::STATUS_TRIAL,
                 HotelLicense::STATUS_ACTIVE,
@@ -441,6 +450,17 @@ class HotelController extends Controller
         $hotel->managers()->sync($assignments);
     }
 
+    private function syncPackageTvChannels(Hotel $hotel, int $masterPaketId): void
+    {
+        $paket = MasterPaket::query()->findOrFail($masterPaketId);
+        $channels = $paket->tvChannels()->withoutGlobalScope('hotel')
+            ->where('tv_channels.is_active', true)->whereNull('tv_channels.deleted_at')->get();
+
+        $hotel->tvChannels()->sync($channels->mapWithKeys(fn ($channel) => [
+            $channel->id => ['is_active' => true, 'sort_order' => $channel->sort_order],
+        ])->all());
+    }
+
     private function createInitialAdmin(Hotel $hotel, array $data): void
     {
         if (empty($data['admin_email'])) {
@@ -468,6 +488,19 @@ class HotelController extends Controller
 
     private function hotelFormData(?Hotel $hotel = null): array
     {
+        $licensePlans = MasterPaket::query()
+            ->where(fn ($query) => $query->where('aktif', true)
+                ->when($hotel?->latestLicense?->plan_code, fn ($query, $code) => $query->orWhere('kode', $code)))
+            ->orderBy('urutan')->orderBy('nama')->get()
+            ->mapWithKeys(fn (MasterPaket $paket) => [$paket->kode => [
+                'id' => $paket->id,
+                'label' => $paket->nama,
+                'description' => $paket->deskripsi,
+                'duration_days' => $paket->durasi_hari,
+                'max_players' => $paket->maksimal_player,
+                'max_users' => $paket->maksimal_user,
+            ]])->all();
+
         return [
             'page' => 'hotels',
             'icon' => 'fa fa-hotel',
@@ -475,6 +508,7 @@ class HotelController extends Controller
                 ->whereHas('role', fn ($query) => $query->where('category', 'manager'))
                 ->where('is_active', true)->with('profile')->orderBy('username')->get(),
             'assignedManagerIds' => $hotel?->managers()->pluck('users.id')->map(fn ($id) => (int) $id)->all() ?? [],
+            'licensePlans' => $licensePlans,
         ];
     }
 
@@ -497,7 +531,7 @@ class HotelController extends Controller
 
     private function licensePayload(array $data): array
     {
-        $plan = config('hotel_plans.'.$data['license_plan']);
+        $plan = MasterPaket::query()->aktif()->where('kode', $data['license_plan'])->firstOrFail();
         $startsAt = $data['license_starts_at'] ? Carbon::parse($data['license_starts_at'])->startOfDay() : now();
         $isTrial = $data['license_plan'] === 'trial';
         $status = $data['license_status'];
@@ -510,13 +544,14 @@ class HotelController extends Controller
 
         return [
             'plan_code' => $data['license_plan'],
+            'master_paket_id' => $plan->id,
             'status' => $status,
             'starts_at' => $startsAt,
-            'expires_at' => $isTrial
-                ? $startsAt->copy()->addDays((int) $plan['duration_days'])
-                : (! empty($data['license_expires_at']) ? Carbon::parse($data['license_expires_at'])->endOfDay() : null),
-            'max_players' => $data['license_plan'] === 'custom' ? ($data['license_max_players'] ?: null) : $plan['max_players'],
-            'max_users' => $data['license_plan'] === 'custom' ? ($data['license_max_users'] ?: null) : $plan['max_users'],
+            'expires_at' => $plan->durasi_hari
+                ? $startsAt->copy()->addDays($plan->durasi_hari)->endOfDay()
+                : null,
+            'max_players' => $plan->maksimal_player,
+            'max_users' => $plan->maksimal_user,
         ];
     }
 }

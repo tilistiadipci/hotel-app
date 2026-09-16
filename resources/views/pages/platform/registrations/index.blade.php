@@ -29,15 +29,17 @@
                         <td><a href="mailto:{{ $registration->email }}">{{ $registration->email }}</a><br><a href="https://wa.me/{{ ltrim($registration->whatsapp, '+') }}" target="_blank" rel="noopener">{{ $registration->whatsapp }}</a></td>
                         <td>{{ $registration->created_at->format('d/m/Y H:i') }}</td>
                         <td><span class="badge badge-{{ $badge }}">{{ __('platform.registration.status_'.$registration->status) }}</span>@if ($registration->reviewed_at)<small class="d-block text-muted mt-1">{{ $registration->reviewed_at->format('d/m/Y H:i') }}</small>@endif</td>
-                        <td>@if($registration->status === \App\Models\Registration::STATUS_PENDING)<form method="POST" action="{{ route('platform.registrations.update', $registration) }}" class="registration-review-form">
-                            @csrf @method('PATCH')
-                            <textarea name="admin_notes" rows="2" class="form-control form-control-sm mb-2" placeholder="{{ __('platform.registration.notes_placeholder') }}">{{ $registration->admin_notes }}</textarea>
-                            <button name="status" value="confirmed" class="btn btn-success btn-sm"><i class="fa fa-check mr-1"></i>{{ __('platform.registration.confirm') }}</button>
-                            <button name="status" value="rejected" class="btn btn-outline-danger btn-sm"><i class="fa fa-times mr-1"></i>{{ __('platform.registration.reject') }}</button>
-                        </form>@else
+                        <td>@if($registration->status === \App\Models\Registration::STATUS_PENDING)
+                            <a href="{{ route('platform.registrations.review', $registration) }}" class="btn btn-success btn-sm mb-2"><i class="fa fa-tasks mr-1"></i>Review &amp; Approve</a>
+                            <form method="POST" action="{{ route('platform.registrations.update', $registration) }}" class="registration-review-form">
+                                @csrf @method('PATCH')
+                                <textarea name="admin_notes" rows="2" class="form-control form-control-sm mb-2" placeholder="{{ __('platform.registration.notes_placeholder') }}">{{ $registration->admin_notes }}</textarea>
+                                <button name="status" value="rejected" class="btn btn-outline-danger btn-sm"><i class="fa fa-times mr-1"></i>{{ __('platform.registration.reject') }}</button>
+                            </form>@else
                             @if($registration->admin_notes)<div class="small text-muted mb-2">{{ $registration->admin_notes }}</div>@endif
                             @if($registration->hotel)<a class="btn btn-outline-primary btn-sm" href="{{ route('platform.hotels.show', $registration->hotel) }}"><i class="fa fa-hotel mr-1"></i>Lihat Hotel</a>@endif
-                            @if($registration->adminUser)<a class="btn btn-outline-secondary btn-sm" href="{{ route('platform.hotel-admins.edit', $registration->adminUser) }}"><i class="fa fa-user-shield mr-1"></i>Lihat Akun</a>@endif
+                            @if($registration->managerUser)<a class="btn btn-outline-secondary btn-sm" href="{{ route('platform.managers.edit', $registration->managerUser) }}"><i class="fa fa-user-tie mr-1"></i>Lihat Manager</a>
+                            @elseif($registration->adminUser)<a class="btn btn-outline-secondary btn-sm" href="{{ route('platform.hotel-admins.edit', $registration->adminUser) }}"><i class="fa fa-user-shield mr-1"></i>Lihat Akun Lama</a>@endif
                         @endif</td>
                     </tr>
                 @endforeach

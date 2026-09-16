@@ -75,7 +75,7 @@ class RegisterController extends Controller
                 Rule::unique('registration', 'whatsapp')->where('status', Registration::STATUS_PENDING),
             ],
             'gender' => ['nullable', Rule::in(['male', 'female'])],
-            'admin_address' => ['nullable', 'string', 'max:255'],
+            'manager_address' => ['nullable', 'string', 'max:255'],
             'password' => ['required', 'string', 'min:8', 'confirmed'],
         ]);
 

@@ -63,7 +63,7 @@
                             <textarea id="hotel_address" name="hotel_address" class="registration-input @error('hotel_address') is-invalid @enderror" required>{{ old('hotel_address') }}</textarea>
                             @error('hotel_address')<span class="registration-error">{{ $message }}</span>@enderror
                         </div>
-                        <div class="registration-section-title">{{ __('platform.registration.admin_account_data') }}</div>
+                        <div class="registration-section-title">{{ __('platform.registration.manager_account_data') }}</div>
                         <div class="registration-field registration-field-wide">
                             <label for="person_in_charge">{{ __('platform.registration.person_in_charge') }} <span class="registration-required">*</span></label>
                             <input id="person_in_charge" name="person_in_charge" value="{{ old('person_in_charge') }}" class="registration-input @error('person_in_charge') is-invalid @enderror" required>
@@ -81,7 +81,7 @@
                         </div>
                         <div class="registration-field">
                             <label for="whatsapp">{{ __('platform.registration.whatsapp') }} <span class="registration-required">*</span></label>
-                            <input id="whatsapp" name="whatsapp" value="{{ old('whatsapp') }}" placeholder="+628123456789" class="registration-input @error('whatsapp') is-invalid @enderror" required>
+                            <input id="whatsapp" name="whatsapp" value="{{ old('whatsapp') }}" placeholder="08123456789" class="registration-input @error('whatsapp') is-invalid @enderror" required>
                             @error('whatsapp')<span class="registration-error">{{ $message }}</span>@enderror
                         </div>
                         <div class="registration-field">
@@ -94,9 +94,9 @@
                             @error('gender')<span class="registration-error">{{ $message }}</span>@enderror
                         </div>
                         <div class="registration-field registration-field-wide">
-                            <label for="admin_address">{{ __('platform.registration.admin_address') }}</label>
-                            <textarea id="admin_address" name="admin_address" class="registration-input @error('admin_address') is-invalid @enderror">{{ old('admin_address') }}</textarea>
-                            @error('admin_address')<span class="registration-error">{{ $message }}</span>@enderror
+                            <label for="manager_address">{{ __('platform.registration.manager_address') }}</label>
+                            <textarea id="manager_address" name="manager_address" class="registration-input @error('manager_address') is-invalid @enderror">{{ old('manager_address') }}</textarea>
+                            @error('manager_address')<span class="registration-error">{{ $message }}</span>@enderror
                         </div>
                         <div class="registration-field">
                             <label for="password">{{ __('platform.registration.password') }} <span class="registration-required">*</span></label>
