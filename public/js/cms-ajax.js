@@ -30,7 +30,11 @@
             document.body.classList.remove('cms-ajax-complete');
         }, 260);
         if (window.swal && typeof window.swal.close === 'function') {
-            window.swal.close();
+            try {
+                window.swal.close();
+            } catch (error) {
+                // No-op: some sweetalert versions throw when closing while no alert is open.
+            }
         }
     }
 
@@ -69,6 +73,27 @@
         });
     }
 
+    function withDomReadyShim(fn) {
+        var originalAddEventListener = document.addEventListener;
+        document.addEventListener = function (type, listener, options) {
+            if (type === 'DOMContentLoaded') {
+                // The real DOMContentLoaded event already fired once for this document.
+                // Page scripts replayed after an in-app AJAX navigation register a fresh
+                // listener expecting init-on-ready semantics, so invoke it directly instead
+                // of binding a listener that would never fire again.
+                window.setTimeout(listener, 0);
+                return;
+            }
+            return originalAddEventListener.call(document, type, listener, options);
+        };
+
+        try {
+            fn();
+        } finally {
+            document.addEventListener = originalAddEventListener;
+        }
+    }
+
     function executeScript(sourceScript, beforeNode) {
         return new Promise(function (resolve) {
             var type = sourceScript.getAttribute('type');
@@ -90,7 +115,9 @@
 
             try {
                 // Function scope prevents repeated page visits from redeclaring top-level let/const.
-                (new Function(sourceScript.textContent))();
+                withDomReadyShim(function () {
+                    (new Function(sourceScript.textContent))();
+                });
             } catch (error) {
                 window.console.error('CMS page script failed:', error);
             }
@@ -119,7 +146,9 @@
 
         try {
             // One function gives all inline script tags on a page the same scope.
-            (new Function(code))();
+            withDomReadyShim(function () {
+                (new Function(code))();
+            });
         } catch (error) {
             window.console.error('CMS page scripts failed:', error);
         }
@@ -182,7 +211,10 @@
     function sidebarStructureChanged(nextDocument) {
         var nextSidebar = nextDocument.querySelector('.app-sidebar');
         var currentSidebar = document.querySelector('.app-sidebar');
-        if (!nextSidebar || !currentSidebar) return false;
+        if (!nextSidebar && !currentSidebar) return false;
+        // Entering or leaving a sidebar-less "focus mode" page (e.g. theme editor) also
+        // needs a full reload, since only the sidebar's own links are otherwise re-synced.
+        if (!nextSidebar || !currentSidebar) return true;
 
         function signature(sidebar) {
             return Array.prototype.map.call(sidebar.querySelectorAll('a[href]'), function (link) {

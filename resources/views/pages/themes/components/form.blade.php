@@ -136,7 +136,13 @@
     $allowsMultipleImagesForKey = function ($key) {
         $normalizedKey = \Illuminate\Support\Str::of((string) $key)->trim()->lower()->toString();
 
-        return preg_match('/^image(_id)?_3$/', $normalizedKey) !== 1;
+        return preg_match('/^(image(_id)?_3|menu_\d+_icon)$/', $normalizedKey) !== 1;
+    };
+
+    $isMenuIconDetailKey = function ($key) {
+        $normalizedKey = \Illuminate\Support\Str::of((string) $key)->trim()->lower()->toString();
+
+        return preg_match('/^menu_\d+_icon$/', $normalizedKey) === 1;
     };
 
     $resolveDetailControlType = function ($key) {
@@ -146,7 +152,7 @@
             return 'boolean';
         }
 
-        if (preg_match('/^image(_id)?_\d+$/', $normalizedKey) === 1) {
+        if (preg_match('/^(image(_id)?_\d+|menu_\d+_icon)$/', $normalizedKey) === 1) {
             return 'image-picker';
         }
 
@@ -154,7 +160,7 @@
             return 'scale-select';
         }
 
-        if (in_array($normalizedKey, ['running_text', 'marquee_text'], true)) {
+        if (in_array($normalizedKey, ['running_text', 'marquee_text', 'notification_message'], true)) {
             return 'textarea';
         }
 
@@ -194,6 +200,46 @@
     if (empty($initialRunningTextParts)) {
         $initialRunningTextParts = [$initialRunningText];
     }
+
+    $resolveMenuStep = function ($key) {
+        $normalizedKey = \Illuminate\Support\Str::of((string) $key)->trim()->lower()->toString();
+
+        return preg_match('/^menu_(\d+)_(?:label|icon)$/', $normalizedKey, $matches) === 1
+            ? (int) $matches[1]
+            : null;
+    };
+
+    $resolveDetailTab = function ($key) use ($resolveMenuStep) {
+        $normalizedKey = \Illuminate\Support\Str::of((string) $key)->trim()->lower()->toString();
+
+        if ($resolveMenuStep($key) !== null) {
+            return 'menu';
+        }
+
+        if (str_starts_with($normalizedKey, 'header_show_')
+            || str_starts_with($normalizedKey, 'wifi_')
+            || str_starts_with($normalizedKey, 'notification_')
+            || str_ends_with($normalizedKey, '_scale')
+            || str_ends_with($normalizedKey, '_color')
+            || $normalizedKey === 'background_color'
+            || $normalizedKey === 'text_color') {
+            return 'appearance';
+        }
+
+        return 'advanced';
+    };
+
+    $initialThemeTab = 'general';
+    if ($errors->any() && ! $errors->has('name') && ! $errors->has('description') && ! $errors->has('is_default')) {
+        $erroredIndex = collect($errors->keys())
+            ->map(fn ($key) => preg_match('/^detail_(?:keys|values)\.(\d+)$/', $key, $m) ? (int) $m[1] : null)
+            ->filter(fn ($index) => $index !== null)
+            ->first();
+
+        if ($erroredIndex !== null) {
+            $initialThemeTab = $resolveDetailTab((string) old("detail_keys.$erroredIndex"));
+        }
+    }
 @endphp
 
 <form action="{{ route('themes.update', $theme->uuid) }}" method="POST" enctype="multipart/form-data">
@@ -207,6 +253,14 @@
                     <strong>{{ trans('common.theme.edit') }}</strong>
                 </div>
                 <div class="card-body">
+                    <div class="theme-tab-nav" role="tablist">
+                        <button type="button" class="theme-tab-nav__btn {{ $initialThemeTab === 'general' ? 'is-active' : '' }}" data-theme-tab="general">{{ trans('common.theme.tab_general') }}</button>
+                        <button type="button" class="theme-tab-nav__btn {{ $initialThemeTab === 'appearance' ? 'is-active' : '' }}" data-theme-tab="appearance">{{ trans('common.theme.tab_appearance') }}</button>
+                        <button type="button" class="theme-tab-nav__btn {{ $initialThemeTab === 'menu' ? 'is-active' : '' }}" data-theme-tab="menu">{{ trans('common.theme.tab_menu') }}</button>
+                        <button type="button" class="theme-tab-nav__btn {{ $initialThemeTab === 'advanced' ? 'is-active' : '' }}" data-theme-tab="advanced">{{ trans('common.theme.tab_advanced') }}</button>
+                    </div>
+
+                    <div class="theme-tab-panel {{ $initialThemeTab === 'general' ? 'is-active' : '' }}" data-tab-panel="general">
                     <div class="form-group">
                         <label class="theme-form-label d-block">{{ trans('common.name') }}</label>
                         <div>
@@ -248,10 +302,13 @@
                             ])
                         </div>
                     </div> --}}
+                    </div>
 
+                    <div class="theme-tab-panel {{ $initialThemeTab !== 'general' ? 'is-active' : '' }}" data-tab-panel="details">
                     <div class="form-group mb-0">
                         <label class="theme-form-label d-block">{{ trans('common.theme.details') }}</label>
                         <div>
+                            <div class="theme-menu-step-nav d-none" id="themeMenuStepNav"></div>
                             <div id="themeDetailRows">
                                 @foreach ($detailRows as $index => $row)
                                     @php
@@ -277,8 +334,9 @@
                                             ->filter(fn($item) => filled($item['url'] ?? null))
                                             ->values()
                                             ->all();
+                                        $isMenuIconKey = $isMenuIconDetailKey($row['key'] ?? '');
                                     @endphp
-                                    <div class="border rounded p-3 mb-2 theme-detail-row">
+                                    <div class="border rounded p-3 mb-2 theme-detail-row" data-detail-tab="{{ $resolveDetailTab($row['key'] ?? '') }}" @if ($resolveMenuStep($row['key'] ?? '') !== null) data-menu-step="{{ $resolveMenuStep($row['key'] ?? '') }}" @endif>
                                         <div class="theme-detail-row__header">
                                             @if ($canManageDetailKeys)
                                                 <input type="text" name="detail_keys[]" class="form-control theme-detail-key-input"
@@ -304,12 +362,12 @@
                                                 placeholder="Special offers for you"
                                                 style="{{ $controlType === 'textarea' ? 'display:block;' : 'display:none;' }}">{{ $prepareTextareaValue($row['value'] ?? '') }}</textarea>
 
-                                            <div class="theme-detail-image-wrap"
+                                            <div class="theme-detail-image-wrap {{ $isMenuIconKey ? 'theme-detail-image-wrap--icon' : '' }}"
                                                 data-image-items='@json($detailImageItems)'
                                                 data-allow-multiple="{{ $allowsMultipleImages ? '1' : '0' }}"
                                                 style="{{ $controlType === 'image-picker' ? 'display:block;' : 'display:none;' }}">
                                                 <button type="button" class="btn btn-outline-primary btn-sm btn-detail-image-upload">
-                                                    <i class="fa fa-image mr-1"></i> Pick / Upload Image
+                                                    <i class="fa fa-image mr-1"></i> {{ $isMenuIconKey ? trans('common.player_content.choose_icon_file') : 'Pick / Upload Image' }}
                                                 </button>
                                                 <input type="file" class="d-none theme-detail-image-file" accept="image/*" {{ $allowsMultipleImages ? 'multiple' : '' }}>
                                                 <small class="d-block text-muted mt-2">
@@ -317,7 +375,7 @@
                                                     <span class="theme-detail-image-id-label">{{ !empty($detailImageIds) ? implode(', ', $detailImageIds) : '-' }}</span>
                                                 </small>
                                                 <small class="d-block text-muted theme-detail-image-help">
-                                                    {{ $allowsMultipleImages ? 'Multi Image Guest Home' : 'Image Background Home' }}
+                                                    {{ $isMenuIconKey ? 'Menu icon image (square, e.g. 128x128px)' : ($allowsMultipleImages ? 'Multi Image Guest Home' : 'Image Background Home') }}
                                                 </small>
                                                 <div class="theme-detail-image-preview-list mt-2 {{ !empty($detailPreviewItems) ? '' : 'd-none' }}">
                                                     @foreach ($detailPreviewItems as $imageIndex => $imageItem)
@@ -334,15 +392,16 @@
                                                 </div>
                                             </div>
 
-                                            <select
-                                                class="form-control theme-detail-value-select theme-detail-boolean-select"
-                                                style="width: 100%; {{ $controlType === 'boolean' ? 'display:block;' : 'display:none;' }}">
+                                            <div class="custom-control custom-switch theme-detail-boolean-toggle-wrap"
+                                                style="{{ $controlType === 'boolean' ? 'display:block;' : 'display:none;' }}">
                                                 @php
                                                     $booleanValue = $normalizeBooleanValue($row['value'] ?? '');
+                                                    $booleanToggleId = 'theme_detail_bool_' . $index;
                                                 @endphp
-                                                <option value="1" {{ $booleanValue === '1' ? 'selected' : '' }}>Yes</option>
-                                                <option value="0" {{ $booleanValue === '0' ? 'selected' : '' }}>No</option>
-                                            </select>
+                                                <input type="checkbox" class="custom-control-input theme-detail-boolean-toggle"
+                                                    id="{{ $booleanToggleId }}" @checked($booleanValue === '1')>
+                                                <label class="custom-control-label" for="{{ $booleanToggleId }}"></label>
+                                            </div>
 
                                             <select
                                                 class="form-control theme-detail-value-select theme-detail-scale-select"
@@ -388,6 +447,7 @@
                                 </button>
                             @endif
                         </div>
+                    </div>
                     </div>
                 </div>
                 <div class="card-footer bg-white text-right">
@@ -467,14 +527,52 @@
                                 </div>
                             </div>
 
-                            <div class="theme-live-preview__menu">
-                                <span><i class="fa fa-home"></i><em>Home</em></span>
-                                <span><i class="fa fa-desktop"></i><em>TV</em></span>
-                                <span><i class="fa fa-music"></i><em>Music</em></span>
-                                <span><i class="fa fa-play-circle-o"></i><em>VOD</em></span>
-                                <span><i class="fa fa-building"></i><em>Guide</em></span>
-                                <span><i class="fa fa-cutlery"></i><em>Dining</em></span>
-                                <span><i class="fa fa-map-marker"></i><em>Nearby</em></span>
+                            <div class="theme-live-preview__widgets" id="themePreviewWidgets">
+                                <div class="theme-live-preview__notification">
+                                    <div class="theme-live-preview__notification-badge">
+                                        <i class="fa fa-volume-up"></i>
+                                        <span id="previewNotificationTitle">Notification</span>
+                                    </div>
+                                    <div class="theme-live-preview__notification-message" id="previewNotificationMessage"></div>
+                                </div>
+                                <div class="theme-live-preview__wifi">
+                                    <div class="theme-live-preview__wifi-label">WIFI ACCESS</div>
+                                    <div class="theme-live-preview__qr">
+                                        <svg viewBox="0 0 29 29" preserveAspectRatio="xMidYMid meet">
+                                            <rect width="29" height="29" fill="#fff"/>
+                                            <g fill="#111">
+                                                <rect x="0" y="0" width="7" height="7"/><rect x="1" y="1" width="5" height="5" fill="#fff"/><rect x="2" y="2" width="3" height="3"/>
+                                                <rect x="22" y="0" width="7" height="7"/><rect x="23" y="1" width="5" height="5" fill="#fff"/><rect x="24" y="2" width="3" height="3"/>
+                                                <rect x="0" y="22" width="7" height="7"/><rect x="1" y="23" width="5" height="5" fill="#fff"/><rect x="2" y="24" width="3" height="3"/>
+                                                <rect x="9" y="0" width="1" height="1"/><rect x="11" y="0" width="2" height="1"/><rect x="15" y="0" width="1" height="2"/><rect x="18" y="0" width="2" height="1"/>
+                                                <rect x="9" y="2" width="2" height="2"/><rect x="13" y="2" width="1" height="3"/><rect x="17" y="2" width="1" height="1"/><rect x="19" y="2" width="1" height="2"/>
+                                                <rect x="9" y="5" width="1" height="2"/><rect x="11" y="4" width="2" height="1"/><rect x="15" y="4" width="2" height="2"/><rect x="18" y="5" width="1" height="2"/>
+                                                <rect x="9" y="9" width="3" height="1"/><rect x="13" y="9" width="1" height="2"/><rect x="16" y="9" width="2" height="1"/><rect x="20" y="9" width="3" height="2"/>
+                                                <rect x="10" y="11" width="1" height="3"/><rect x="12" y="12" width="2" height="1"/><rect x="15" y="11" width="1" height="2"/><rect x="18" y="12" width="1" height="3"/><rect x="24" y="11" width="2" height="2"/>
+                                                <rect x="9" y="15" width="2" height="1"/><rect x="13" y="15" width="2" height="2"/><rect x="17" y="15" width="2" height="1"/><rect x="21" y="15" width="1" height="3"/><rect x="26" y="15" width="2" height="2"/>
+                                                <rect x="9" y="18" width="1" height="2"/><rect x="12" y="18" width="1" height="1"/><rect x="15" y="18" width="3" height="1"/><rect x="19" y="18" width="2" height="2"/><rect x="23" y="18" width="1" height="1"/>
+                                                <rect x="9" y="22" width="4" height="1"/><rect x="14" y="22" width="1" height="3"/><rect x="17" y="23" width="2" height="1"/><rect x="20" y="22" width="1" height="2"/><rect x="23" y="23" width="3" height="1"/>
+                                                <rect x="9" y="25" width="1" height="3"/><rect x="12" y="26" width="2" height="2"/><rect x="16" y="26" width="1" height="2"/><rect x="19" y="26" width="2" height="1"/><rect x="24" y="25" width="1" height="3"/><rect x="27" y="26" width="2" height="2"/>
+                                            </g>
+                                        </svg>
+                                    </div>
+                                    <div class="theme-live-preview__wifi-details">
+                                        <small>SSID</small>
+                                        <strong id="previewWifiSsid"></strong>
+                                        <small>Password</small>
+                                        <strong id="previewWifiPassword"></strong>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="theme-live-preview__menu-wrap">
+                                <button type="button" class="theme-live-preview__menu-arrow" data-menu-scroll="-1" aria-label="Previous">
+                                    <i class="fa fa-chevron-left"></i>
+                                </button>
+                                <div class="theme-live-preview__menu" id="themePreviewMenu"></div>
+                                <button type="button" class="theme-live-preview__menu-arrow" data-menu-scroll="1" aria-label="Next">
+                                    <i class="fa fa-chevron-right"></i>
+                                </button>
                             </div>
                         </div>
                         <div class="theme-live-preview__ticker">
@@ -529,6 +627,64 @@
 
         .theme-form-card .form-group {
             margin-bottom: 10px;
+        }
+
+        .theme-tab-nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 14px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e5e9f2;
+        }
+
+        .theme-tab-nav__btn {
+            border: 1px solid #dbe3ee;
+            background: #f8fafc;
+            color: #64748b;
+            border-radius: 8px;
+            padding: 6px 12px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .theme-tab-nav__btn.is-active {
+            border-color: #3f6ad8;
+            color: #2854c5;
+            background: #eef3ff;
+        }
+
+        .theme-tab-panel {
+            display: none;
+        }
+
+        .theme-tab-panel.is-active {
+            display: block;
+        }
+
+        .theme-menu-step-nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 6px;
+            margin-bottom: 12px;
+        }
+
+        .theme-menu-step-nav__btn {
+            border: 1px solid #dbe3ee;
+            background: #f8fafc;
+            color: #64748b;
+            border-radius: 999px;
+            padding: 5px 12px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+        }
+
+        .theme-menu-step-nav__btn.is-active {
+            border-color: #3f6ad8;
+            color: #fff;
+            background: #3f6ad8;
         }
 
         .theme-form-card .form-control,
@@ -600,12 +756,29 @@
             object-fit: cover;
         }
 
+        .theme-detail-image-wrap--icon .theme-detail-image-preview-list {
+            grid-template-columns: repeat(auto-fill, minmax(48px, 48px));
+        }
+
+        .theme-detail-image-wrap--icon .theme-detail-image-preview-img {
+            height: 48px;
+            object-fit: contain;
+            background: #f8fafc;
+        }
+
         .btn-detail-image-remove {
             position: absolute;
             top: 6px;
             right: 6px;
             line-height: 1;
             padding: 0.2rem 0.35rem;
+        }
+
+        .theme-detail-image-wrap--icon .btn-detail-image-remove {
+            top: 1px;
+            right: 1px;
+            padding: 0 0.2rem;
+            font-size: 9px;
         }
 
         .theme-live-preview {
@@ -626,6 +799,8 @@
             --preview-footer-ticker-padding-x: 14px;
             --preview-footer-reserved-height: 74px;
             position: relative;
+            display: flex;
+            flex-direction: column;
             min-height: 760px;
             overflow: hidden;
             border-radius: 0;
@@ -654,6 +829,7 @@
         .theme-live-preview__content {
             display: flex;
             flex-direction: column;
+            flex: 1 1 auto;
             gap: 28px;
             padding:
                 var(--preview-header-padding-top)
@@ -763,6 +939,100 @@
         .theme-live-preview__grid {
             gap: 20px;
             align-items: stretch;
+        }
+
+        .theme-live-preview__widgets {
+            display: none;
+            justify-content: space-between;
+            align-items: flex-start;
+            gap: 20px;
+        }
+
+        .theme-live-preview__widgets.is-active {
+            display: flex;
+        }
+
+
+        .theme-live-preview__notification,
+        .theme-live-preview__wifi {
+            background: rgba(255, 255, 255, 0.94);
+            color: #1f2430;
+            border-radius: 10px;
+            padding: 14px 16px;
+            box-shadow: 0 12px 30px rgba(0, 0, 0, 0.28);
+        }
+
+        .theme-live-preview__notification {
+            max-width: 300px;
+        }
+
+        .theme-live-preview__notification-badge {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #d33a5c;
+            color: #fff;
+            font-size: 11px;
+            font-weight: 700;
+            padding: 3px 10px;
+            border-radius: 999px;
+            text-transform: uppercase;
+            letter-spacing: 0.04em;
+        }
+
+        .theme-live-preview__notification-message {
+            margin-top: 8px;
+            font-size: 12px;
+            line-height: 1.5;
+        }
+
+        .theme-live-preview__wifi {
+            flex: 0 0 auto;
+            width: 150px;
+            text-align: center;
+        }
+
+        .theme-live-preview__wifi-label {
+            font-size: 10px;
+            font-weight: 700;
+            letter-spacing: 0.08em;
+            color: #6b7280;
+            margin-bottom: 8px;
+        }
+
+        .theme-live-preview__qr {
+            width: 72px;
+            height: 72px;
+            margin: 0 auto 8px;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .theme-live-preview__qr svg {
+            display: block;
+            width: 100%;
+            height: 100%;
+        }
+
+        .theme-live-preview__wifi-details {
+            text-align: left;
+            font-size: 10px;
+        }
+
+        .theme-live-preview__wifi-details small {
+            display: block;
+            color: #9ca3af;
+            margin-top: 6px;
+        }
+
+        .theme-live-preview__wifi-details small:first-child {
+            margin-top: 0;
+        }
+
+        .theme-live-preview__wifi-details strong {
+            display: block;
+            font-size: 11px;
+            word-break: break-all;
         }
 
         .theme-preview-card {
@@ -912,19 +1182,54 @@
             transform: scale(1.16);
         }
 
-        .theme-live-preview__menu {
-            justify-content: space-around;
+        .theme-live-preview__menu-wrap {
+            display: flex;
+            align-items: center;
+            gap: 8px;
             padding: calc(var(--preview-footer-menu-padding-y) + 6px) var(--preview-footer-menu-padding-x) calc(var(--preview-footer-menu-padding-y) - 3px);
-            margin: 0 -34px;
+            margin: auto -34px 0;
             background: rgba(0, 0, 0, 0.78);
-            font-size: calc(var(--preview-body-size) * 0.92);
-            align-items: flex-end;
         }
 
-        .theme-live-preview__menu span {
+        .theme-live-preview__menu-arrow {
+            flex: 0 0 auto;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 26px;
+            height: 26px;
+            border-radius: 50%;
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            background: rgba(255, 255, 255, 0.08);
+            color: rgba(255, 255, 255, 0.9);
+            font-size: 11px;
+            cursor: pointer;
+            transition: background-color 0.15s ease;
+        }
+
+        .theme-live-preview__menu-arrow:hover {
+            background: rgba(255, 255, 255, 0.22);
+        }
+
+        .theme-live-preview__menu {
+            flex: 1 1 auto;
+            justify-content: space-around;
+            align-items: flex-end;
+            gap: 6px;
+            overflow-x: auto;
+            scrollbar-width: none;
+            font-size: calc(var(--preview-body-size) * 0.92);
+        }
+
+        .theme-live-preview__menu::-webkit-scrollbar {
+            display: none;
+        }
+
+        .theme-live-preview__item {
             position: relative;
             display: flex;
             flex-direction: column;
+            flex: 0 0 auto;
             gap: 4px;
             align-items: center;
             justify-content: flex-end;
@@ -933,11 +1238,32 @@
             transform: translateY(6px);
         }
 
-        .theme-live-preview__menu i {
+        .theme-live-preview__item-icon {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            transition: background-color 0.2s ease, color 0.2s ease;
+        }
+
+        .theme-live-preview__item-icon img {
+            width: 16px;
+            height: 16px;
+            object-fit: contain;
+        }
+
+        .theme-live-preview__item i {
             font-size: 16px;
         }
 
-        .theme-live-preview__menu em {
+        .theme-live-preview__item.is-active .theme-live-preview__item-icon {
+            background: var(--preview-accent);
+            color: #1a1400;
+        }
+
+        .theme-live-preview__item em {
             font-style: normal;
             font-size: 9px;
         }
@@ -1038,8 +1364,7 @@
 
         @media (max-width: 767.98px) {
 
-            .theme-live-preview__topbar,
-            .theme-live-preview__menu {
+            .theme-live-preview__topbar {
                 flex-wrap: wrap;
             }
 
@@ -1083,6 +1408,20 @@
             const rows = document.getElementById('themeDetailRows');
             const addButton = document.getElementById('btnAddThemeDetail');
             const canManageDetailKeys = @json($canManageDetailKeys);
+            const themeTabButtons = document.querySelectorAll('.theme-tab-nav__btn');
+            const themeTabPanels = document.querySelectorAll('.theme-tab-panel');
+            const menuStepNavWrap = document.getElementById('themeMenuStepNav');
+            let activeThemeTab = @json($initialThemeTab);
+            let activeMenuStep = 1;
+            const defaultPreviewMenuItems = [
+                { label: 'Home', faClass: 'fa-home' },
+                { label: 'TV', faClass: 'fa-desktop' },
+                { label: 'Music', faClass: 'fa-music' },
+                { label: 'VOD', faClass: 'fa-play-circle-o' },
+                { label: 'Guide', faClass: 'fa-building' },
+                { label: 'Dining', faClass: 'fa-cutlery' },
+                { label: 'Nearby', faClass: 'fa-map-marker' }
+            ];
             const preview = $('#themeLivePreview');
             const previewDate = preview.find('.theme-preview-date');
             const previewClock = preview.find('.theme-preview-time');
@@ -1096,6 +1435,13 @@
             const previewImageCard = preview.find('.theme-preview-card--image');
             const previewOfferCard = preview.find('.theme-preview-card--offer');
             const previewExtraCard = preview.find('.theme-preview-card--extra');
+            const previewMenu = preview.find('.theme-live-preview__menu');
+            const previewGrid = preview.find('.theme-live-preview__grid');
+            const previewWidgets = preview.find('.theme-live-preview__widgets');
+            const previewNotificationTitle = preview.find('#previewNotificationTitle');
+            const previewNotificationMessage = preview.find('#previewNotificationMessage');
+            const previewWifiSsid = preview.find('#previewWifiSsid');
+            const previewWifiPassword = preview.find('#previewWifiPassword');
             const nameInput = $('#name');
             const appBaseUrl = @json(url('/'));
             let tickerRotationTimer = null;
@@ -1117,7 +1463,7 @@
                     return 'boolean';
                 }
 
-                if (/^image(_id)?_\d+$/.test(normalizedKey)) {
+                if (/^(image(_id)?_\d+|menu_\d+_icon)$/.test(normalizedKey)) {
                     return 'image-picker';
                 }
 
@@ -1125,7 +1471,7 @@
                     return 'scale-select';
                 }
 
-                if (['running_text', 'marquee_text'].includes(normalizedKey)) {
+                if (['running_text', 'marquee_text', 'notification_message'].includes(normalizedKey)) {
                     return 'textarea';
                 }
 
@@ -1136,6 +1482,104 @@
 
                 return 'text';
             }
+
+            function getDetailTab(key) {
+                const normalizedKey = (key || '').trim().toLowerCase();
+
+                if (/^menu_\d+_(label|icon)$/.test(normalizedKey)) {
+                    return 'menu';
+                }
+
+                if (normalizedKey.startsWith('header_show_')
+                    || normalizedKey.startsWith('wifi_')
+                    || normalizedKey.startsWith('notification_')
+                    || normalizedKey.endsWith('_scale')
+                    || normalizedKey.endsWith('_color')
+                    || normalizedKey === 'background_color'
+                    || normalizedKey === 'text_color') {
+                    return 'appearance';
+                }
+
+                return 'advanced';
+            }
+
+            function getMenuStep(key) {
+                const match = /^menu_(\d+)_(?:label|icon)$/.exec((key || '').trim().toLowerCase());
+                return match ? Number(match[1]) : null;
+            }
+
+            function renderMenuStepNav(steps) {
+                if (!menuStepNavWrap) return;
+
+                menuStepNavWrap.innerHTML = '';
+                steps.forEach(step => {
+                    const labelRow = findDetailRowByKey(`menu_${step}_label`);
+                    const labelText = (labelRow?.querySelector('.theme-detail-value-hidden')?.value || '').trim() || `Item ${step}`;
+                    const button = document.createElement('button');
+                    button.type = 'button';
+                    button.className = 'theme-menu-step-nav__btn' + (step === activeMenuStep ? ' is-active' : '');
+                    button.textContent = labelText;
+                    button.addEventListener('click', () => {
+                        activeMenuStep = step;
+                        applyThemeTabFilter();
+                    });
+                    menuStepNavWrap.appendChild(button);
+                });
+            }
+
+            function applyThemeTabFilter() {
+                themeTabButtons.forEach(button => {
+                    button.classList.toggle('is-active', button.dataset.themeTab === activeThemeTab);
+                });
+
+                themeTabPanels.forEach(panel => {
+                    const isGeneralPanel = panel.dataset.tabPanel === 'general';
+                    panel.classList.toggle('is-active', isGeneralPanel ? activeThemeTab === 'general' : activeThemeTab !== 'general');
+                });
+
+                const menuSteps = new Set();
+                rows?.querySelectorAll('.theme-detail-row').forEach(row => {
+                    const keyInput = row.querySelector('input[name="detail_keys[]"]');
+                    const key = keyInput?.value || '';
+                    row.dataset.detailTab = getDetailTab(key);
+
+                    const step = getMenuStep(key);
+                    if (step !== null) {
+                        row.dataset.menuStep = String(step);
+                        menuSteps.add(step);
+                    } else {
+                        delete row.dataset.menuStep;
+                    }
+                });
+
+                const sortedMenuSteps = Array.from(menuSteps).sort((a, b) => a - b);
+                const showMenuStepNav = activeThemeTab === 'menu' && sortedMenuSteps.length > 0;
+
+                if (showMenuStepNav && !sortedMenuSteps.includes(activeMenuStep)) {
+                    activeMenuStep = sortedMenuSteps[0];
+                }
+
+                menuStepNavWrap?.classList.toggle('d-none', !showMenuStepNav);
+                if (showMenuStepNav) {
+                    renderMenuStepNav(sortedMenuSteps);
+                }
+
+                rows?.querySelectorAll('.theme-detail-row').forEach(row => {
+                    const tab = row.dataset.detailTab;
+                    let visible = activeThemeTab === 'general' || tab === activeThemeTab;
+                    if (visible && showMenuStepNav) {
+                        visible = Number(row.dataset.menuStep) === activeMenuStep;
+                    }
+                    row.style.display = visible ? '' : 'none';
+                });
+            }
+
+            themeTabButtons.forEach(button => {
+                button.addEventListener('click', function() {
+                    activeThemeTab = this.dataset.themeTab;
+                    applyThemeTabFilter();
+                });
+            });
 
             function syncDetailValueField(row) {
                 if (!row) {
@@ -1151,25 +1595,27 @@
                 const imagePreviewList = row.querySelector('.theme-detail-image-preview-list');
                 const imageFileInput = row.querySelector('.theme-detail-image-file');
                 const imageHelp = row.querySelector('.theme-detail-image-help');
-                const booleanSelect = row.querySelector('.theme-detail-boolean-select');
+                const booleanToggleWrap = row.querySelector('.theme-detail-boolean-toggle-wrap');
+                const booleanToggle = row.querySelector('.theme-detail-boolean-toggle');
                 const scaleSelect = row.querySelector('.theme-detail-scale-select');
                 const colorWrap = row.querySelector('.theme-detail-color-wrap');
                 const colorInput = row.querySelector('.theme-detail-color-input');
                 const controlType = getDetailControlType(keyInput?.value || '');
 
-                if (!hiddenInput || !textInput || !textareaInput || !imageWrap || !imageIdLabel || !imagePreviewList || !imageFileInput || !imageHelp || !booleanSelect || !scaleSelect || !colorWrap || !colorInput) {
+                if (!hiddenInput || !textInput || !textareaInput || !imageWrap || !imageIdLabel || !imagePreviewList || !imageFileInput || !imageHelp || !booleanToggleWrap || !booleanToggle || !scaleSelect || !colorWrap || !colorInput) {
                     return;
                 }
 
                 textInput.style.display = controlType === 'text' ? 'block' : 'none';
                 textareaInput.style.display = controlType === 'textarea' ? 'block' : 'none';
                 imageWrap.style.display = controlType === 'image-picker' ? 'block' : 'none';
-                booleanSelect.style.display = controlType === 'boolean' ? 'block' : 'none';
+                booleanToggleWrap.style.display = controlType === 'boolean' ? 'block' : 'none';
                 scaleSelect.style.display = controlType === 'scale-select' ? 'block' : 'none';
                 colorWrap.style.display = controlType === 'color' ? 'block' : 'none';
 
                 if (controlType === 'image-picker') {
-                    const canUploadMultiple = !/^image(_id)?_3$/i.test(keyInput?.value || '');
+                    const isMenuIcon = /^menu_\d+_icon$/i.test(keyInput?.value || '');
+                    const canUploadMultiple = !isMenuIcon && !/^image(_id)?_3$/i.test(keyInput?.value || '');
                     const existingItems = getImageItems(row);
                     const hiddenIds = parseImageIds(hiddenInput.value);
                     const syncedItems = hiddenIds.map(function(id) {
@@ -1179,15 +1625,16 @@
                         };
                     }).slice(0, canUploadMultiple ? undefined : 1);
 
+                    imageWrap.classList.toggle('theme-detail-image-wrap--icon', isMenuIcon);
                     imageWrap.dataset.allowMultiple = canUploadMultiple ? '1' : '0';
                     imageFileInput.toggleAttribute('multiple', canUploadMultiple);
-                    imageHelp.textContent = canUploadMultiple
-                        ? 'Multi Image Guest Home'
-                        : 'Image Background Home (1290x1080px suggested)';
+                    imageHelp.textContent = isMenuIcon
+                        ? 'Menu icon image (square, e.g. 128x128px)'
+                        : (canUploadMultiple ? 'Multi Image Guest Home' : 'Image Background Home (1290x1080px suggested)');
                     setImageItems(row, syncedItems);
                 } else if (controlType === 'boolean') {
-                    booleanSelect.value = normalizeBoolean(hiddenInput.value);
-                    hiddenInput.value = booleanSelect.value;
+                    booleanToggle.checked = normalizeBoolean(hiddenInput.value) === '1';
+                    hiddenInput.value = booleanToggle.checked ? '1' : '0';
                 } else if (controlType === 'scale-select') {
                     scaleSelect.value = ['1', '2', '3', '4', '5'].includes(String(hiddenInput.value)) ? String(hiddenInput.value) : '3';
                     hiddenInput.value = scaleSelect.value;
@@ -1627,6 +2074,63 @@
                 previewCardMarquee.text(ctaText);
                 previewTitle.text(`Welcome, Guest`);
                 renderTickerMessages(runningTextParts);
+                renderPreviewMenu();
+
+                const wifiSsid = normalizePreviewText(details.wifi_ssid, '');
+                const notificationMessage = normalizeRunningText(details.notification_message, '');
+                const useWidgetLayout = Boolean(wifiSsid || notificationMessage);
+
+                previewGrid.toggle(!useWidgetLayout);
+                previewWidgets.toggleClass('is-active', useWidgetLayout);
+                preview.css('background-image', useWidgetLayout && primarySlides[0]
+                    ? `url("${String(primarySlides[0]).replaceAll('"', '%22')}")`
+                    : 'none');
+
+                if (useWidgetLayout) {
+                    previewNotificationTitle.text(normalizePreviewText(details.notification_title, 'Notification'));
+                    const messageParts = splitRunningTextParts(details.notification_message, '');
+                    previewNotificationMessage.html(messageParts.map(part =>
+                        $('<div>').text(part).html()
+                    ).join('<br>'));
+                    previewWifiSsid.text(wifiSsid || '-');
+                    previewWifiPassword.text(normalizePreviewText(details.wifi_password, '-'));
+                }
+            }
+
+            function resolvePreviewMenuItems() {
+                const items = [];
+
+                for (let index = 1; index <= 12; index++) {
+                    const labelRow = findDetailRowByKey(`menu_${index}_label`);
+                    const iconRow = findDetailRowByKey(`menu_${index}_icon`);
+
+                    if (!labelRow && !iconRow) {
+                        continue;
+                    }
+
+                    const label = (labelRow?.querySelector('.theme-detail-value-hidden')?.value || '').trim();
+                    const iconUrl = iconRow ? (getImageItems(iconRow)[0]?.url || '') : '';
+
+                    if (!label && !iconUrl) {
+                        continue;
+                    }
+
+                    items.push({ label: label || `Menu ${index}`, iconUrl });
+                }
+
+                return items.length ? items : defaultPreviewMenuItems;
+            }
+
+            function renderPreviewMenu() {
+                const items = resolvePreviewMenuItems();
+                const activeIndex = Math.floor((items.length - 1) / 2);
+
+                previewMenu.html(items.map((item, index) => `
+                    <span class="theme-live-preview__item ${index === activeIndex ? 'is-active' : ''}">
+                        <span class="theme-live-preview__item-icon">${item.iconUrl ? `<img src="${item.iconUrl}" alt="">` : `<i class="fa ${item.faClass || 'fa-th-large'}"></i>`}</span>
+                        <em>${$('<div>').text(item.label).html()}</em>
+                    </span>
+                `).join(''));
             }
 
             function renderTickerMessages(parts) {
@@ -1687,6 +2191,7 @@
 
             rows?.querySelectorAll('.theme-detail-row').forEach(syncDetailValueField);
             applyPreviewState();
+            applyThemeTabFilter();
             updateLiveTime();
             setInterval(updateLiveTime, 1000);
 
@@ -1710,7 +2215,25 @@
                     hiddenInput.value = event.target.value;
                 }
 
+                if (activeThemeTab === 'menu' && event.target.matches('.theme-detail-value-input')
+                    && row?.dataset.menuStep !== undefined) {
+                    const keyInput = row.querySelector('input[name="detail_keys[]"]');
+                    if (/_label$/i.test(keyInput?.value || '')) {
+                        const steps = Array.from(rows.querySelectorAll('.theme-detail-row[data-menu-step]'))
+                            .map(r => Number(r.dataset.menuStep))
+                            .filter((step, index, all) => all.indexOf(step) === index)
+                            .sort((a, b) => a - b);
+                        renderMenuStepNav(steps);
+                    }
+                }
+
                 applyPreviewState();
+            });
+
+            rows?.addEventListener('focusout', function(event) {
+                if (event.target.matches('input[name="detail_keys[]"]')) {
+                    applyThemeTabFilter();
+                }
             });
 
             rows?.addEventListener('change', function(event) {
@@ -1721,9 +2244,11 @@
                     return;
                 }
 
-                if (event.target.matches(
-                        '.theme-detail-boolean-select, .theme-detail-scale-select')) {
+                if (event.target.matches('.theme-detail-scale-select')) {
                     hiddenInput.value = event.target.value;
+                    applyPreviewState();
+                } else if (event.target.matches('.theme-detail-boolean-toggle')) {
+                    hiddenInput.value = event.target.checked ? '1' : '0';
                     applyPreviewState();
                 }
             });
@@ -1799,8 +2324,12 @@
                 }
             });
 
-            const template = () => `
-                <div class="border rounded p-3 mb-2 theme-detail-row">
+            let newDetailRowSequence = 0;
+            const template = () => {
+                const toggleId = 'theme_detail_bool_new_' + (++newDetailRowSequence);
+
+                return `
+                <div class="border rounded p-3 mb-2 theme-detail-row" data-detail-tab="advanced">
                     <div class="theme-detail-row__header">
                         <input type="text" name="detail_keys[]" class="form-control theme-detail-key-input" maxlength="200" placeholder="header_show_date">
                     </div>
@@ -1817,10 +2346,10 @@
                             <small class="d-block text-muted theme-detail-image-help">Multi Image Guest Home</small>
                             <div class="theme-detail-image-preview-list mt-2 d-none"></div>
                         </div>
-                        <select class="form-control theme-detail-value-select theme-detail-boolean-select" style="width: 100%;">
-                            <option value="1">Yes</option>
-                            <option value="0">No</option>
-                        </select>
+                        <div class="custom-control custom-switch theme-detail-boolean-toggle-wrap">
+                            <input type="checkbox" class="custom-control-input theme-detail-boolean-toggle" id="${toggleId}">
+                            <label class="custom-control-label" for="${toggleId}"></label>
+                        </div>
                         <select class="form-control theme-detail-value-select theme-detail-scale-select" style="width: 100%;">
                             <option value="1">1</option>
                             <option value="2">2</option>
@@ -1837,13 +2366,16 @@
                         <i class="fa fa-trash mr-1"></i> {{ trans('common.delete') }}
                     </button>
                 </div>
-            `;
+                `;
+            };
 
             if (canManageDetailKeys && rows && addButton) {
                 addButton.addEventListener('click', function() {
                     rows.insertAdjacentHTML('beforeend', template());
                     syncDetailValueField(rows.lastElementChild);
                     applyPreviewState();
+                    activeThemeTab = 'advanced';
+                    applyThemeTabFilter();
                 });
 
                 rows.addEventListener('click', function(event) {
@@ -1879,6 +2411,11 @@
             });
 
             nameInput.on('input', applyPreviewState);
+
+            preview.find('[data-menu-scroll]').on('click', function() {
+                const direction = Number($(this).data('menu-scroll')) || 1;
+                previewMenu[0]?.scrollBy({ left: direction * 90, behavior: 'smooth' });
+            });
         });
     </script>
 @endsection

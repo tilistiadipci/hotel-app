@@ -260,7 +260,7 @@ class ThemeController extends Controller
 
     private function isMultilineDetailKey(string $key): bool
     {
-        return in_array($key, ['running_text', 'marquee_text'], true);
+        return in_array($key, ['running_text', 'marquee_text', 'notification_message'], true);
     }
 
     private function isDeprecatedDetailKey(string $key): bool
@@ -270,12 +270,12 @@ class ThemeController extends Controller
 
     private function isImageDetailKey(string $key): bool
     {
-        return preg_match('/^image(_id)?_\d+$/', $key) === 1;
+        return preg_match('/^(image(_id)?_\d+|menu_\d+_icon)$/', $key) === 1;
     }
 
     private function isSingleImageDetailKey(string $key): bool
     {
-        return preg_match('/^image(_id)?_3$/', $key) === 1;
+        return preg_match('/^(image(_id)?_3|menu_\d+_icon)$/', $key) === 1;
     }
 
     private function extractImageMediaIds(?string $value): array

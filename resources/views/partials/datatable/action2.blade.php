@@ -17,19 +17,19 @@
     @endif
     <button type="button" class="action-pill neutral bg-primary text-white" title="{{ trans('common.detail') }}"
         data-uid="{{ $row->uuid ?? ($row->id ?? '') }}"
-        onclick="show('{{ $row->uuid ?? ($row->id ?? '') }}')" data-toggle="tooltip" data-placement="top">
+        onclick="show('{{ $row->uuid ?? ($row->id ?? '') }}')">
         <i class="fa fa-eye"></i>
     </button>
     @if (isset($playerContent))
         <a href="{{ route('players.content.edit', $row->uuid ?? ($row->id ?? '')) }}"
-            class="action-pill neutral bg-info text-white" title="{{ trans('common.player_content.action') }}" data-toggle="tooltip" data-placement="top"
+            class="action-pill neutral bg-info text-white" title="{{ trans('common.player_content.action') }}"
             style="width:auto;border-radius:16px;padding:0 10px;text-decoration:none">
             <i class="fa fa-th-large"></i>
         </a>
     @endif
     <button type="button" class="action-pill neutral" title="{{ trans('common.edit') }}"
         data-uid="{{ $row->uuid ?? ($row->id ?? '') }}"
-        onclick="edit('{{ $row->uuid ?? ($row->id ?? '') }}')" data-toggle="tooltip" data-placement="top">
+        onclick="edit('{{ $row->uuid ?? ($row->id ?? '') }}')">
         <i class="fa fa-edit"></i>
     </button>
     {{-- <button type="button" class="action-pill danger" title="{{ trans('common.delete') }}"
