@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Player;
 use App\Models\Setting;
+use App\Models\Theme;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
@@ -31,6 +32,11 @@ class PlayerContentManager
     public function keys(): array
     {
         return array_keys(self::MENUS);
+    }
+
+    public function isBuiltIn(string $key): bool
+    {
+        return array_key_exists($key, self::MENUS);
     }
 
     /** @return array<string, string> */
@@ -81,7 +87,7 @@ class PlayerContentManager
     {
         $overrides = $player->menuSettings()->get()->keyBy('menu_key');
 
-        return $global->map(function (array $menu) use ($overrides): array {
+        $builtInMenus = $global->map(function (array $menu) use ($overrides): array {
             $override = $overrides->get($menu['key']);
 
             if (! $override) {
@@ -100,15 +106,36 @@ class PlayerContentManager
                 'is_active' => (bool) $override->is_active,
                 'sort_order' => (int) $override->sort_order,
                 'source' => 'player',
+                'is_custom' => false,
             ]);
-        })->sortBy('sort_order')->values();
+        });
+
+        $customMenus = $overrides
+            ->reject(fn ($override, string $key) => $this->isBuiltIn($key))
+            ->map(function ($override): array {
+                return [
+                    'key' => $override->menu_key,
+                    'name' => $override->label,
+                    'label' => $override->label,
+                    'icon' => $override->icon ?: 'apps',
+                    'icon_path' => $override->icon_path,
+                    'icon_url' => $override->icon_path ? getMediaImageUrl($override->icon_path, 256, 256) : null,
+                    'placement' => $override->placement,
+                    'parent_menu_key' => $override->placement === 'submenu' ? $override->parent_menu_key : null,
+                    'is_active' => (bool) $override->is_active,
+                    'sort_order' => (int) $override->sort_order,
+                    'source' => 'player',
+                    'is_custom' => true,
+                ];
+            });
+
+        return $builtInMenus->concat($customMenus)->sortBy('sort_order')->values();
     }
 
     /** @param array<int, array<string, mixed>> $menus */
-    public function save(Player $player, bool $useCustom, array $menus, ?int $themeId = null): array
+    public function save(Player $player, bool $useCustom, array $menus, ?int $themeId = null): void
     {
-        return DB::transaction(function () use ($player, $useCustom, $menus, $themeId): array {
-            $obsoleteIconPaths = [];
+        DB::transaction(function () use ($player, $useCustom, $menus, $themeId): void {
             $player->use_custom_content = $useCustom;
             if ($themeId !== null) {
                 $player->theme_id = $themeId;
@@ -117,27 +144,26 @@ class PlayerContentManager
             $player->save();
 
             if (! $useCustom) {
-                return [];
+                $player->html_content = $this->renderHtml(
+                    $player,
+                    $player->theme()->with(['details', 'imageMedia'])->first(),
+                    $this->effective($player)
+                );
+                $player->save();
+
+                return;
             }
 
             $submittedKeys = collect($menus)->pluck('key')->all();
-            $removedSettings = $player->menuSettings()->whereNotIn('menu_key', $submittedKeys ?: ['__none__'])->get();
-            $obsoleteIconPaths = array_merge($obsoleteIconPaths, $removedSettings->pluck('icon_path')->filter()->all());
-            $player->menuSettings()->whereKey($removedSettings->pluck('id'))->delete();
+            $player->menuSettings()->whereNotIn('menu_key', $submittedKeys ?: ['__none__'])->delete();
 
             foreach ($menus as $index => $menu) {
                 $existing = $player->menuSettings()->where('menu_key', $menu['key'])->first();
                 $iconPath = $existing?->icon_path;
 
                 if (! empty($menu['_uploaded_icon_path'])) {
-                    if ($iconPath && $iconPath !== $menu['_uploaded_icon_path']) {
-                        $obsoleteIconPaths[] = $iconPath;
-                    }
                     $iconPath = $menu['_uploaded_icon_path'];
                 } elseif (! empty($menu['remove_icon'])) {
-                    if ($iconPath) {
-                        $obsoleteIconPaths[] = $iconPath;
-                    }
                     $iconPath = null;
                 }
 
@@ -157,8 +183,37 @@ class PlayerContentManager
                 );
             }
 
-            return array_values(array_unique($obsoleteIconPaths));
+            $player->html_content = $this->renderHtml(
+                $player,
+                $player->theme()->with(['details', 'imageMedia'])->first(),
+                $this->effective($player)
+            );
+            $player->save();
         });
+    }
+
+    public function renderHtml(Player $player, ?Theme $theme, Collection $menus): string
+    {
+        $details = $theme?->details?->pluck('value', 'key') ?? collect();
+        foreach (['background_color' => '#10131b', 'text_color' => '#f8fafc', 'accent_color' => '#d4af37'] as $key => $fallback) {
+            if (! preg_match('/^#[0-9a-f]{3,8}$/i', (string) $details->get($key))) {
+                $details->put($key, $fallback);
+            }
+        }
+        $themeImageUrl = $theme
+            ? ($theme->imageMedia
+                ? getMediaImageUrl($theme->imageMedia->storage_path, 1280, 720)
+                : getMediaImageUrl('default/theme-'.$theme->id.'.png', 1280, 720))
+            : null;
+
+        return view('pages.players.content-html', [
+            'player' => $player,
+            'theme' => $theme,
+            'themeDetails' => $details,
+            'themeImageUrl' => $themeImageUrl,
+            'allMenus' => $menus,
+            'menus' => $menus->where('is_active', true)->values(),
+        ])->render();
     }
 
     private function global(Player $player): Collection
@@ -192,6 +247,7 @@ class PlayerContentManager
                 'is_active' => $active,
                 'sort_order' => array_search($key, array_keys(self::MENUS), true),
                 'source' => 'global',
+                'is_custom' => false,
             ];
         })->values();
     }

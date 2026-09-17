@@ -199,6 +199,8 @@ X-Player-Token: token-player
 
 Response `content.menus` sudah merupakan hasil akhir. Jika `content.uses_custom` bernilai `false`, daftar tersebut berasal dari General Settings hotel. Jika bernilai `true`, label, ikon, status, urutan, dan penempatan menu memakai konfigurasi khusus player. `icon_url` berisi URL ikon upload jika tersedia; jika `null`, player menggunakan nama ikon bawaan pada `icon`. Untuk submenu, `parent_menu_key` dan `parent_menu` menunjukkan menu utama induknya.
 
+Menu tambahan yang dibuat manual juga dikirim dalam array yang sama dengan `is_custom: true`. Nilai `key` menjadi identifier unik yang digunakan aplikasi player untuk mengenali aksi menu custom tersebut.
+
 ```json
 {
   "status": true,

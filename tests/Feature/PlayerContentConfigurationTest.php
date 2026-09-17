@@ -61,6 +61,7 @@ class PlayerContentConfigurationTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('content.uses_custom', true)
+            ->assertJsonPath('content.html', fn ($html) => is_string($html) && str_contains($html, 'Musik Kamar'))
             ->assertJsonPath('content.menus.0.key', 'music')
             ->assertJsonPath('content.menus.0.label', 'Musik Kamar')
             ->assertJsonPath('content.menus.0.icon', 'apps')
@@ -90,6 +91,7 @@ class PlayerContentConfigurationTest extends TestCase
                 $menu['label'] = $menu['key'] === 'vod' ? 'Film Pilihan' : $menu['label'];
                 $menu['icon'] = $menu['key'] === 'vod' ? 'movie' : $menu['icon'];
                 $menu['placement'] = $menu['key'] === 'vod' ? 'main' : 'submenu';
+                $menu['parent_menu_key'] = $menu['key'] === 'vod' ? null : 'vod';
 
                 return $menu;
             })

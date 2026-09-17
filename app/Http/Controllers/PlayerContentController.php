@@ -2,14 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Models\Media;
 use App\Repositories\PlayerMqttRepository;
 use App\Repositories\PlayerRepository;
 use App\Repositories\ThemeRepository;
 use App\Services\PlayerContentManager;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
@@ -42,14 +41,43 @@ class PlayerContentController extends Controller
                 'image_url' => $theme->imageMedia
                     ? getMediaImageUrl($theme->imageMedia->storage_path, 480, 270)
                     : getMediaImageUrl('default/theme-'.$theme->id.'.png', 480, 270),
+                'details' => $theme->details->pluck('value', 'key')->all(),
             ];
         });
+
+        $menus = $this->content->editable($player);
+        if (is_array(old('menus'))) {
+            $storedMenus = $menus->keyBy('key');
+            $menus = collect(old('menus'))->map(function (array $menu, int|string $index) use ($storedMenus): array {
+                $key = (string) ($menu['key'] ?? '');
+                $stored = $storedMenus->get($key, []);
+
+                return array_merge([
+                    'key' => $key,
+                    'name' => $menu['label'] ?? $key,
+                    'label' => $menu['label'] ?? '',
+                    'icon' => $menu['icon'] ?? 'apps',
+                    'icon_path' => null,
+                    'icon_url' => null,
+                    'placement' => $menu['placement'] ?? 'main',
+                    'parent_menu_key' => $menu['parent_menu_key'] ?? null,
+                    'is_active' => (bool) ($menu['is_active'] ?? false),
+                    'sort_order' => $menu['sort_order'] ?? $index,
+                    'source' => 'player',
+                    'is_custom' => ! $this->content->isBuiltIn($key),
+                ], $stored, $menu, [
+                    'icon_path' => $stored['icon_path'] ?? null,
+                    'icon_url' => $stored['icon_url'] ?? null,
+                    'is_custom' => ! $this->content->isBuiltIn($key),
+                ]);
+            })->values();
+        }
 
         return view('pages.players.content', [
             'page' => 'players',
             'icon' => 'fa fa-th-large',
             'player' => $player,
-            'menus' => $this->content->editable($player),
+            'menus' => $menus,
             'iconOptions' => $this->content->iconOptions(),
             'themeOptions' => $themeOptions,
             'selectedThemeId' => $selectedThemeId,
@@ -65,20 +93,20 @@ class PlayerContentController extends Controller
         $validated = $request->validate([
             'use_custom_content' => ['required', 'boolean'],
             'theme_id' => [
-                'required',
+                'nullable',
                 'integer',
                 Rule::exists('hotel_theme', 'theme_id')->where(
                     fn ($query) => $query->where('hotel_id', app(TenantContext::class)->id())
                 ),
             ],
-            'menus' => ['nullable', 'array'],
-            'menus.*.key' => ['required', 'string', 'distinct', Rule::in($this->content->keys())],
+            'menus' => ['nullable', 'array', 'max:100'],
+            'menus.*.key' => ['required', 'string', 'distinct', 'max:50', 'regex:/^[a-z][a-z0-9_-]*$/'],
             'menus.*.label' => ['required', 'string', 'max:100'],
             'menus.*.icon' => ['nullable', 'string', 'max:100', 'regex:/^[A-Za-z0-9 _-]+$/'],
-            'menus.*.icon_file' => ['nullable', 'image', 'mimes:png,jpg,jpeg,webp', 'max:2048'],
+            'menus.*.icon_media_id' => ['nullable', 'integer', 'min:1'],
             'menus.*.remove_icon' => ['nullable', 'boolean'],
             'menus.*.placement' => ['required', Rule::in(['main', 'submenu'])],
-            'menus.*.parent_menu_key' => ['nullable', 'string', Rule::in($this->content->keys())],
+            'menus.*.parent_menu_key' => ['nullable', 'string', 'max:50', 'regex:/^[a-z][a-z0-9_-]*$/'],
             'menus.*.is_active' => ['required', 'boolean'],
             'menus.*.sort_order' => ['required', 'integer', 'min:0', 'max:999'],
         ]);
@@ -99,44 +127,34 @@ class PlayerContentController extends Controller
             }
         }
 
-        $uploadedPaths = [];
+        $skippedIconUploads = [];
         foreach ($menus as $index => &$menu) {
-            $file = $request->file("menus.$index.icon_file");
-            if (! $file) {
+            $mediaId = $menu['icon_media_id'] ?? null;
+            if (empty($mediaId)) {
                 continue;
             }
 
-            $path = $file->storeAs(
-                'images/player-menu-icons/'.$player->uuid,
-                $menu['key'].'-'.Str::uuid().'.'.$file->extension(),
-                'media'
-            );
-
-            if (! $path) {
-                Storage::disk('media')->delete($uploadedPaths);
-                throw ValidationException::withMessages([
-                    "menus.$index.icon_file" => trans('common.player_content.icon_upload_failed'),
-                ]);
+            $media = Media::query()->where('type', 'image')->find((int) $mediaId);
+            if (! $media) {
+                $skippedIconUploads[] = $menu['label'];
+                continue;
             }
 
-            $menu['_uploaded_icon_path'] = $path;
-            $uploadedPaths[] = $path;
+            $menu['_uploaded_icon_path'] = $media->storage_path;
         }
         unset($menu);
 
-        try {
-            $obsoletePaths = $this->content->save(
-                $player,
-                (bool) $validated['use_custom_content'],
-                $menus,
-                (int) $validated['theme_id']
-            );
-        } catch (\Throwable $exception) {
-            Storage::disk('media')->delete($uploadedPaths);
-            throw $exception;
-        }
-
-        Storage::disk('media')->delete($obsoletePaths);
+        $themeId = isset($validated['theme_id'])
+            ? (int) $validated['theme_id']
+            : ($player->theme_id ?: $this->themes->getList()->first(
+                fn ($theme) => (string) ($theme->is_default ?? '0') === '1'
+            )?->id);
+        $this->content->save(
+            $player,
+            (bool) $validated['use_custom_content'],
+            $menus,
+            $themeId ? (int) $themeId : null
+        );
 
         try {
             $this->mqtt->publishPlayerUpdate($player->fresh(), 'menus');
@@ -144,8 +162,16 @@ class PlayerContentController extends Controller
             report($exception);
         }
 
-        return redirect()
+        $redirect = redirect()
             ->route('players.content.edit', $player->uuid)
             ->with('success', trans('common.player_content.success'));
+
+        if ($skippedIconUploads) {
+            $redirect->with('warning', trans('common.player_content.icon_upload_skipped', [
+                'menus' => implode(', ', $skippedIconUploads),
+            ]));
+        }
+
+        return $redirect;
     }
 }

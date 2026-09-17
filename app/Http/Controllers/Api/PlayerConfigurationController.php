@@ -54,6 +54,7 @@ class PlayerConfigurationController extends Controller
             ] : null,
             'content' => [
                 'uses_custom' => (bool) $player->use_custom_content,
+                'html' => $player->html_content,
                 'menus' => $this->content->effective($player)->values(),
             ],
         ]);
