@@ -7,6 +7,7 @@ use App\Repositories\PlayerMqttRepository;
 use App\Repositories\PlayerRepository;
 use App\Repositories\ThemeRepository;
 use App\Services\PlayerContentManager;
+use App\Services\PlayerTvChannelManager;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -18,6 +19,7 @@ class PlayerContentController extends Controller
         private readonly PlayerRepository $players,
         private readonly ThemeRepository $themes,
         private readonly PlayerContentManager $content,
+        private readonly PlayerTvChannelManager $channels,
         private readonly PlayerMqttRepository $mqtt,
     ) {
     }
@@ -44,6 +46,26 @@ class PlayerContentController extends Controller
                 'details' => $theme->details->pluck('value', 'key')->all(),
             ];
         });
+
+        $channels = $this->channels->editable($player);
+        if (is_array(old('channels'))) {
+            $storedChannels = $channels->keyBy('id');
+            $channels = collect(old('channels'))->map(function (array $channel, int|string $index) use ($storedChannels): array {
+                $id = (int) ($channel['tv_channel_id'] ?? 0);
+                $stored = $storedChannels->get($id, []);
+
+                return array_merge([
+                    'id' => $id,
+                    'name' => $stored['name'] ?? '',
+                    'group' => $stored['group'] ?? null,
+                    'type' => $stored['type'] ?? null,
+                    'region' => $stored['region'] ?? null,
+                ], [
+                    'is_selected' => (bool) ($channel['is_active'] ?? false),
+                    'sort_order' => (int) ($channel['sort_order'] ?? $index),
+                ]);
+            })->sortBy('sort_order')->values();
+        }
 
         $menus = $this->content->editable($player);
         if (is_array(old('menus'))) {
@@ -81,6 +103,7 @@ class PlayerContentController extends Controller
             'iconOptions' => $this->content->iconOptions(),
             'themeOptions' => $themeOptions,
             'selectedThemeId' => $selectedThemeId,
+            'channels' => $channels,
         ]);
     }
 
@@ -89,7 +112,10 @@ class PlayerContentController extends Controller
         $player = $this->players->findUid($player);
         abort_unless($player, 404);
 
-        $request->merge(['use_custom_content' => $request->boolean('use_custom_content')]);
+        $request->merge([
+            'use_custom_content' => $request->boolean('use_custom_content'),
+            'use_custom_channels' => $request->boolean('use_custom_channels'),
+        ]);
         $validated = $request->validate([
             'use_custom_content' => ['required', 'boolean'],
             'theme_id' => [
@@ -99,6 +125,18 @@ class PlayerContentController extends Controller
                     fn ($query) => $query->where('hotel_id', app(TenantContext::class)->id())
                 ),
             ],
+            'use_custom_channels' => ['required', 'boolean'],
+            'channels' => ['nullable', 'array', 'max:200'],
+            'channels.*.tv_channel_id' => [
+                'required',
+                'integer',
+                'distinct',
+                Rule::exists('hotel_tv_channel', 'tv_channel_id')->where(
+                    fn ($query) => $query->where('hotel_id', app(TenantContext::class)->id())
+                ),
+            ],
+            'channels.*.is_active' => ['required', 'boolean'],
+            'channels.*.sort_order' => ['required', 'integer', 'min:0', 'max:999'],
             'menus' => ['nullable', 'array', 'max:100'],
             'menus.*.key' => ['required', 'string', 'distinct', 'max:50', 'regex:/^[a-z][a-z0-9_-]*$/'],
             'menus.*.label' => ['required', 'string', 'max:100'],
@@ -156,8 +194,15 @@ class PlayerContentController extends Controller
             $themeId ? (int) $themeId : null
         );
 
+        $this->channels->save(
+            $player,
+            (bool) $validated['use_custom_channels'],
+            $validated['channels'] ?? []
+        );
+
         try {
             $this->mqtt->publishPlayerUpdate($player->fresh(), 'menus');
+            $this->mqtt->publishPlayerUpdate($player->fresh(), 'channels');
         } catch (\Throwable $exception) {
             report($exception);
         }

@@ -43,7 +43,7 @@
     };
 
     $detailRows = collect($detailRows)
-        ->reject(fn ($row) => ($row['key'] ?? '') === 'background_theme_color')
+        ->reject(fn ($row) => in_array($row['key'] ?? '', ['background_theme_color', 'notification_title', 'notification_message'], true))
         ->values()
         ->map(fn($row, $index) => [
             'key' => $row['key'] ?? '',
@@ -167,7 +167,7 @@
             return 'scale-select';
         }
 
-        if (in_array($normalizedKey, ['running_text', 'marquee_text', 'notification_message'], true)) {
+        if (in_array($normalizedKey, ['running_text', 'marquee_text'], true)) {
             return 'textarea';
         }
 
@@ -1411,7 +1411,7 @@
                     return 'scale-select';
                 }
 
-                if (['running_text', 'marquee_text', 'notification_message'].includes(normalizedKey)) {
+                if (['running_text', 'marquee_text'].includes(normalizedKey)) {
                     return 'textarea';
                 }
 

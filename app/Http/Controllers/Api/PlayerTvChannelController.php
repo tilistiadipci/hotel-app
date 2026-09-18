@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\TvChannel;
 use App\Services\PlayerContentManager;
 use App\Services\PlayerTokenAuthenticator;
+use App\Services\PlayerTvChannelManager;
 use App\Services\TvChannelCacheService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,6 +17,7 @@ class PlayerTvChannelController extends Controller
         private readonly TvChannelCacheService $channelCache,
         private readonly PlayerTokenAuthenticator $authenticator,
         private readonly PlayerContentManager $content,
+        private readonly PlayerTvChannelManager $channels,
     ) {
     }
 
@@ -34,55 +36,39 @@ class PlayerTvChannelController extends Controller
             return response()->json(['status' => false, 'message' => 'Token player tidak valid atau sudah kedaluwarsa.'], 401);
         }
 
-        $channels = $this->channelCache->remember($hotel->id, function () use ($hotel) {
+        $hotelChannels = $this->channelCache->remember($hotel->id, function () use ($hotel) {
             return TvChannel::query()
-                ->withoutGlobalScope('hotel')
+                ->assignedToHotel($hotel->id)
                 ->with(['imageMedia', 'hotelImageMedia'])
-                ->join('hotel_tv_channel', 'hotel_tv_channel.tv_channel_id', '=', 'tv_channels.id')
-                ->where('hotel_tv_channel.hotel_id', $hotel->id)
-                ->where('hotel_tv_channel.is_active', true)
-                ->where('tv_channels.is_active', true)
-                ->whereNull('tv_channels.deleted_at')
-                ->select(
-                    'tv_channels.*',
-                    'hotel_tv_channel.custom_name',
-                    'hotel_tv_channel.custom_type',
-                    'hotel_tv_channel.custom_region',
-                    'hotel_tv_channel.custom_stream_url',
-                    'hotel_tv_channel.custom_frequency',
-                    'hotel_tv_channel.custom_quality',
-                    'hotel_tv_channel.custom_image_id',
-                    'hotel_tv_channel.sort_order as hotel_sort_order'
-                )
-                ->orderBy('hotel_tv_channel.sort_order')
-                ->orderBy('tv_channels.name')
-                ->get()
-                ->map(function (TvChannel $channel) {
-                    $streamUrl = $channel->custom_stream_url ?: $channel->stream_url;
-                    $remoteLogo = filter_var($channel->source_logo_url, FILTER_VALIDATE_URL)
-                        && in_array(parse_url($channel->source_logo_url, PHP_URL_SCHEME), ['http', 'https'], true)
-                            ? $channel->source_logo_url
-                            : null;
-
-                    return [
-                        'id' => $channel->uuid,
-                        'name' => $channel->custom_name ?: $channel->name,
-                        'group' => $channel->group_title,
-                        'type' => $channel->custom_type ?: $channel->type,
-                        'region' => $channel->custom_region ?: $channel->region,
-                        'frequency' => $channel->custom_frequency ?: $channel->frequency,
-                        'quality' => $channel->custom_quality ?: $channel->quality,
-                        'stream_type' => $this->streamType($streamUrl),
-                        'stream_url' => $streamUrl,
-                        'logo_url' => $channel->hotelImageMedia
-                            ? getMediaImageUrl($channel->hotelImageMedia->storage_path)
-                            : ($channel->imageMedia
-                            ? getMediaImageUrl($channel->imageMedia->storage_path)
-                            : $remoteLogo),
-                    ];
-                })
-                ->values();
+                ->get();
         });
+
+        $channels = $this->channels->effective($player, $hotelChannels)
+            ->map(function (TvChannel $channel) {
+                $streamUrl = $channel->custom_stream_url ?: $channel->stream_url;
+                $remoteLogo = filter_var($channel->source_logo_url, FILTER_VALIDATE_URL)
+                    && in_array(parse_url($channel->source_logo_url, PHP_URL_SCHEME), ['http', 'https'], true)
+                        ? $channel->source_logo_url
+                        : null;
+
+                return [
+                    'id' => $channel->uuid,
+                    'name' => $channel->custom_name ?: $channel->name,
+                    'group' => $channel->group_title,
+                    'type' => $channel->custom_type ?: $channel->type,
+                    'region' => $channel->custom_region ?: $channel->region,
+                    'frequency' => $channel->custom_frequency ?: $channel->frequency,
+                    'quality' => $channel->custom_quality ?: $channel->quality,
+                    'stream_type' => $this->streamType($streamUrl),
+                    'stream_url' => $streamUrl,
+                    'logo_url' => $channel->hotelImageMedia
+                        ? getMediaImageUrl($channel->hotelImageMedia->storage_path)
+                        : ($channel->imageMedia
+                        ? getMediaImageUrl($channel->imageMedia->storage_path)
+                        : $remoteLogo),
+                ];
+            })
+            ->values();
 
         return response()->json([
             'status' => true,

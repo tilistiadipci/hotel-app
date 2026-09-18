@@ -270,12 +270,14 @@ class ThemeController extends Controller
 
     private function isMultilineDetailKey(string $key): bool
     {
-        return in_array($key, ['running_text', 'marquee_text', 'notification_message'], true);
+        return in_array($key, ['running_text', 'marquee_text'], true);
     }
 
     private function isDeprecatedDetailKey(string $key): bool
     {
-        return $key === 'background_theme_color';
+        // Notifications now come from the Warning Broadcast feature
+        // (pushed live via MQTT/FCM), not a static per-theme text field.
+        return in_array($key, ['background_theme_color', 'notification_title', 'notification_message'], true);
     }
 
     private function isImageDetailKey(string $key): bool

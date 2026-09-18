@@ -15,7 +15,6 @@
             </div>
         </div>
 
-        @php($customContentEnabled = filter_var(old('use_custom_content', $player->use_custom_content), FILTER_VALIDATE_BOOLEAN))
         <form method="POST" action="{{ route('players.content.update', $player->uuid) }}" id="playerContentForm" enctype="multipart/form-data">
             @csrf
             @method('PUT')
@@ -31,8 +30,13 @@
                     </a>
                 </div>
 
+                @php
+                    $customContentEnabled = filter_var(old('use_custom_content', $player->use_custom_content), FILTER_VALIDATE_BOOLEAN);
+                    $customChannelsEnabled = filter_var(old('use_custom_channels', $player->use_custom_channels), FILTER_VALIDATE_BOOLEAN);
+                    $anyCustomEnabled = $customContentEnabled || $customChannelsEnabled;
+                @endphp
                 <div class="card-body">
-                    <div class="content-choice-card mb-4">
+                    <div class="content-choice-card mb-3">
                         <div>
                             <h5 class="mb-1">{{ trans('common.player_content.custom_title') }}</h5>
                             <p class="text-muted mb-0">{{ trans('common.player_content.custom_description') }}</p>
@@ -40,12 +44,12 @@
                         <div class="custom-control custom-switch custom-switch-lg">
                             <input type="hidden" name="use_custom_content" value="0">
                             <input type="checkbox" class="custom-control-input" id="use_custom_content"
-                                name="use_custom_content" value="1" @checked(old('use_custom_content', $player->use_custom_content))>
+                                name="use_custom_content" value="1" @checked($customContentEnabled)>
                             <label class="custom-control-label" for="use_custom_content">{{ trans('common.player_content.enable') }}</label>
                         </div>
                     </div>
 
-                    <div id="contentWizardContainer" class="{{ $customContentEnabled ? '' : 'content-custom-hidden' }}">
+                    <div id="contentWizardContainer" class="{{ $anyCustomEnabled ? '' : 'content-custom-hidden' }}">
                     <div class="content-wizard-steps mb-4">
                         <button type="button" class="content-wizard-step is-active" data-step-target="1">
                             <span>1</span> {{ trans('common.player_content.step_source') }}
@@ -54,7 +58,10 @@
                             <span>2</span> {{ trans('common.player_content.step_menu') }}
                         </button>
                         <button type="button" class="content-wizard-step" data-step-target="3">
-                            <span>3</span> {{ trans('common.player_content.step_confirmation') }}
+                            <span>3</span> {{ trans('common.player_content.step_channel') }}
+                        </button>
+                        <button type="button" class="content-wizard-step" data-step-target="4">
+                            <span>4</span> {{ trans('common.player_content.step_confirmation') }}
                         </button>
                     </div>
 
@@ -323,6 +330,55 @@
                     </section>
 
                     <section class="content-wizard-panel" data-step-panel="3">
+                        <div class="alert alert-info mb-4" id="channelSourceDescription"></div>
+
+                        <div class="d-flex justify-content-between align-items-start mb-3 flex-wrap">
+                            <div>
+                                <h5 class="mb-1">{{ trans('common.player_content.channel_title') }}</h5>
+                                <p class="text-muted mb-0">{{ trans('common.player_content.channel_description') }}</p>
+                            </div>
+                            @unless ($channels->isEmpty())
+                                <div class="d-flex align-items-center mt-2 mt-md-0">
+                                    <button type="button" class="btn btn-light btn-sm mr-2" id="selectAllChannels">{{ trans('common.player_content.select_all_channels') }}</button>
+                                    <button type="button" class="btn btn-light btn-sm" id="clearAllChannels">{{ trans('common.player_content.clear_all_channels') }}</button>
+                                </div>
+                            @endunless
+                        </div>
+
+                        @if ($channels->isEmpty())
+                            <div class="alert alert-warning mb-0">{{ trans('common.player_content.no_channel') }}</div>
+                        @else
+                            @php $channelIndex = 0; @endphp
+                            <fieldset id="customChannelFields">
+                                @foreach ($channels->groupBy(fn ($channel) => $channel['group'] ?: trans('platform.tv_catalog.uncategorized')) as $groupName => $groupChannels)
+                                    <div class="content-channel-group">
+                                        <h6 class="content-channel-group__title">{{ $groupName }}</h6>
+                                        <div class="row">
+                                            @foreach ($groupChannels as $channel)
+                                                @php $index = $channelIndex++; @endphp
+                                                <div class="col-sm-6 col-xl-4 mb-2">
+                                                    <input type="hidden" name="channels[{{ $index }}][tv_channel_id]" value="{{ $channel['id'] }}">
+                                                    <input type="hidden" name="channels[{{ $index }}][sort_order]" value="{{ $index }}">
+                                                    <input type="hidden" name="channels[{{ $index }}][is_active]" value="0">
+                                                    <label class="content-channel-card {{ old("channels.$index.is_active", $channel['is_selected']) ? 'content-channel-card--selected' : '' }}">
+                                                        <input type="checkbox" class="content-channel-active-toggle"
+                                                            name="channels[{{ $index }}][is_active]"
+                                                            value="1" @checked(old("channels.$index.is_active", $channel['is_selected']))>
+                                                        <span>
+                                                            <strong class="d-block">{{ $channel['name'] }}</strong>
+                                                            <small class="text-muted">{{ collect([$channel['type'] ? strtoupper($channel['type']) : null, $channel['region'] ? ucfirst($channel['region']) : null])->filter()->implode(' · ') ?: '—' }}</small>
+                                                        </span>
+                                                    </label>
+                                                </div>
+                                            @endforeach
+                                        </div>
+                                    </div>
+                                @endforeach
+                            </fieldset>
+                        @endif
+                    </section>
+
+                    <section class="content-wizard-panel" data-step-panel="4">
                         <div class="content-review-card">
                             <i class="fa fa-check-circle"></i>
                             <div>
@@ -356,13 +412,13 @@
                     </div>
                 </div>
 
-                <div class="card-footer d-flex justify-content-end {{ $customContentEnabled ? 'content-custom-hidden' : '' }}" id="contentGlobalFooter">
+                <div class="card-footer d-flex justify-content-end {{ $anyCustomEnabled ? 'content-custom-hidden' : '' }}" id="contentGlobalFooter">
                     <button type="submit" class="btn btn-primary">
                         <i class="fa fa-save mr-1"></i> {{ trans('common.save') }}
                     </button>
                 </div>
 
-                <div class="card-footer d-flex justify-content-between {{ $customContentEnabled ? '' : 'content-custom-hidden' }}" id="contentWizardFooter">
+                <div class="card-footer d-flex justify-content-between {{ $anyCustomEnabled ? '' : 'content-custom-hidden' }}" id="contentWizardFooter">
                     <button type="button" class="btn btn-light border" id="contentWizardPrevious" disabled>
                         <i class="fa fa-arrow-left mr-1"></i> {{ trans('common.player_content.previous') }}
                     </button>
@@ -387,7 +443,7 @@
     @include('partials.components.media_picker_style')
     <style>
         .player-content-card { border:0; box-shadow:0 14px 36px rgba(15,23,42,.08); }
-        .content-wizard-steps { display:grid; grid-template-columns:repeat(3,1fr); gap:12px; }
+        .content-wizard-steps { display:grid; grid-template-columns:repeat(4,1fr); gap:12px; }
         .content-wizard-step { border:1px solid #dbe3ee; background:#f8fafc; color:#64748b; border-radius:12px; padding:12px; font-weight:600; }
         .content-wizard-step span { display:inline-flex; width:28px; height:28px; align-items:center; justify-content:center; border-radius:50%; background:#e5eaf2; margin-right:7px; }
         .content-wizard-step.is-active { border-color:#3f6ad8; color:#2854c5; background:#eef3ff; }
@@ -413,6 +469,12 @@
         .content-menu-table tr[data-custom-menu="1"] td { background:#fbfdff; }
         .content-current-icon { display:flex; align-items:center; gap:10px; }
         .content-current-icon img { width:44px; height:44px; border-radius:9px; border:1px solid #dbe3ee; object-fit:contain; background:#f8fafc; }
+        .content-channel-group { margin-bottom:20px; }
+        .content-channel-group__title { font-size:12px; font-weight:700; text-transform:uppercase; letter-spacing:.05em; color:#64748b; padding-bottom:8px; margin-bottom:12px; border-bottom:1px solid #e2e8f0; }
+        .content-channel-card { display:flex; align-items:flex-start; gap:10px; width:100%; margin:0; padding:12px 14px; border:1px solid #dbe3ee; border-radius:10px; cursor:pointer; transition:.15s ease; }
+        .content-channel-card:hover { border-color:#9db8f4; }
+        .content-channel-card--selected { border-color:#3f6ad8; background:#f4f7ff; }
+        .content-channel-card input[type="checkbox"] { margin-top:3px; flex:0 0 auto; }
         .content-final-preview { --preview-bg:#10131b; --preview-text:#f8fafc; --preview-accent:#d4af37; position:relative; min-height:430px; overflow:hidden; display:flex; flex-direction:column; justify-content:space-between; border-radius:16px; background-color:var(--preview-bg); background-position:center; background-size:cover; color:var(--preview-text); box-shadow:0 18px 45px rgba(15,23,42,.2); }
         .content-final-preview__shade { position:absolute; inset:0; background:linear-gradient(180deg,rgba(3,7,15,.18),rgba(3,7,15,.88)); }
         .content-final-preview__header, .content-final-preview__footer { position:relative; z-index:1; }
@@ -436,8 +498,8 @@
         .content-final-preview__branch-arrow::after { content:'\f054'; margin-left:-2px; font:normal normal normal 12px/1 FontAwesome; }
         .content-final-preview__branch-children { display:flex; flex-wrap:wrap; gap:10px; }
         .content-final-preview__empty { padding:18px; border:1px dashed rgba(255,255,255,.35); border-radius:12px; text-align:center; }
+        #customContentFields[disabled], #customChannelFields[disabled] { opacity:.6; }
         .content-custom-hidden { display:none !important; }
-        #customContentFields[disabled] { opacity:.6; }
         @media(max-width:767.98px) {
             .content-wizard-steps { grid-template-columns:1fr; }
             .content-choice-card { align-items:flex-start; flex-direction:column; }
@@ -462,6 +524,11 @@
             const globalNotice = document.getElementById('globalContentNotice');
             const sourceDescription = document.getElementById('contentSourceDescription');
             const modeBadge = document.getElementById('contentModeBadge');
+            const channelToggle = document.getElementById('use_custom_channels');
+            const channelFields = document.getElementById('customChannelFields');
+            const channelSourceDescription = document.getElementById('channelSourceDescription');
+            const selectAllChannelsButton = document.getElementById('selectAllChannels');
+            const clearAllChannelsButton = document.getElementById('clearAllChannels');
             const wizardContainer = document.getElementById('contentWizardContainer');
             const wizardFooter = document.getElementById('contentWizardFooter');
             const globalFooter = document.getElementById('contentGlobalFooter');
@@ -492,37 +559,67 @@
                 modeGlobal: {{ Illuminate\Support\Js::from(trans('common.player_content.mode_global')) }},
                 reviewGlobal: {{ Illuminate\Support\Js::from(trans('common.player_content.review_global')) }},
                 reviewCustom: {{ Illuminate\Support\Js::from(trans('common.player_content.review_custom')) }},
-                chooseParentMenu: {{ Illuminate\Support\Js::from(trans('common.player_content.choose_parent_menu')) }}
+                chooseParentMenu: {{ Illuminate\Support\Js::from(trans('common.player_content.choose_parent_menu')) }},
+                channelSourceCustom: {{ Illuminate\Support\Js::from(trans('common.player_content.channel_source_custom')) }},
+                channelSourceGlobal: {{ Illuminate\Support\Js::from(trans('common.player_content.channel_source_global')) }},
+                reviewChannelsGlobal: {{ Illuminate\Support\Js::from(trans('common.player_content.review_channels_global')) }},
+                reviewChannelsCustom: {{ Illuminate\Support\Js::from(trans('common.player_content.review_channels_custom')) }}
             };
+
+            function syncWizardVisibility() {
+                const anyCustom = customToggle.checked || (channelToggle && channelToggle.checked);
+                wizardContainer.classList.toggle('content-custom-hidden', !anyCustom);
+                wizardFooter.classList.toggle('content-custom-hidden', !anyCustom);
+                globalFooter.classList.toggle('content-custom-hidden', anyCustom);
+            }
 
             function syncMode() {
                 const custom = customToggle.checked;
                 fields.disabled = !custom;
-                wizardContainer.classList.toggle('content-custom-hidden', !custom);
-                wizardFooter.classList.toggle('content-custom-hidden', !custom);
-                globalFooter.classList.toggle('content-custom-hidden', custom);
                 fields.classList.remove('d-none');
                 globalNotice.classList.add('d-none');
                 sourceDescription.textContent = custom
                     ? messages.sourceCustom
                     : messages.sourceGlobal;
                 modeBadge.textContent = custom ? messages.modeCustom : messages.modeGlobal;
+                syncWizardVisibility();
+            }
+
+            function syncChannelMode() {
+                if (!channelToggle) return;
+                const custom = channelToggle.checked;
+                if (channelFields) channelFields.disabled = !custom;
+                channelSourceDescription.textContent = custom
+                    ? messages.channelSourceCustom
+                    : messages.channelSourceGlobal;
+                syncWizardVisibility();
             }
 
             function syncReview() {
-                if (!customToggle.checked) {
-                    reviewText.textContent = messages.reviewGlobal;
-                    return;
-                }
+                const menuText = customToggle.checked
+                    ? (() => {
+                        const active = form.querySelectorAll('.content-active-toggle:checked').length;
+                        const placements = Array.from(form.querySelectorAll('.content-placement'));
+                        const main = placements.filter(item => item.value === 'main').length;
+                        const submenu = placements.length - main;
+                        return messages.reviewCustom
+                            .replace(':active', active)
+                            .replace(':main', main)
+                            .replace(':submenu', submenu);
+                    })()
+                    : messages.reviewGlobal;
 
-                const active = form.querySelectorAll('.content-active-toggle:checked').length;
-                const placements = Array.from(form.querySelectorAll('.content-placement'));
-                const main = placements.filter(item => item.value === 'main').length;
-                const submenu = placements.length - main;
-                reviewText.textContent = messages.reviewCustom
-                    .replace(':active', active)
-                    .replace(':main', main)
-                    .replace(':submenu', submenu);
+                const channelText = channelToggle && channelToggle.checked
+                    ? (() => {
+                        const total = form.querySelectorAll('.content-channel-active-toggle').length;
+                        const active = form.querySelectorAll('.content-channel-active-toggle:checked').length;
+                        return messages.reviewChannelsCustom
+                            .replace(':active', active)
+                            .replace(':total', total);
+                    })()
+                    : messages.reviewChannelsGlobal;
+
+                reviewText.textContent = menuText + ' ' + channelText;
                 syncPreview();
             }
 
@@ -699,7 +796,7 @@
             }
 
             function showStep(target) {
-                step = Math.max(1, Math.min(3, target));
+                step = Math.max(1, Math.min(4, target));
                 document.querySelectorAll('.content-wizard-panel').forEach(panel => {
                     panel.classList.toggle('is-active', Number(panel.dataset.stepPanel) === step);
                 });
@@ -707,12 +804,41 @@
                     button.classList.toggle('is-active', Number(button.dataset.stepTarget) === step);
                 });
                 previousButton.disabled = step === 1;
-                nextButton.classList.toggle('d-none', step === 3);
-                saveButton.classList.toggle('d-none', step !== 3);
-                if (step === 3) syncReview();
+                nextButton.classList.toggle('d-none', step === 4);
+                saveButton.classList.toggle('d-none', step !== 4);
+                if (step === 4) syncReview();
+            }
+
+            function syncChannelCardState(checkbox) {
+                checkbox.closest('.content-channel-card')?.classList.toggle('content-channel-card--selected', checkbox.checked);
             }
 
             customToggle.addEventListener('change', syncMode);
+            if (channelToggle) channelToggle.addEventListener('change', syncChannelMode);
+            if (channelFields) {
+                channelFields.querySelectorAll('.content-channel-active-toggle').forEach(syncChannelCardState);
+                channelFields.addEventListener('change', event => {
+                    if (event.target.matches('.content-channel-active-toggle')) {
+                        syncChannelCardState(event.target);
+                    }
+                });
+            }
+            if (selectAllChannelsButton) {
+                selectAllChannelsButton.addEventListener('click', () => {
+                    channelFields?.querySelectorAll('.content-channel-active-toggle').forEach(checkbox => {
+                        checkbox.checked = true;
+                        syncChannelCardState(checkbox);
+                    });
+                });
+            }
+            if (clearAllChannelsButton) {
+                clearAllChannelsButton.addEventListener('click', () => {
+                    channelFields?.querySelectorAll('.content-channel-active-toggle').forEach(checkbox => {
+                        checkbox.checked = false;
+                        syncChannelCardState(checkbox);
+                    });
+                });
+            }
             addCustomMenuButton.addEventListener('click', addCustomMenu);
             form.addEventListener('change', event => {
                 if (event.target.matches('.content-placement')) {
@@ -745,8 +871,9 @@
             });
 
             syncMode();
+            syncChannelMode();
             syncParentMenus();
-            showStep({{ $errors->has('menus.*') ? 2 : 1 }});
+            showStep({{ $errors->has('menus.*') ? 2 : ($errors->has('channels.*') ? 3 : 1) }});
         })();
     </script>
 @endsection

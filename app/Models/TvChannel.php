@@ -45,6 +45,34 @@ class TvChannel extends TenantModel
         });
     }
 
+    /**
+     * Channels assigned and active for a hotel, in the hotel's own display
+     * order. Shared by the player-facing API and the admin per-player
+     * channel picker so both agree on the same source list.
+     */
+    public function scopeAssignedToHotel($query, string $hotelId)
+    {
+        return $query->withoutGlobalScope('hotel')
+            ->join('hotel_tv_channel', 'hotel_tv_channel.tv_channel_id', '=', 'tv_channels.id')
+            ->where('hotel_tv_channel.hotel_id', $hotelId)
+            ->where('hotel_tv_channel.is_active', true)
+            ->where('tv_channels.is_active', true)
+            ->whereNull('tv_channels.deleted_at')
+            ->select(
+                'tv_channels.*',
+                'hotel_tv_channel.custom_name',
+                'hotel_tv_channel.custom_type',
+                'hotel_tv_channel.custom_region',
+                'hotel_tv_channel.custom_stream_url',
+                'hotel_tv_channel.custom_frequency',
+                'hotel_tv_channel.custom_quality',
+                'hotel_tv_channel.custom_image_id',
+                'hotel_tv_channel.sort_order as hotel_sort_order'
+            )
+            ->orderBy('hotel_tv_channel.sort_order')
+            ->orderBy('tv_channels.name');
+    }
+
     public function scopeFilter($query, array $filters)
     {
         $query->when($filters['search']['value'] ?? false, function ($query, $search) {

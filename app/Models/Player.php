@@ -15,6 +15,7 @@ class Player extends TenantModel
     protected $casts = [
         'is_active' => 'boolean',
         'use_custom_content' => 'boolean',
+        'use_custom_channels' => 'boolean',
         'token_expires_at' => 'datetime',
     ];
 
@@ -94,5 +95,12 @@ class Player extends TenantModel
     public function menuSettings()
     {
         return $this->hasMany(PlayerMenuSetting::class);
+    }
+
+    public function tvChannels()
+    {
+        return $this->belongsToMany(TvChannel::class, 'player_tv_channel')
+            ->withPivot(['is_active', 'sort_order'])
+            ->withTimestamps();
     }
 }
