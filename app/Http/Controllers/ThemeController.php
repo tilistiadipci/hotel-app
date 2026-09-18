@@ -53,6 +53,8 @@ class ThemeController extends Controller
             'icon' => $this->icon,
             'theme' => $theme,
             'canManageDetailKeys' => $this->canManageDetailKeys(),
+            'masterDetails' => $this->themeRepository->getMasterDetailMap($theme->id),
+            'masterHotelCode' => $this->themeRepository->getMasterHotelCode(),
             'focusMode' => true,
         ]);
     }

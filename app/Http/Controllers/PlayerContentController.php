@@ -40,7 +40,7 @@ class PlayerContentController extends Controller
                 'is_default' => (string) ($theme->is_default ?? '0') === '1',
                 'image_url' => $theme->imageMedia
                     ? getMediaImageUrl($theme->imageMedia->storage_path, 480, 270)
-                    : getMediaImageUrl('default/theme-'.$theme->id.'.png', 480, 270),
+                    : asset('images/theme_'.$theme->id.'.png'),
                 'details' => $theme->details->pluck('value', 'key')->all(),
             ];
         });

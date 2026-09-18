@@ -20,6 +20,8 @@
                 @include('pages.themes.components.form', [
                     'theme' => $theme,
                     'canManageDetailKeys' => $canManageDetailKeys,
+                    'masterDetails' => $masterDetails,
+                    'masterHotelCode' => $masterHotelCode,
                 ])
             </div>
         </div>

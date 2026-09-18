@@ -43,19 +43,11 @@
                                 </div>
                             </div>
 
-                            @if ($theme->imageMedia)
-                                <div class="mb-3">
-                                    <img src="{{ getMediaImageUrl($theme->imageMedia->storage_path, 320, 200) }}"
-                                        alt="{{ $theme->name }}" class="img-fluid rounded shadow-sm"
-                                        style="object-fit: cover;">
-                                </div>
-                            @else
-                                <div class="mb-3">
-                                    <img src="{{ getMediaImageUrl('default/theme-' . $theme->id . '.png', 320, 200) }}"
-                                        alt="{{ $theme->name }}" class="img-fluid rounded shadow-sm"
-                                        style="object-fit: cover;">
-                                </div>
-                            @endif
+                            <div class="mb-3">
+                                <img src="{{ asset('images/theme_' . $theme->id . '.png') }}"
+                                    alt="{{ $theme->name }}" class="img-fluid rounded shadow-sm"
+                                    style="object-fit: cover;">
+                            </div>
                         </div>
                     </div>
                 </div>

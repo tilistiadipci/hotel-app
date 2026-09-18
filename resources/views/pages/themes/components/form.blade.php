@@ -1,5 +1,7 @@
 @php
     $canManageDetailKeys = $canManageDetailKeys ?? false;
+    $masterDetails = $masterDetails ?? collect();
+    $masterHotelCode = $masterHotelCode ?? null;
     $detailRows = old('detail_keys')
         ? collect(old('detail_keys'))
             ->map(function ($key, $index) {
@@ -96,11 +98,11 @@
         return preg_replace('/<br\s*\/?>/i', PHP_EOL, (string) $value);
     };
 
-    $resolveDetailImageUrl = function ($value, $fallback = null) {
+    $resolveDetailImageUrl = function ($value, $fallback = null, $hotelCode = null) {
         if (is_numeric($value)) {
             $media = \App\Models\Media::query()->withoutGlobalScope('hotel')->find((int) $value);
             if ($media && $media->type === 'image') {
-                return getMediaImageUrl($media->storage_path, 1200, 800);
+                return getMediaImageUrl($media->storage_path, 1200, 800, $hotelCode);
             }
         }
 
@@ -111,9 +113,14 @@
         return $fallback;
     };
 
-    $resolveDetailImageUrls = function ($value, $fallback = []) use ($extractDetailImageIds, $resolveDetailImageUrl) {
+    // $hotelCode lets a caller resolve media that belongs to a different
+    // hotel than the current tenant context (e.g. the Master hotel's
+    // fallback images, resolved while editing a regular hotel's theme) -
+    // the media API serves a hotel's files from its own media_root, so the
+    // code must match whichever hotel actually owns the file.
+    $resolveDetailImageUrls = function ($value, $fallback = [], $hotelCode = null) use ($extractDetailImageIds, $resolveDetailImageUrl) {
         $mediaUrls = collect($extractDetailImageIds($value))
-            ->map(fn($mediaId) => $resolveDetailImageUrl($mediaId))
+            ->map(fn($mediaId) => $resolveDetailImageUrl($mediaId, null, $hotelCode))
             ->filter()
             ->values()
             ->all();
@@ -170,6 +177,16 @@
 
         return 'text';
     };
+
+    // Preview-only fallback: image keys the platform admin has set on the
+    // Master hotel, pre-resolved to URLs, so a hotel that hasn't uploaded
+    // its own image yet still sees a filled-in preview instead of a blank
+    // one. The hotel's own saved value always takes priority (see JS).
+    $masterImageUrlMap = $masterDetails
+        ->filter(fn ($value, $key) => $resolveDetailControlType($key) === 'image-picker')
+        ->map(fn ($value) => $resolveDetailImageUrls($value, [], $masterHotelCode))
+        ->filter()
+        ->all();
 
     $detailMap = collect($detailRows)->pluck('value', 'key');
     $defaultPreviewImage = old('image_media_id')
@@ -470,6 +487,10 @@
                         data-image-carousel='@json($initialPreviewImages)'
                         data-offer-image-carousel='@json($initialOfferPreviewImages)'
                         data-extra-image-carousel='@json($initialExtraPreviewImages)'>
+                        <div class="theme-live-preview__wallpaper theme-preview-card">
+                            <div class="theme-preview-card__slides"></div>
+                            <div class="theme-preview-card__indicators"></div>
+                        </div>
                         <div class="theme-live-preview__overlay"></div>
                         <div class="theme-live-preview__content">
                             <div class="theme-live-preview__topbar">
@@ -493,36 +514,20 @@
                                         <span class="theme-preview-hotel-name-main">HOTEL</span>
                                     </div>
                                 </div>
-                                <div class="theme-live-preview__guest text-right">
-                                    <div class="theme-preview-title">Welcome, Martine</div>
-                                    <div class="theme-preview-subtitle">Have a nice day</div>
-                                    <div class="theme-preview-meta theme-preview-room-name">Room 025</div>
-                                </div>
-                            </div>
-
-                            <div class="theme-live-preview__grid">
-                                <div class="theme-preview-card theme-preview-card--image">
-                                    <div class="theme-preview-card__slides"></div>
-                                    <div class="theme-preview-card__label">Stay Longer At The Hotel</div>
-                                    <div class="theme-preview-card__indicators"></div>
-                                </div>
-                                <div class="theme-preview-card-stack">
-                                    <div class="theme-preview-card theme-preview-card--offer">
-                                        <div class="theme-preview-card__slides"></div>
-                                        <div class="theme-preview-card__label">Save Your Money</div>
-                                        <div class="theme-preview-cta">
-                                            <span class="theme-preview-marquee-text">Special Offers for You</span>
-                                            <span class="theme-preview-cta-button">Click Here!</span>
+                                <div class="theme-live-preview__topbar-right">
+                                    <div class="theme-live-preview__guest-row">
+                                        <div class="theme-live-preview__guest-avatar"><i class="fa fa-user"></i></div>
+                                        <div class="theme-live-preview__guest text-right">
+                                            <div class="theme-preview-title">Welcome, Martine</div>
+                                            <div class="theme-preview-subtitle">Have a nice day</div>
+                                            <div class="theme-preview-meta theme-preview-room-name">Room 025</div>
                                         </div>
-                                        <div class="theme-preview-card__indicators"></div>
                                     </div>
-                                    <div class="theme-preview-card theme-preview-card--extra">
-                                        <div class="theme-preview-card__slides"></div>
-                                        <div class="theme-preview-card__label">Hotel Highlights</div>
-                                        <div class="theme-preview-card__body">
-                                            <div class="theme-preview-card__caption">Additional default theme image area</div>
-                                        </div>
-                                        <div class="theme-preview-card__indicators"></div>
+                                    <div class="theme-live-preview__status-row">
+                                        <span>Ver 2.0</span>
+                                        <i class="fa fa-wifi"></i>
+                                        <i class="fa fa-volume-up"></i>
+                                        <i class="fa fa-battery-three-quarters"></i>
                                     </div>
                                 </div>
                             </div>
@@ -838,7 +843,6 @@
         }
 
         .theme-live-preview__topbar,
-        .theme-live-preview__grid,
         .theme-live-preview__menu {
             display: flex;
         }
@@ -872,9 +876,44 @@
             margin-top: -2px;
         }
 
-        .theme-live-preview__guest {
+        .theme-live-preview__topbar-right {
             flex: 1 1 0;
             min-width: 0;
+            display: flex;
+            flex-direction: column;
+            align-items: flex-end;
+            gap: 8px;
+        }
+
+        .theme-live-preview__guest-row {
+            display: flex;
+            align-items: flex-start;
+            gap: 10px;
+        }
+
+        .theme-live-preview__guest {
+            min-width: 0;
+        }
+
+        .theme-live-preview__guest-avatar {
+            flex: 0 0 auto;
+            width: 34px;
+            height: 34px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            background: rgba(255, 255, 255, 0.14);
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            font-size: 14px;
+        }
+
+        .theme-live-preview__status-row {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            font-size: calc(var(--preview-body-size) * 0.8);
+            opacity: 0.85;
         }
 
         .theme-live-preview__weather i,
@@ -884,8 +923,7 @@
         }
 
         .theme-preview-time,
-        .theme-preview-title,
-        .theme-preview-card__label {
+        .theme-preview-title {
             font-weight: 700;
         }
 
@@ -936,22 +974,19 @@
             opacity: 0.88;
         }
 
-        .theme-live-preview__grid {
-            gap: 20px;
-            align-items: stretch;
+        .theme-live-preview__wallpaper {
+            position: absolute;
+            inset: 0;
+            z-index: 0;
         }
 
         .theme-live-preview__widgets {
-            display: none;
+            display: flex;
             justify-content: space-between;
             align-items: flex-start;
             gap: 20px;
+            flex: 1 1 auto;
         }
-
-        .theme-live-preview__widgets.is-active {
-            display: flex;
-        }
-
 
         .theme-live-preview__notification,
         .theme-live-preview__wifi {
@@ -1044,37 +1079,6 @@
             box-shadow: none;
         }
 
-        .theme-preview-card--image {
-            width: 50%;
-            min-height: 500px;
-        }
-
-        .theme-preview-card-stack {
-            display: flex;
-            flex: 1;
-            flex-direction: column;
-            gap: 20px;
-        }
-
-        .theme-preview-card--offer,
-        .theme-preview-card--extra {
-            min-height: 0;
-        }
-
-        .theme-preview-card--offer {
-            display: flex;
-            flex: 1;
-            min-height: 300px;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-
-        .theme-preview-card--extra {
-            flex: 0 0 34%;
-            min-height: 180px;
-            justify-content: space-between;
-        }
-
         .theme-preview-card__slides {
             position: absolute;
             inset: 0;
@@ -1101,60 +1105,6 @@
             position: absolute;
             inset: 0;
             background: linear-gradient(180deg, rgba(0, 0, 0, 0.14), rgba(0, 0, 0, 0.42));
-        }
-
-        .theme-preview-card__label {
-            position: relative;
-            z-index: 1;
-            padding: 30px 24px 0;
-            font-size: calc(var(--preview-title-size) * 0.7 * var(--preview-header-scale));
-            text-transform: uppercase;
-            text-align: center;
-            text-shadow: 0 2px 6px rgba(0, 0, 0, 0.3);
-        }
-
-        .theme-preview-card__body {
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            flex: 1 1 auto;
-            position: relative;
-            z-index: 1;
-            padding: 18px 24px 30px;
-            text-align: center;
-        }
-
-        .theme-preview-card__caption {
-            display: inline-flex;
-            padding: 10px 16px;
-            background: rgba(0, 0, 0, 0.55);
-            color: rgba(255, 255, 255, 0.92);
-            font-size: calc(var(--preview-body-size) * 1.02);
-            letter-spacing: 0.02em;
-        }
-
-        .theme-preview-cta {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin: 0 30px 30px;
-            background: #c2a160;
-            color: #20170a;
-            font-weight: 700;
-            position: relative;
-            z-index: 1;
-        }
-
-        .theme-preview-marquee-text,
-        .theme-preview-cta-button {
-            padding: 14px 20px;
-            font-size: calc(var(--preview-body-size) * 1.2);
-        }
-
-        .theme-preview-cta-button {
-            background: rgba(31, 33, 41, 0.92);
-            color: #d6b065;
-            text-transform: uppercase;
         }
 
         .theme-preview-card__indicators {
@@ -1340,25 +1290,16 @@
             }
 
             .theme-live-preview__topbar-left,
-            .theme-live-preview__guest {
+            .theme-live-preview__topbar-right {
                 flex: 1 1 100%;
-                justify-content: space-between;
             }
 
-            .theme-live-preview__grid {
-                flex-direction: column;
+            .theme-live-preview__topbar-right {
+                align-items: flex-end;
             }
 
-            .theme-preview-card-stack {
-                width: 100%;
-                gap: 16px;
-            }
-
-            .theme-preview-card--image,
-            .theme-preview-card--offer,
-            .theme-preview-card--extra {
-                width: 100%;
-                min-height: 320px;
+            .theme-live-preview__widgets {
+                flex-wrap: wrap;
             }
         }
 
@@ -1431,13 +1372,9 @@
             const previewRoomName = preview.find('.theme-preview-room-name');
             const previewBrand = preview.find('.theme-live-preview__brand');
             const previewTickerTrack = preview.find('.theme-live-preview__ticker-track');
-            const previewCardMarquee = preview.find('.theme-preview-marquee-text');
-            const previewImageCard = preview.find('.theme-preview-card--image');
-            const previewOfferCard = preview.find('.theme-preview-card--offer');
-            const previewExtraCard = preview.find('.theme-preview-card--extra');
+            const previewWallpaperCard = preview.find('.theme-live-preview__wallpaper');
             const previewMenu = preview.find('.theme-live-preview__menu');
             const previewMenuArrows = preview.find('.theme-live-preview__menu-arrow');
-            const previewGrid = preview.find('.theme-live-preview__grid');
             const previewWidgets = preview.find('.theme-live-preview__widgets');
             const previewNotificationTitle = preview.find('#previewNotificationTitle');
             const previewNotificationMessage = preview.find('#previewNotificationMessage');
@@ -1445,6 +1382,8 @@
             const previewWifiPassword = preview.find('#previewWifiPassword');
             const nameInput = $('#name');
             const appBaseUrl = @json(url('/'));
+            const masterDetails = @json($masterDetails);
+            const masterImageUrls = @json($masterImageUrlMap);
             let tickerRotationTimer = null;
             const previewCardTimers = {};
 
@@ -1860,13 +1799,17 @@
             }
 
             function collectThemeDetails() {
-                const details = {};
+                // Seed from the platform admin's Master hotel values first -
+                // a hotel that hasn't customized a field yet still previews
+                // with a filled-in default instead of blank. Any value the
+                // hotel actually saved below always overrides it.
+                const details = { ...masterDetails };
 
                 rows?.querySelectorAll('.theme-detail-row').forEach(function(row) {
                     const key = row.querySelector('input[name="detail_keys[]"]')?.value?.trim();
                     const value = row.querySelector('.theme-detail-value-hidden')?.value ?? '';
 
-                    if (key) {
+                    if (key && value !== '') {
                         details[key] = value;
                     }
                 });
@@ -1908,6 +1851,18 @@
                         if (directUrl) {
                             return [directUrl];
                         }
+                    }
+                }
+
+                // Hotel hasn't uploaded its own image for any of these keys -
+                // fall back to what the platform admin set on the Master hotel.
+                for (const detailKey of detailKeys) {
+                    const urls = (masterImageUrls[detailKey] || [])
+                        .map(url => resolvePreviewImageUrl(url, ''))
+                        .filter(Boolean);
+
+                    if (urls.length) {
+                        return urls;
                     }
                 }
 
@@ -2020,13 +1975,13 @@
                 const offerImageUrls = getDetailImagePreviewUrls('image_id_2', 'image_2');
                 const extraImageUrls = getDetailImagePreviewUrls('image_id_3', 'image_3');
                 const primarySlides = imageUrls.length ? imageUrls : fallbackPrimaryImages;
-                const offerSlides = offerImageUrls.length ? offerImageUrls : (fallbackOfferImages.length ? fallbackOfferImages : primarySlides);
-                const extraSlides = extraImageUrls.length ? extraImageUrls : (fallbackExtraImages.length ? fallbackExtraImages : offerSlides);
+                const offerSlides = offerImageUrls.length ? offerImageUrls : fallbackOfferImages;
+                const extraSlides = extraImageUrls.length ? extraImageUrls : fallbackExtraImages;
+                const wallpaperSlides = Array.from(new Set([...primarySlides, ...offerSlides, ...extraSlides].filter(Boolean)));
                 const runningText = normalizeRunningText(details.running_text,
                     'Our well trained staffs eagerly await to serve and provide you with a truly memorable stay at our hotel');
                 const runningTextParts = splitRunningTextParts(details.running_text,
                     'Our well trained staffs eagerly await to serve and provide you with a truly memorable stay at our hotel');
-                const ctaText = normalizePreviewText(details.marquee_text, 'Special Offers for You');
 
                 preview.css({
                     '--preview-bg': backgroundColor,
@@ -2049,22 +2004,10 @@
                 });
 
                 renderPreviewCardSlides(
-                    previewImageCard,
-                    primarySlides,
+                    previewWallpaperCard,
+                    wallpaperSlides,
                     'linear-gradient(135deg, rgba(83, 50, 16, 0.96), rgba(22, 20, 18, 0.85))',
-                    'primary-card'
-                );
-                renderPreviewCardSlides(
-                    previewOfferCard,
-                    offerSlides,
-                    'linear-gradient(135deg, rgba(28, 31, 39, 0.96), rgba(40, 52, 84, 0.94))',
-                    'offer-card'
-                );
-                renderPreviewCardSlides(
-                    previewExtraCard,
-                    extraSlides,
-                    'linear-gradient(135deg, rgba(30, 48, 66, 0.96), rgba(17, 23, 34, 0.92))',
-                    'extra-card'
+                    'wallpaper-card'
                 );
                 previewDate.toggle(showDate);
                 previewGuest.toggle(showName || showRoomName);
@@ -2072,45 +2015,39 @@
                 previewSubtitle.toggle(showName);
                 previewRoomName.toggle(showRoomName);
                 previewBrand.toggle(showTitle);
-                previewCardMarquee.text(ctaText);
                 previewTitle.text(`Welcome, Guest`);
                 renderTickerMessages(runningTextParts);
                 renderPreviewMenu();
 
-                const wifiSsid = normalizePreviewText(details.wifi_ssid, '');
-                const notificationMessage = normalizeRunningText(details.notification_message, '');
-                const useWidgetLayout = Boolean(wifiSsid || notificationMessage);
-
-                previewGrid.toggle(!useWidgetLayout);
-                previewWidgets.toggleClass('is-active', useWidgetLayout);
-                preview.css('background-image', useWidgetLayout && primarySlides[0]
-                    ? `url("${String(primarySlides[0]).replaceAll('"', '%22')}")`
-                    : 'none');
-
-                if (useWidgetLayout) {
-                    previewNotificationTitle.text(normalizePreviewText(details.notification_title, 'Notification'));
-                    const messageParts = splitRunningTextParts(details.notification_message, '');
-                    previewNotificationMessage.html(messageParts.map(part =>
-                        $('<div>').text(part).html()
-                    ).join('<br>'));
-                    previewWifiSsid.text(wifiSsid || '-');
-                    previewWifiPassword.text(normalizePreviewText(details.wifi_password, '-'));
-                }
+                previewNotificationTitle.text(normalizePreviewText(details.notification_title, 'Notification'));
+                const messageParts = splitRunningTextParts(details.notification_message,
+                    'Please let us know at the front desk if there is anything we can help you with.');
+                previewNotificationMessage.html(messageParts.map(part =>
+                    $('<div>').text(part).html()
+                ).join('<br>'));
+                previewWifiSsid.text(normalizePreviewText(details.wifi_ssid, '-'));
+                previewWifiPassword.text(normalizePreviewText(details.wifi_password, '-'));
             }
 
             function resolvePreviewMenuItems() {
                 const items = [];
 
                 for (let index = 1; index <= 12; index++) {
-                    const labelRow = findDetailRowByKey(`menu_${index}_label`);
-                    const iconRow = findDetailRowByKey(`menu_${index}_icon`);
+                    const labelKey = `menu_${index}_label`;
+                    const iconKey = `menu_${index}_icon`;
+                    const labelRow = findDetailRowByKey(labelKey);
+                    const iconRow = findDetailRowByKey(iconKey);
 
-                    if (!labelRow && !iconRow) {
-                        continue;
+                    let label = (labelRow?.querySelector('.theme-detail-value-hidden')?.value || '').trim();
+                    let iconUrl = iconRow ? (getImageItems(iconRow)[0]?.url || '') : '';
+
+                    // Hotel hasn't set this menu slot - fall back to Master's.
+                    if (!label) {
+                        label = (masterDetails[labelKey] || '').trim();
                     }
-
-                    const label = (labelRow?.querySelector('.theme-detail-value-hidden')?.value || '').trim();
-                    const iconUrl = iconRow ? (getImageItems(iconRow)[0]?.url || '') : '';
+                    if (!iconUrl) {
+                        iconUrl = resolvePreviewImageUrl((masterImageUrls[iconKey] || [])[0] || '', '');
+                    }
 
                     if (!label && !iconUrl) {
                         continue;

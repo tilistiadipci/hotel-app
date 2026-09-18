@@ -142,7 +142,7 @@ if (!function_exists('secureDecrypt')) {
 }
 
 if (!function_exists('getMediaImageUrl')) {
-    function getMediaImageUrl($path, $width = 300, $height = 300)
+    function getMediaImageUrl($path, $width = 300, $height = 300, $hotelCode = null)
     {
         if (empty($path)) {
             return null;
@@ -156,7 +156,8 @@ if (!function_exists('getMediaImageUrl')) {
         // jika path tidak full url, tambahkan base url media storage
         // api/media?type=image&path=images/movies/sample_cover.jpg
         $query = ['type' => 'image', 'path' => $path, 'w' => $width, 'h' => $height];
-        if ($hotelCode = app(\App\Tenancy\TenantContext::class)->hotel()?->code) {
+        $hotelCode = $hotelCode ?: app(\App\Tenancy\TenantContext::class)->hotel()?->code;
+        if ($hotelCode) {
             $query['hotel'] = $hotelCode;
         }
 

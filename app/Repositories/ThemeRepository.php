@@ -4,7 +4,9 @@ namespace App\Repositories;
 
 use App\Models\Hotel;
 use App\Models\Theme;
+use App\Models\ThemeDetail;
 use App\Tenancy\TenantContext;
+use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 
 class ThemeRepository extends BaseRepository
@@ -60,6 +62,45 @@ class ThemeRepository extends BaseRepository
     public function findUidGlobal(string $uuid): ?Theme
     {
         return Theme::query()->where('uuid', $uuid)->first();
+    }
+
+    /**
+     * Raw key => value theme_details set by the platform admin on the
+     * Master hotel, for the given theme. Used as a preview-only fallback so
+     * a hotel that hasn't customized a field yet still sees the platform
+     * default instead of a blank preview - a hotel's own saved value always
+     * wins once it sets one. Empty when the current context already is the
+     * Master hotel (nothing to fall back to).
+     */
+    public function getMasterDetailMap(int $themeId): Collection
+    {
+        $masterId = Hotel::masterId();
+
+        if (! $masterId || $masterId === $this->hotelId()) {
+            return collect();
+        }
+
+        return ThemeDetail::query()
+            ->withoutGlobalScope('hotel')
+            ->where('hotel_id', $masterId)
+            ->where('theme_id', $themeId)
+            ->pluck('value', 'key');
+    }
+
+    /**
+     * The Master hotel's own code, needed to resolve its media through the
+     * media API (which serves files from the hotel's own media_root), since
+     * the current tenant context is a different hotel when this is used.
+     */
+    public function getMasterHotelCode(): ?string
+    {
+        $masterId = Hotel::masterId();
+
+        if (! $masterId || $masterId === $this->hotelId()) {
+            return null;
+        }
+
+        return Hotel::query()->whereKey($masterId)->value('code');
     }
 
     public function resetDefaultExcept(int $themeId): void

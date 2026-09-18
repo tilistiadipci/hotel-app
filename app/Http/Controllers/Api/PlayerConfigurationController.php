@@ -49,7 +49,7 @@ class PlayerConfigurationController extends Controller
                 'description' => $theme->description,
                 'image_url' => $theme->imageMedia
                     ? getMediaImageUrl($theme->imageMedia->storage_path, 1280, 720)
-                    : getMediaImageUrl('default/theme-'.$theme->id.'.png', 1280, 720),
+                    : asset('images/theme_'.$theme->id.'.png'),
                 'details' => $theme->details->pluck('value', 'key'),
             ] : null,
             'content' => [

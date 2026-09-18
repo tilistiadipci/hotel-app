@@ -203,7 +203,7 @@ class PlayerContentManager
         $themeImageUrl = $theme
             ? ($theme->imageMedia
                 ? getMediaImageUrl($theme->imageMedia->storage_path, 1280, 720)
-                : getMediaImageUrl('default/theme-'.$theme->id.'.png', 1280, 720))
+                : asset('images/theme_'.$theme->id.'.png'))
             : null;
 
         return view('pages.players.content-html', [
