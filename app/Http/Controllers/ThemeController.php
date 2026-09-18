@@ -32,13 +32,17 @@ class ThemeController extends Controller
         return view('pages.themes.index', [
             'page' => $this->page,
             'icon' => $this->icon,
-            'themes' => $this->themeRepository->getList(),
+            'themes' => $this->canManageDetailKeys()
+                ? $this->themeRepository->getGlobalList()
+                : $this->themeRepository->getList(),
         ]);
     }
 
     public function edit(string $uuid)
     {
-        $theme = $this->themeRepository->findUidWithRelations($uuid);
+        $theme = $this->canManageDetailKeys()
+            ? $this->themeRepository->findUidGlobalWithRelations($uuid)
+            : $this->themeRepository->findUidWithRelations($uuid);
 
         if (! $theme) {
             return redirect()->route('error.404');
@@ -55,7 +59,9 @@ class ThemeController extends Controller
 
     public function update(Request $request, string $uuid): RedirectResponse
     {
-        $theme = $this->themeRepository->findUidWithRelations($uuid);
+        $theme = $this->canManageDetailKeys()
+            ? $this->themeRepository->findUidGlobalWithRelations($uuid)
+            : $this->themeRepository->findUidWithRelations($uuid);
 
         if (! $theme) {
             return redirect()->route('error.404');
@@ -106,7 +112,9 @@ class ThemeController extends Controller
 
     public function setDefault(string $uuid)
     {
-        $theme = $this->themeRepository->findUid($uuid);
+        $theme = $this->canManageDetailKeys()
+            ? $this->themeRepository->findUidGlobal($uuid)
+            : $this->themeRepository->findUid($uuid);
 
         if (! $theme) {
             return response()->json([

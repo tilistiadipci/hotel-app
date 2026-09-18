@@ -1436,6 +1436,7 @@
             const previewOfferCard = preview.find('.theme-preview-card--offer');
             const previewExtraCard = preview.find('.theme-preview-card--extra');
             const previewMenu = preview.find('.theme-live-preview__menu');
+            const previewMenuArrows = preview.find('.theme-live-preview__menu-arrow');
             const previewGrid = preview.find('.theme-live-preview__grid');
             const previewWidgets = preview.find('.theme-live-preview__widgets');
             const previewNotificationTitle = preview.find('#previewNotificationTitle');
@@ -2131,6 +2132,14 @@
                         <em>${$('<div>').text(item.label).html()}</em>
                     </span>
                 `).join(''));
+
+                updateMenuArrowVisibility();
+            }
+
+            function updateMenuArrowVisibility() {
+                const el = previewMenu[0];
+                const needsScroll = !!el && el.scrollWidth > el.clientWidth + 1;
+                previewMenuArrows.toggleClass('d-none', !needsScroll);
             }
 
             function renderTickerMessages(parts) {
@@ -2415,6 +2424,12 @@
             preview.find('[data-menu-scroll]').on('click', function() {
                 const direction = Number($(this).data('menu-scroll')) || 1;
                 previewMenu[0]?.scrollBy({ left: direction * 90, behavior: 'smooth' });
+            });
+
+            let menuArrowResizeTimer = null;
+            $(window).on('resize', function() {
+                window.clearTimeout(menuArrowResizeTimer);
+                menuArrowResizeTimer = window.setTimeout(updateMenuArrowVisibility, 150);
             });
         });
     </script>

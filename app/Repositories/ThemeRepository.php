@@ -23,6 +23,20 @@ class ThemeRepository extends BaseRepository
             ->each(fn (Theme $theme) => $this->applyHotelDefault($theme));
     }
 
+    /**
+     * Full theme catalog, not scoped to the hotel_theme assignment of any
+     * single hotel. Used for the platform-admin view of Themes as master
+     * data, as opposed to a hotel's own assigned themes.
+     */
+    public function getGlobalList()
+    {
+        return $this->globalQuery()
+            ->with(['details', 'imageMedia'])
+            ->orderBy('name')
+            ->get()
+            ->each(fn (Theme $theme) => $this->applyPivotDefault($theme));
+    }
+
     public function findUidWithRelations(string $uuid): ?Theme
     {
         $theme = $this->assignedQuery()
@@ -31,6 +45,21 @@ class ThemeRepository extends BaseRepository
             ->first();
 
         return $theme ? $this->applyHotelDefault($theme) : null;
+    }
+
+    public function findUidGlobalWithRelations(string $uuid): ?Theme
+    {
+        $theme = $this->globalQuery()
+            ->with(['details', 'imageMedia'])
+            ->where('themes.uuid', $uuid)
+            ->first();
+
+        return $theme ? $this->applyPivotDefault($theme) : null;
+    }
+
+    public function findUidGlobal(string $uuid): ?Theme
+    {
+        return Theme::query()->where('uuid', $uuid)->first();
     }
 
     public function resetDefaultExcept(int $themeId): void
@@ -48,10 +77,11 @@ class ThemeRepository extends BaseRepository
     {
         $this->resetDefaultExcept($themeId);
 
-        DB::table('hotel_theme')
-            ->where('hotel_id', $this->hotelId())
-            ->where('theme_id', $themeId)
-            ->update(['is_default' => true, 'updated_at' => now()]);
+        // Attach if this theme was never assigned to the hotel yet (e.g. a
+        // platform admin defaulting a theme from the global catalog).
+        Theme::query()->findOrFail($themeId)
+            ->hotels()
+            ->syncWithoutDetaching([$this->hotelId() => ['is_default' => true]]);
     }
 
     public function updateDefaultStatus(int $themeId, bool $isDefault): void
@@ -87,6 +117,13 @@ class ThemeRepository extends BaseRepository
         return $this->hotel()->themes();
     }
 
+    private function globalQuery()
+    {
+        $hotelId = $this->hotelId();
+
+        return Theme::query()->with(['hotels' => fn ($query) => $query->where('hotels.id', $hotelId)]);
+    }
+
     private function hotel(): Hotel
     {
         return Hotel::query()->findOrFail($this->hotelId());
@@ -101,6 +138,13 @@ class ThemeRepository extends BaseRepository
     private function applyHotelDefault(Theme $theme): Theme
     {
         $theme->setAttribute('is_default', (string) (int) ($theme->pivot?->is_default ?? false));
+
+        return $theme;
+    }
+
+    private function applyPivotDefault(Theme $theme): Theme
+    {
+        $theme->setAttribute('is_default', (string) (int) ($theme->hotels->first()?->pivot?->is_default ?? false));
 
         return $theme;
     }

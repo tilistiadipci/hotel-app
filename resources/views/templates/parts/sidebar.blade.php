@@ -81,8 +81,8 @@
                 <li class="{{ $page == 'master-settings' ? 'mm-active' : '' }}">
                     <a href="{{ route('platform.master-settings.index') }}" class="{{ $page == 'master-settings' ? 'mm-active' : '' }}"><i class="metismenu-icon fa fa-sliders-h"></i> Master Settings</a>
                 </li>
-                <li class="{{ $page == 'master-theme-details' ? 'mm-active' : '' }}">
-                    <a href="{{ route('platform.master-theme.edit') }}" class="{{ $page == 'master-theme-details' ? 'mm-active' : '' }}"><i class="metismenu-icon pe-7s-paint-bucket"></i> Master Theme Details</a>
+                <li class="{{ $page == 'themes' ? 'mm-active' : '' }}">
+                    <a href="{{ route('platform.master-theme.index') }}" class="{{ $page == 'themes' ? 'mm-active' : '' }}"><i class="metismenu-icon pe-7s-paint-bucket"></i> Master Theme</a>
                 </li>
                 <li class="{{ $page == 'tv channels' ? 'mm-active' : '' }}">
                     <a href="{{ route('platform.master-tv-channels.index') }}" class="{{ $page == 'tv channels' ? 'mm-active' : '' }}"><i class="metismenu-icon fa fa-tv"></i> Master TV Channels</a>

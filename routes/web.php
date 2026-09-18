@@ -115,7 +115,7 @@ Route::middleware(['auth', 'role.category:master,superadmin'])
         // Master data (dicopy ke tiap hotel baru) - reuses the normal hotel
         // settings/theme/tv-channels/media screens, pointed at the Master hotel.
         Route::get('/master-settings', [SuperadminMasterDataController::class, 'settings'])->name('master-settings.index');
-        Route::get('/master-theme', [SuperadminMasterDataController::class, 'theme'])->name('master-theme.edit');
+        Route::get('/master-theme', [SuperadminMasterDataController::class, 'themes'])->name('master-theme.index');
         Route::get('/master-tv-channels', [SuperadminMasterDataController::class, 'tvChannels'])->name('master-tv-channels.index');
         Route::get('/media-library', [SuperadminMediaLibraryController::class, 'index'])->name('media-library.index');
         Route::post('/hotel-context', [SuperadminHotelContextController::class, 'update'])->name('hotel-context.update');

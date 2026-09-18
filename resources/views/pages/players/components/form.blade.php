@@ -70,8 +70,6 @@
 
                         @error('player_group_id')
                             <div class="text-danger">{{ $message }}</div>
-                        @else
-                            <small class="text-primary" style="font-style: italic">* {{ trans('common.required') }}</small>
                         @enderror
                     </div>
                 </div>

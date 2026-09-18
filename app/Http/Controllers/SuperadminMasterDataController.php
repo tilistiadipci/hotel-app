@@ -3,7 +3,6 @@
 namespace App\Http\Controllers;
 
 use App\Models\Hotel;
-use App\Models\Theme;
 use App\Services\HotelSettingsManager;
 
 class SuperadminMasterDataController extends Controller
@@ -30,24 +29,21 @@ class SuperadminMasterDataController extends Controller
     }
 
     /**
-     * Send superadmin straight to the Master hotel's Default Theme on the
-     * existing rich theme editor.
+     * Send superadmin to the theme catalog on the existing themes screen,
+     * "acting as" the Master hotel. Theme content (theme_details) is scoped
+     * per hotel_id, so editing here as Master never overwrites the details
+     * a hotel admin has already customized for their own hotel - it only
+     * edits the Master hotel's own copy, plus the shared name/description/
+     * cover image every hotel sees in the catalog.
      */
-    public function theme()
+    public function themes()
     {
         $masterId = Hotel::masterId();
         abort_unless($masterId, 404);
 
-        $themeUuid = Theme::query()
-            ->where(fn ($query) => $query->where('id', 1)->orWhere('name', 'Default Theme'))
-            ->orderByRaw('CASE WHEN id = 1 THEN 0 ELSE 1 END')
-            ->value('uuid');
-
-        abort_unless($themeUuid, 404);
-
         session(['active_hotel_id' => $masterId]);
 
-        return redirect()->route('themes.edit', $themeUuid);
+        return redirect()->route('themes.index');
     }
 
     public function tvChannels()
