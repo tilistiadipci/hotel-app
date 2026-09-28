@@ -151,12 +151,12 @@ class PlayerPublishController extends Controller
             'formMethod' => $publish ? 'PUT' : 'POST',
             'submitLabel' => $publish ? trans('common.publish.update_publish') : trans('common.publish.title'),
             'playerGroups' => $this->groups->query()
-                ->with(['players' => fn ($query) => $query->where('is_active', true)->orderBy('name')])
+                ->with(['players' => fn ($query) => $query->where('is_active', true)->orderBy('name')->with('masterTv')])
                 ->withCount(['players' => fn ($query) => $query->where('is_active', true)])
                 ->orderBy('name')
                 ->get(),
             'players' => $this->players->query()
-                ->with('playerGroup')
+                ->with(['playerGroup', 'masterTv'])
                 ->whereNull('deleted_at')
                 ->where('is_active', true)
                 ->orderBy('name')
@@ -424,7 +424,7 @@ class PlayerPublishController extends Controller
 
     public function show(PlayerPublish $publish)
     {
-        $publish->load(['theme', 'targets.playerGroup']);
+        $publish->load(['theme', 'targets.playerGroup', 'targets.masterTv']);
 
         return view('pages.publish.show', [
             'page' => 'publish',

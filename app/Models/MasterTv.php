@@ -6,7 +6,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
-class Player extends TenantModel
+class MasterTv extends TenantModel
 {
     use HasFactory, SoftDeletes;
 
@@ -14,9 +14,6 @@ class Player extends TenantModel
 
     protected $casts = [
         'is_active' => 'boolean',
-        'use_custom_content' => 'boolean',
-        'use_custom_channels' => 'boolean',
-        'token_expires_at' => 'datetime',
     ];
 
     protected static function booted(): void
@@ -43,12 +40,18 @@ class Player extends TenantModel
         return $this->belongsTo(User::class, 'deleted_by');
     }
 
+    public function players()
+    {
+        return $this->hasMany(Player::class, 'master_tv_id');
+    }
+
     public function scopeFilter($query, array $filters)
     {
         $query->when($filters['search']['value'] ?? false, function ($query, $search) {
             $query->where(function ($q) use ($search) {
                 $q->where('name', 'like', '%'.$search.'%')
-                    ->orWhere('serial', 'like', '%'.$search.'%');
+                    ->orWhere('brand', 'like', '%'.$search.'%')
+                    ->orWhere('size', 'like', '%'.$search.'%');
             });
         });
 
@@ -62,60 +65,5 @@ class Player extends TenantModel
                 $q->where('is_active', 0);
             }
         });
-    }
-
-    public function theme()
-    {
-        return $this->belongsTo(Theme::class);
-    }
-
-    public function playerGroup()
-    {
-        return $this->belongsTo(PlayerGroup::class);
-    }
-
-    public function masterTv()
-    {
-        return $this->belongsTo(MasterTv::class);
-    }
-
-    public function bookings()
-    {
-        return $this->hasMany(Booking::class, 'player_id');
-    }
-
-    public function currentBooking()
-    {
-        return $this->hasOne(Booking::class, 'player_id')
-            ->whereNull('checked_out_at')
-            ->latestOfMany('checked_in_at');
-    }
-
-    public function menuTenants()
-    {
-        return $this->belongsToMany(MenuTenant::class, 'menu_tenant_player')
-            ->withTimestamps();
-    }
-
-    public function menuSettings()
-    {
-        return $this->hasMany(PlayerMenuSetting::class);
-    }
-
-    public function tvChannels()
-    {
-        return $this->belongsToMany(TvChannel::class, 'player_tv_channel')
-            ->withPivot(['is_active', 'sort_order'])
-            ->withTimestamps();
-    }
-
-    public function contentScopes()
-    {
-        return $this->hasMany(PlayerContentScope::class);
-    }
-
-    public function settingOverrides()
-    {
-        return $this->hasMany(PlayerSettingOverride::class);
     }
 }

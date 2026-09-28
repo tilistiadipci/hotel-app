@@ -24,6 +24,7 @@ use App\Http\Controllers\ManagerPortfolioController;
 use App\Http\Controllers\ManagerPortfolioReportController;
 use App\Http\Controllers\ManagerTvChannelAccessController;
 use App\Http\Controllers\MasterPaketController;
+use App\Http\Controllers\MasterTvController;
 use App\Http\Controllers\MediaController;
 use App\Http\Controllers\MenuCategoryController;
 use App\Http\Controllers\MenuController;
@@ -244,6 +245,14 @@ Route::middleware(['auth', 'role.category:manager,admin,operator,user', 'manager
             ->name('player-groups.')
             ->group(function () {
                 Route::post('/bulkDelete', [PlayerGroupController::class, 'bulkDelete'])->name('bulkDelete');
+            });
+
+        // Master TV
+        Route::resource('master-tvs', MasterTvController::class);
+        Route::prefix('master-tvs')
+            ->name('master-tvs.')
+            ->group(function () {
+                Route::post('/bulkDelete', [MasterTvController::class, 'bulkDelete'])->name('bulkDelete');
             });
 
         // Movies (custom routes first to avoid conflict with resource show)

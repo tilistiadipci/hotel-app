@@ -449,6 +449,15 @@ return [
         'players_in_group' => 'Players in this group',
     ],
 
+    'master_tv' => [
+        'list_of_master_tvs' => 'List of Master TVs',
+        'title' => 'Master TV',
+        'title_singular' => 'Master TV',
+        'brand' => 'Brand / Type',
+        'size' => 'Size',
+        'size_hint' => 'Example: 32 Inch, 43 Inch, 55 Inch',
+    ],
+
     'booking' => [
         'title' => 'Booking',
         'book_now' => 'Check In',

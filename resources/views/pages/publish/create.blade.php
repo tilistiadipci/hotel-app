@@ -17,22 +17,30 @@
             'guide' => trans('common.publish.catalog_help.guide'),
             'place' => trans('common.publish.catalog_help.place'),
         ];
-        $targetPlayersForJs = $players->map(function ($player) {
+        $playerMeta = function ($player) {
+            $meta = trim(($player->alias ? $player->alias.' - ' : '').$player->serial);
+            if ($player->masterTv) {
+                $meta = trim($meta.' · '.$player->masterTv->brand.' '.$player->masterTv->size, ' ·');
+            }
+
+            return $meta;
+        };
+        $targetPlayersForJs = $players->map(function ($player) use ($playerMeta) {
             return [
                 'id' => (int) $player->id,
                 'name' => $player->name,
-                'meta' => trim(($player->alias ? $player->alias.' - ' : '').$player->serial),
+                'meta' => $playerMeta($player),
             ];
         })->values();
-        $targetGroupsForJs = $playerGroups->map(function ($group) {
+        $targetGroupsForJs = $playerGroups->map(function ($group) use ($playerMeta) {
             return [
                 'id' => (int) $group->id,
                 'name' => $group->name,
-                'players' => $group->players->map(function ($player) {
+                'players' => $group->players->map(function ($player) use ($playerMeta) {
                     return [
                         'id' => (int) $player->id,
                         'name' => $player->name,
-                        'meta' => trim(($player->alias ? $player->alias.' - ' : '').$player->serial),
+                        'meta' => $playerMeta($player),
                     ];
                 })->values(),
             ];
@@ -206,6 +214,9 @@
                                             <span>
                                                 <strong>{{ $player->name }}</strong>
                                                 <small class="text-muted d-block">{{ $player->alias }} · {{ $player->serial }}</small>
+                                                @if ($player->masterTv)
+                                                    <small class="text-muted d-block"><i class="fa fa-tv"></i> {{ $player->masterTv->brand }} {{ $player->masterTv->size }}</small>
+                                                @endif
                                             </span>
                                         </label>
                                     </div>

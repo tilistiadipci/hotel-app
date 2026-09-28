@@ -75,6 +75,32 @@
                 </div>
 
                 <div class="position-relative row form-group">
+                    <label class="col-sm-3 col-form-label text-sm-right">{{ trans('common.master_tv.title_singular') }}</label>
+                    <div class="col-sm-9">
+                        <div class="d-flex">
+                            <select name="master_tv_id" id="master_tv_id" required class="form-control select2 @error('master_tv_id') is-invalid @enderror" style="width: 100%;">
+                                <option value="">{{ trans('common.select_an_option') }}</option>
+                                @foreach ($masterTvs as $masterTv)
+                                    <option value="{{ $masterTv->id }}"
+                                        {{ (string) old('master_tv_id', $player->master_tv_id ?? '') === (string) $masterTv->id ? 'selected' : '' }}>
+                                        {{ $masterTv->name }} ({{ $masterTv->brand }} - {{ $masterTv->size }})
+                                    </option>
+                                @endforeach
+                            </select>
+                            <button type="button" class="btn btn-outline-primary ml-2" title="Add Master TV" onclick="window.location.href='{{ route('master-tvs.create') }}'">
+                                <i class="fa fa-plus"></i>
+                            </button>
+                        </div>
+
+                        @error('master_tv_id')
+                            <div class="text-danger">{{ $message }}</div>
+                        @else
+                            <small class="text-primary" style="font-style: italic">* {{ trans('common.required') }}</small>
+                        @enderror
+                    </div>
+                </div>
+
+                <div class="position-relative row form-group">
                     <label class="col-sm-3 col-form-label text-sm-right">{{ trans('common.status') }}</label>
                     <div class="col-sm-9">
                         @php
@@ -107,7 +133,7 @@
     <script>
         (function waitForjQuery() {
             if (window.jQuery) {
-                ['#player_group_id', '#is_active'].forEach(selector => {
+                ['#player_group_id', '#master_tv_id', '#is_active'].forEach(selector => {
                     const el = $(selector);
                     if (el.hasClass('select2-hidden-accessible')) {
                         el.select2('destroy');

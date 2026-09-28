@@ -69,7 +69,7 @@ class PlayerRepository extends BaseRepository
     public function getDatatable()
     {
         $query = $this->query()
-            ->with(['theme'])
+            ->with(['theme', 'masterTv'])
             ->filter(request(['search', 'filters']));
 
         return DataTables::of($this->paginateDatatable($query))
@@ -82,7 +82,14 @@ class PlayerRepository extends BaseRepository
             ->addColumn('theme_name', function ($row) {
                 return $row->theme ? $row->theme->name : '-';
             })
-            ->rawColumns(['action'])
+            ->addColumn('master_tv_name', function ($row) {
+                if (! $row->masterTv) {
+                    return '-';
+                }
+
+                return e($row->masterTv->name).' <small class="text-muted">('.e($row->masterTv->brand).' - '.e($row->masterTv->size).')</small>';
+            })
+            ->rawColumns(['action', 'master_tv_name'])
             ->make(true);
     }
 

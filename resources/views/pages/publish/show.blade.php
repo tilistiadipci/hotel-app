@@ -68,6 +68,9 @@
                                 <span class="publish-chip">
                                     {{ $player->name }}
                                     <small>{{ trim(($player->alias ? $player->alias.' - ' : '').$player->serial) }}</small>
+                                    @if ($player->masterTv)
+                                        <small><i class="fa fa-tv"></i> {{ $player->masterTv->brand }} {{ $player->masterTv->size }}</small>
+                                    @endif
                                 </span>
                             @empty
                                 <span class="text-muted">{{ trans('common.publish.no_target_player') }}</span>

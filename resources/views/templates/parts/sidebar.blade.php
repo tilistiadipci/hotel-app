@@ -139,6 +139,12 @@
                         </li>
                     @endif
 
+                    <li class="{{ $page == 'players' ? 'mm-active' : '' }}">
+                        <a href="{{ url('/players') }}" class="{{ $page == 'players' ? 'mm-active' : '' }}">
+                            <i class="metismenu-icon fa fa-play"></i> {{ trans('common.player.title') }}
+                        </a>
+                    </li>
+
                     <li class="{{ $page == 'publish' ? 'mm-active' : '' }}">
                         <a href="{{ route('publish.index') }}" class="{{ $page == 'publish' ? 'mm-active' : '' }}">
                             <i class="metismenu-icon fa fa-paper-plane"></i>
@@ -155,7 +161,7 @@
                     </li>
 
                     <li
-                        class="{{ in_array($page, ['songs', 'movies', 'players', 'places', 'guides']) ? 'mm-active' : '' }}">
+                        class="{{ in_array($page, ['songs', 'movies', 'places', 'guides', 'master tv']) ? 'mm-active' : '' }}">
                         <a href="#">
                             <i class="metismenu-icon pe-7s-folder"></i> Master
                             <i class="metismenu-state-icon pe-7s-angle-down caret-left"></i>
@@ -166,9 +172,9 @@
                                     <i class="metismenu-icon pe-7s-monitor"></i> TV Channels
                                 </a>
                             </li>
-                            <li class="{{ $page == 'players' ? 'mm-active' : '' }}">
-                                <a href="{{ url('/players') }}" class="{{ $page == 'players' ? 'mm-active' : '' }}">
-                                    <i class="metismenu-icon pe-7s-play"></i> {{ trans('common.player.title') }}
+                            <li class="{{ $page == 'master tv' ? 'mm-active' : '' }}">
+                                <a href="{{ url('/master-tvs') }}" class="{{ $page == 'master tv' ? 'mm-active' : '' }}">
+                                    <i class="metismenu-icon pe-7s-tv"></i> Master TV
                                 </a>
                             </li>
                             @if ($isMusicMenuActive)

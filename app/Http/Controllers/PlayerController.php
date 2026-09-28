@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Repositories\MasterTvRepository;
 use App\Repositories\PlayerGroupRepository;
 use App\Repositories\PlayerRepository;
 use App\Services\HotelLicenseCapacity;
@@ -16,14 +17,17 @@ class PlayerController extends Controller
 
     protected PlayerGroupRepository $playerGroupRepository;
 
+    protected MasterTvRepository $masterTvRepository;
+
     private string $page = 'players';
 
     private string $icon = 'fa fa-users';
 
-    public function __construct(PlayerRepository $playerRepository, PlayerGroupRepository $playerGroupRepository)
+    public function __construct(PlayerRepository $playerRepository, PlayerGroupRepository $playerGroupRepository, MasterTvRepository $masterTvRepository)
     {
         $this->playerRepository = $playerRepository;
         $this->playerGroupRepository = $playerGroupRepository;
+        $this->masterTvRepository = $masterTvRepository;
     }
 
     public function index(Request $request)
@@ -56,6 +60,7 @@ class PlayerController extends Controller
             'page' => $this->page,
             'icon' => $this->icon,
             'playerGroups' => $this->playerGroupRepository->get(),
+            'masterTvs' => $this->masterTvRepository->query()->where('is_active', true)->orderBy('name')->get(),
         ]);
     }
 
@@ -118,6 +123,7 @@ class PlayerController extends Controller
             'icon' => $this->icon,
             'player' => $player,
             'playerGroups' => $this->playerGroupRepository->get(),
+            'masterTvs' => $this->masterTvRepository->query()->where('is_active', true)->orderBy('name')->get(),
         ]);
     }
 
@@ -225,6 +231,7 @@ class PlayerController extends Controller
             ],
             'is_active' => 'nullable|boolean',
             'player_group_id' => 'nullable|integer|exists:player_groups,id',
+            'master_tv_id' => 'required|integer|exists:master_tvs,id',
         ];
 
         $data = $request->validate($rules);

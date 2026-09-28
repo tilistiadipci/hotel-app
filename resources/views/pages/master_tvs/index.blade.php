@@ -7,16 +7,16 @@
             <div class="page-title-wrapper">
 
                 @include('templates.parts.breadcrumb', [
-                    'title' => trans('common.player.title'),
+                    'title' => trans('common.master_tv.title'),
                     'icon' => $icon,
                     'breadcrumbs' => [
-                        ['href' => '#', 'label' => trans('common.player.title')],
+                        ['href' => '#', 'label' => trans('common.master_tv.title')],
                     ],
                 ])
 
                 <div class="page-title-actions">
                     @include('partials.buttons.btn-create-new', [
-                        'url' => route('players.create'),
+                        'url' => route('master-tvs.create'),
                     ])
                 </div>
             </div>
@@ -27,7 +27,7 @@
                 <div class="card mb-3">
                     <div class="card-header-tab card-header">
                         <div class="card-header-title font-size-lg text-capitalize font-weight-normal">
-                            {{ trans('common.player.list_of_player') }}
+                            {{ trans('common.master_tv.list_of_master_tvs') }}
                         </div>
                         <div class="btn-actions-pane-right actions-icon-btn d-flex align-items-center">
                             <button class="btn btn-sm btn-danger" id="applyBulkAction" data-toggle="tooltip" title="{{ trans('common.bulk_delete') }}">
@@ -47,10 +47,9 @@
                                     </th>
                                     <th style="width:60px">No</th>
                                     <th>{{ trans('common.name') }}</th>
-                                    <th>Alias</th>
-                                    <th>{{ trans('common.player.serial') }}</th>
-                                    <th>{{ trans('common.master_tv.title_singular') }}</th>
-                                    <th>Theme</th>
+                                    <th>{{ trans('common.master_tv.brand') }}</th>
+                                    <th>{{ trans('common.master_tv.size') }}</th>
+                                    <th>Players</th>
                                     <th>{{ trans('common.status') }}</th>
                                     <th style="text-align:center">{!! trans('common.action') !!}</th>
                                 </tr>
@@ -66,10 +65,6 @@
 
 @section('js')
     <script>
-        function attachFilters(d) {
-            // no custom filters
-        }
-
         function applyFilters() {
             table.ajax.reload();
         }
@@ -105,14 +100,24 @@
                 data: 'name',
                 name: 'name',
                 render: function(data, type, row) {
-                    let url = `{{ url('players') }}/${row.uuid ?? row.id}/edit`;
+                    let url = `{{ url('master-tvs') }}/${row.uuid ?? row.id}/edit`;
                     return `<a href="${url}">${row.name || ''}</a>`;
                 }
             },
-            { data: 'alias', name: 'alias' },
-            { data: 'serial', name: 'serial' },
-            { data: 'master_tv_name', name: 'master_tv_name' },
-            { data: 'theme_name', name: 'theme_name' },
+            { data: 'brand', name: 'brand' },
+            { data: 'size', name: 'size' },
+            {
+                data: 'players_count',
+                name: 'players_count',
+                render: function(data, type, row) {
+                    return `<a href="javascript:void(0)"
+                                data-uid="${row.uuid ?? row.id}"
+                                onclick="show('${row.uuid ?? row.id}')"
+                            >
+                            ${row.players_count || 0}
+                        </a>`;
+                }
+            },
             {
                 name: 'is_active',
                 render: function(data, type, row) {
@@ -132,10 +137,10 @@
             { data: 'created_at', name: 'created_at', visible: false },
         ];
 
-        var getUrl = "{{ route('players.index') }}";
-        var showUrl = "{{ route('players.show', ':id') }}";
-        var editUrl = "{{ route('players.edit', ':id') }}";
-        var destroyUrl = "{{ route('players.destroy', ':id') }}";
+        var getUrl = "{{ route('master-tvs.index') }}";
+        var showUrl = "{{ route('master-tvs.show', ':id') }}";
+        var editUrl = "{{ route('master-tvs.edit', ':id') }}";
+        var destroyUrl = "{{ route('master-tvs.destroy', ':id') }}";
         var scrollX = false;
         var fixedColumns = false;
     </script>
