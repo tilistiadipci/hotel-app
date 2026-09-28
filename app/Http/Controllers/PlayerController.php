@@ -4,12 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Repositories\PlayerGroupRepository;
 use App\Repositories\PlayerRepository;
-use App\Repositories\ThemeRepository;
 use App\Services\HotelLicenseCapacity;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 
 class PlayerController extends Controller
@@ -18,17 +16,14 @@ class PlayerController extends Controller
 
     protected PlayerGroupRepository $playerGroupRepository;
 
-    protected ThemeRepository $themeRepository;
-
     private string $page = 'players';
 
     private string $icon = 'fa fa-users';
 
-    public function __construct(PlayerRepository $playerRepository, PlayerGroupRepository $playerGroupRepository, ThemeRepository $themeRepository)
+    public function __construct(PlayerRepository $playerRepository, PlayerGroupRepository $playerGroupRepository)
     {
         $this->playerRepository = $playerRepository;
         $this->playerGroupRepository = $playerGroupRepository;
-        $this->themeRepository = $themeRepository;
     }
 
     public function index(Request $request)
@@ -60,7 +55,6 @@ class PlayerController extends Controller
         return view('pages.players.create', [
             'page' => $this->page,
             'icon' => $this->icon,
-            'themes' => $this->themeRepository->getList(),
             'playerGroups' => $this->playerGroupRepository->get(),
         ]);
     }
@@ -123,7 +117,6 @@ class PlayerController extends Controller
             'page' => $this->page,
             'icon' => $this->icon,
             'player' => $player,
-            'themes' => $this->themeRepository->getList(),
             'playerGroups' => $this->playerGroupRepository->get(),
         ]);
     }
@@ -229,13 +222,6 @@ class PlayerController extends Controller
                 'string',
                 'max:100',
                 uniqueNotDeleted('players', 'serial', $playerId),
-            ],
-            'theme_id' => [
-                'required',
-                'integer',
-                Rule::exists('hotel_theme', 'theme_id')->where(
-                    fn ($query) => $query->where('hotel_id', app(TenantContext::class)->id())
-                ),
             ],
             'is_active' => 'nullable|boolean',
             'player_group_id' => 'nullable|integer|exists:player_groups,id',

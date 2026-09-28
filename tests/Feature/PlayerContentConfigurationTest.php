@@ -6,6 +6,7 @@ use App\Models\Hotel;
 use App\Models\HotelLicense;
 use App\Models\Player;
 use App\Models\Setting;
+use App\Models\Theme;
 use App\Repositories\PlayerMqttRepository;
 use App\Services\PlayerContentManager;
 use App\Tenancy\TenantContext;
@@ -80,11 +81,12 @@ class PlayerContentConfigurationTest extends TestCase
             ->assertUnauthorized();
     }
 
-    public function test_hotel_admin_can_save_player_content_and_trigger_menu_sync(): void
+    public function test_hotel_admin_can_publish_player_content_and_trigger_sync(): void
     {
         [$hotel] = $this->hotelWithLicense();
         app(TenantContext::class)->set($hotel->id);
         $player = $this->player($hotel);
+        $theme = $this->theme($hotel);
         $menus = app(PlayerContentManager::class)->editable($player)
             ->map(function (array $menu): array {
                 $menu['is_active'] = $menu['key'] === 'vod';
@@ -100,18 +102,32 @@ class PlayerContentConfigurationTest extends TestCase
         $mqtt = Mockery::mock(PlayerMqttRepository::class);
         $mqtt->shouldReceive('publishPlayerUpdate')->once()->with(
             Mockery::on(fn (Player $published) => $published->is($player)),
-            'menus'
+            'all'
         );
         $this->app->instance(PlayerMqttRepository::class, $mqtt);
 
-        $this->withoutMiddleware()
-            ->put(route('players.content.update', $player->uuid), [
+        $response = $this->withoutMiddleware()
+            ->post(route('publish.store'), [
+                'target_mode' => 'players',
+                'target_player_ids' => [$player->id],
+                'theme_id' => $theme->id,
                 'use_custom_content' => '1',
                 'menus' => $menus,
+                'use_custom_channels' => '0',
+                'use_other_settings_override' => '0',
             ])
-            ->assertRedirect(route('players.content.edit', $player->uuid));
+            ->assertRedirect();
 
         $this->assertTrue($player->fresh()->use_custom_content);
+        $publishId = basename($response->headers->get('Location'));
+        $this->assertDatabaseHas('player_publishes', [
+            'id' => $publishId,
+            'hotel_id' => $hotel->id,
+            'theme_id' => $theme->id,
+        ]);
+        $this->assertDatabaseHas('player_publish_targets', [
+            'player_id' => $player->id,
+        ]);
         $this->assertDatabaseHas('player_menu_settings', [
             'player_id' => $player->id,
             'menu_key' => 'vod',
@@ -161,6 +177,20 @@ class PlayerContentConfigurationTest extends TestCase
         $player->save();
 
         return $player;
+    }
+
+    private function theme(Hotel $hotel): Theme
+    {
+        $theme = Theme::query()->create([
+            'name' => 'Publish Test Theme',
+            'description' => 'Theme for publish tests',
+            'is_default' => true,
+            'is_active' => true,
+        ]);
+
+        $hotel->themes()->attach($theme->id, ['is_default' => true]);
+
+        return $theme;
     }
 
     private function setting(Hotel $hotel, string $key, string $value): void

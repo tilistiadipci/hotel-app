@@ -75,26 +75,6 @@
                 </div>
 
                 <div class="position-relative row form-group">
-                    <label class="col-sm-3 col-form-label text-sm-right">{{ trans('common.theme.title_singular') }}</label>
-                    <div class="col-sm-9">
-                        <select name="theme_id" id="theme_id" class="form-control select2 @error('theme_id') is-invalid @enderror" style="width: 100%;">
-                            <option value="">{{ trans('common.select_an_option') }}</option>
-                            @foreach ($themes as $theme)
-                                <option value="{{ $theme->id }}"
-                                    {{ (string) old('theme_id', $player->theme_id ?? '') === (string) $theme->id ? 'selected' : '' }}>
-                                    {{ $theme->name }}
-                                </option>
-                            @endforeach
-                        </select>
-                        @error('theme_id')
-                            <div class="text-danger">{{ $message }}</div>
-                        @else
-                            <small class="text-primary" style="font-style: italic">* {{ trans('common.required') }}</small>
-                        @enderror
-                    </div>
-                </div>
-
-                <div class="position-relative row form-group">
                     <label class="col-sm-3 col-form-label text-sm-right">{{ trans('common.status') }}</label>
                     <div class="col-sm-9">
                         @php
@@ -127,7 +107,7 @@
     <script>
         (function waitForjQuery() {
             if (window.jQuery) {
-                ['#theme_id', '#is_active'].forEach(selector => {
+                ['#player_group_id', '#is_active'].forEach(selector => {
                     const el = $(selector);
                     if (el.hasClass('select2-hidden-accessible')) {
                         el.select2('destroy');

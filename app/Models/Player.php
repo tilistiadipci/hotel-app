@@ -103,4 +103,14 @@ class Player extends TenantModel
             ->withPivot(['is_active', 'sort_order'])
             ->withTimestamps();
     }
+
+    public function contentScopes()
+    {
+        return $this->hasMany(PlayerContentScope::class);
+    }
+
+    public function settingOverrides()
+    {
+        return $this->hasMany(PlayerSettingOverride::class);
+    }
 }

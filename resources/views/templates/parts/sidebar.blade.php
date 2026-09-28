@@ -139,6 +139,13 @@
                         </li>
                     @endif
 
+                    <li class="{{ $page == 'publish' ? 'mm-active' : '' }}">
+                        <a href="{{ route('publish.index') }}" class="{{ $page == 'publish' ? 'mm-active' : '' }}">
+                            <i class="metismenu-icon fa fa-paper-plane"></i>
+                            {{ trans('common.publish.title') }}
+                        </a>
+                    </li>
+
                     {{-- media --}}
                     <li class="{{ $page == 'media-library' ? 'mm-active' : '' }}">
                         <a href="{{ url('/media') }}" class="{{ $page == 'media-library' ? 'mm-active' : '' }}">

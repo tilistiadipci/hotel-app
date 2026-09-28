@@ -38,8 +38,8 @@ use App\Http\Controllers\PlaceController;
 use App\Http\Controllers\PlatformLicenseController;
 use App\Http\Controllers\PlatformDashboardController;
 use App\Http\Controllers\PlayerController;
-use App\Http\Controllers\PlayerContentController;
 use App\Http\Controllers\PlayerGroupController;
+use App\Http\Controllers\PlayerPublishController;
 use App\Http\Controllers\ManagerLicenseController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicLandingPageController;
@@ -222,14 +222,20 @@ Route::middleware(['auth', 'role.category:manager,admin,operator,user', 'manager
         });
 
         // Players
+        Route::get('/publish', [PlayerPublishController::class, 'index'])->name('publish.index');
+        Route::get('/publish/create', [PlayerPublishController::class, 'create'])->name('publish.create');
+        Route::post('/publish', [PlayerPublishController::class, 'store'])->name('publish.store');
+        Route::get('/publish/{publish}/edit', [PlayerPublishController::class, 'edit'])->name('publish.edit');
+        Route::put('/publish/{publish}', [PlayerPublishController::class, 'update'])->name('publish.update');
+        Route::get('/publish/{publish}', [PlayerPublishController::class, 'show'])->name('publish.show');
+        Route::delete('/publish/{publish}', [PlayerPublishController::class, 'destroy'])->name('publish.destroy');
+
         Route::resource('players', PlayerController::class);
         Route::prefix('players')
             ->name('players.')
             ->group(function () {
                 Route::post('/bulkDelete', [PlayerController::class, 'bulkDelete'])->name('bulkDelete');
                 Route::post('/{player}/token', [PlayerController::class, 'regenerateToken'])->name('token');
-                Route::get('/{player}/content', [PlayerContentController::class, 'edit'])->name('content.edit');
-                Route::put('/{player}/content', [PlayerContentController::class, 'update'])->name('content.update');
             });
 
         // Player Groups

@@ -3,16 +3,22 @@
 namespace App\Http\Controllers\Api;
 
 use App\Http\Controllers\Controller;
+use App\Models\PlayerContentScope;
+use App\Services\PlayerCatalogManager;
 use App\Services\PlayerContentManager;
+use App\Services\PlayerOtherSettingsManager;
 use App\Services\PlayerTokenAuthenticator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Schema;
 
 class PlayerConfigurationController extends Controller
 {
     public function __construct(
         private readonly PlayerTokenAuthenticator $authenticator,
         private readonly PlayerContentManager $content,
+        private readonly PlayerCatalogManager $catalogs,
+        private readonly PlayerOtherSettingsManager $otherSettings,
     ) {
     }
 
@@ -56,7 +62,31 @@ class PlayerConfigurationController extends Controller
                 'uses_custom' => (bool) $player->use_custom_content,
                 'html' => $player->html_content,
                 'menus' => $this->content->effective($player)->values(),
+                'catalogs' => $this->catalogPayload($player),
+                'other_settings' => $this->otherSettings->effective($player),
             ],
         ]);
+    }
+
+    private function catalogPayload($player): array
+    {
+        if (! Schema::hasTable('player_content_scopes')) {
+            return collect(PlayerContentScope::TYPES)
+                ->mapWithKeys(fn (string $type): array => [$type => ['mode' => 'all', 'ids' => [], 'uuids' => []]])
+                ->all();
+        }
+
+        $scopes = $player->contentScopes()->with('items')->get()->keyBy('content_type');
+
+        return collect(PlayerContentScope::TYPES)->mapWithKeys(function (string $type) use ($player, $scopes): array {
+            $scope = $scopes->get($type);
+            $items = $this->catalogs->effective($player, $type);
+
+            return [$type => [
+                'mode' => $scope?->mode ?? 'all',
+                'ids' => $items->pluck('id')->values(),
+                'uuids' => $items->pluck('uuid')->filter()->values(),
+            ]];
+        })->all();
     }
 }
