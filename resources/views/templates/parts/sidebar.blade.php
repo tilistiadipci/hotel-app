@@ -68,6 +68,9 @@
                 <li class="{{ $page == 'managers' ? 'mm-active' : '' }}">
                     <a href="{{ route('platform.managers.index') }}" class="{{ $page == 'managers' ? 'mm-active' : '' }}"><i class="metismenu-icon fa fa-user-tie"></i> Manager Hotel</a>
                 </li>
+                <li class="{{ $page == 'platform-licenses' ? 'mm-active' : '' }}">
+                    <a href="{{ route('platform.licenses.index') }}" class="{{ $page == 'platform-licenses' ? 'mm-active' : '' }}"><i class="metismenu-icon fa fa-key"></i> License</a>
+                </li>
                 <li class="{{ $page == 'landing-page' ? 'mm-active' : '' }}">
                     <a href="{{ route('platform.landing-page.edit') }}" class="{{ $page == 'landing-page' ? 'mm-active' : '' }}"><i class="metismenu-icon fa fa-globe"></i> Landing Page</a>
                 </li>
@@ -98,6 +101,7 @@
                 <li class="{{ $page == 'manager-dashboard' ? 'mm-active' : '' }}"><a href="{{ route('manager.dashboard') }}" class="{{ $page == 'manager-dashboard' ? 'mm-active' : '' }}"><i class="metismenu-icon fa fa-chart-line"></i> Dashboard Manager</a></li>
                 <li class="{{ $page == 'manager-portfolio' ? 'mm-active' : '' }}"><a href="{{ route('manager.portfolio') }}" class="{{ $page == 'manager-portfolio' ? 'mm-active' : '' }}"><i class="metismenu-icon fa fa-building"></i> Portfolio Hotel</a></li>
                 <li class="{{ $page == 'manager-hotel-users' ? 'mm-active' : '' }}"><a href="{{ route('manager.hotel-users.index') }}" class="{{ $page == 'manager-hotel-users' ? 'mm-active' : '' }}"><i class="metismenu-icon fa fa-users-cog"></i> User Hotel</a></li>
+                <li class="{{ $page == 'manager-licenses' ? 'mm-active' : '' }}"><a href="{{ route('manager.licenses.index') }}" class="{{ $page == 'manager-licenses' ? 'mm-active' : '' }}"><i class="metismenu-icon fa fa-key"></i> License</a></li>
                 <li class="{{ $page == 'manager-report-checkins' ? 'mm-active' : '' }}"><a href="{{ route('manager.reports.checkins.index') }}" class="{{ $page == 'manager-report-checkins' ? 'mm-active' : '' }}"><i class="metismenu-icon fa fa-sign-in-alt"></i> Laporan Check-in</a></li>
                 <li class="{{ $page == 'manager-report-player-usage' ? 'mm-active' : '' }}"><a href="{{ route('manager.reports.player-usage.index') }}" class="{{ $page == 'manager-report-player-usage' ? 'mm-active' : '' }}"><i class="metismenu-icon fa fa-chart-bar"></i> Penggunaan Player</a></li>
                 <li class="{{ $page == 'manager-tv-channel-access' ? 'mm-active' : '' }}"><a href="{{ route('manager.tv-channels.index') }}" class="{{ $page == 'manager-tv-channel-access' ? 'mm-active' : '' }}"><i class="metismenu-icon fa fa-tv"></i> Akses TV Channels</a></li>
@@ -107,6 +111,7 @@
                 <li><a href="{{ route('manager.dashboard') }}"><i class="metismenu-icon fa fa-chart-line"></i> Dashboard Manager</a></li>
                 <li><a href="{{ route('manager.portfolio') }}"><i class="metismenu-icon fa fa-building"></i> Portfolio Hotel</a></li>
                 <li><a href="{{ route('manager.hotel-users.index') }}"><i class="metismenu-icon fa fa-users-cog"></i> User Hotel</a></li>
+                <li><a href="{{ route('manager.licenses.index') }}"><i class="metismenu-icon fa fa-key"></i> License</a></li>
                 <li>
                     <form method="POST" action="{{ route('manager.hotel-context.clear') }}" class="px-3 pb-2">@csrf<button type="submit" class="btn btn-sm btn-outline-primary btn-block"><i class="fa fa-exchange-alt mr-1"></i>Ganti Hotel</button></form>
                 </li>

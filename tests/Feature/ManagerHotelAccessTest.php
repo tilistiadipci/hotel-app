@@ -32,6 +32,30 @@ class ManagerHotelAccessTest extends TestCase
             ->assertForbidden();
     }
 
+    public function test_superadmin_can_create_manager_without_assigning_hotels(): void
+    {
+        $superadmin = $this->platformUser('master');
+        $email = Str::lower(Str::random(8)).'@example.test';
+
+        $this->actingAs($superadmin)->post(route('platform.managers.store'), [
+            'name' => 'Manager Tanpa Hotel',
+            'username' => 'manager_no_hotel_'.Str::lower(Str::random(6)),
+            'email' => $email,
+            'phone' => '081234567890',
+            'address' => null,
+            'gender' => null,
+            'is_active' => 1,
+            'password' => 'password123',
+            'password_confirmation' => 'password123',
+            'hotel_ids' => [],
+        ])->assertRedirect(route('platform.managers.index'));
+
+        $this->assertDatabaseHas('users', [
+            'email' => $email,
+            'hotel_id' => null,
+        ]);
+    }
+
     public function test_manager_without_an_active_hotel_is_sent_to_portfolio(): void
     {
         $manager = $this->manager();
@@ -160,14 +184,19 @@ class ManagerHotelAccessTest extends TestCase
 
     private function manager(): User
     {
-        $role = Role::query()->where('category', 'manager')->first() ?? new Role;
-        $role->category = 'manager';
-        $role->name = 'Manager';
-        $role->description = 'Test manager';
+        return $this->platformUser('manager');
+    }
+
+    private function platformUser(string $category): User
+    {
+        $role = Role::query()->where('category', $category)->first() ?? new Role;
+        $role->category = $category;
+        $role->name = Str::headline($category);
+        $role->description = 'Test '.$category;
         $role->save();
 
         return User::query()->withoutGlobalScope('hotel')->create([
-            'username' => 'manager_'.Str::lower(Str::random(8)),
+            'username' => $category.'_'.Str::lower(Str::random(8)),
             'email' => Str::lower(Str::random(8)).'@example.test',
             'phone' => '081234567890',
             'password' => bcrypt('password'),

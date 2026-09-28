@@ -24,6 +24,14 @@ trait BelongsToHotel
                 $model->hotel_id = app(TenantContext::class)->id();
             }
 
+            if (
+                ! $model->hotel_id
+                && method_exists($model, 'requiresHotelContextOnCreate')
+                && ! $model->requiresHotelContextOnCreate()
+            ) {
+                return;
+            }
+
             if (! $model->hotel_id && ! app()->runningInConsole()) {
                 throw new LogicException('Hotel context is required to create tenant data.');
             }

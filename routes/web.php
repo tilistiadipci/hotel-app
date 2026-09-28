@@ -35,10 +35,12 @@ use App\Http\Controllers\MovieController;
 use App\Http\Controllers\MqttDocumentationController;
 use App\Http\Controllers\PlaceCategoryController;
 use App\Http\Controllers\PlaceController;
+use App\Http\Controllers\PlatformLicenseController;
 use App\Http\Controllers\PlatformDashboardController;
 use App\Http\Controllers\PlayerController;
 use App\Http\Controllers\PlayerContentController;
 use App\Http\Controllers\PlayerGroupController;
+use App\Http\Controllers\ManagerLicenseController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicLandingPageController;
 use App\Http\Controllers\RunningTextController;
@@ -97,7 +99,6 @@ Route::middleware(['auth', 'role.category:master,superadmin'])
         Route::get('/dashboard', [PlatformDashboardController::class, 'index'])->name('dashboard');
         Route::get('/landing-page', [LandingPageController::class, 'edit'])->name('landing-page.edit');
         Route::put('/landing-page', [LandingPageController::class, 'update'])->name('landing-page.update');
-        Route::post('/hotels/license-key/generate', [HotelController::class, 'generateLicenseKey'])->name('hotels.license-key.generate');
         Route::put('/hotels/{hotel}/settings', [HotelSettingController::class, 'update'])->name('hotels.settings.update');
         Route::put('/hotels/{hotel}/tv-channels', [HotelController::class, 'updateTvChannels'])->name('hotels.tv-channels.update');
         Route::resource('hotels', HotelController::class)->except('destroy');
@@ -105,6 +106,9 @@ Route::middleware(['auth', 'role.category:master,superadmin'])
             ->parameters(['hotel-admins' => 'hotelAdmin'])
             ->except('show');
         Route::resource('managers', ManagerController::class)->except('show');
+        Route::resource('licenses', PlatformLicenseController::class)
+            ->parameters(['licenses' => 'license'])
+            ->only(['index', 'store', 'update', 'destroy']);
         Route::resource('master-paket', MasterPaketController::class)
             ->parameters(['master-paket' => 'masterPaket'])
             ->except('show');
@@ -130,6 +134,9 @@ Route::middleware(['auth', 'role.category:manager'])
         Route::resource('hotel-users', ManagerHotelUserController::class)
             ->parameters(['hotel-users' => 'hotelUser'])
             ->except('show');
+        Route::resource('licenses', ManagerLicenseController::class)
+            ->parameters(['licenses' => 'assignment'])
+            ->only(['index', 'store', 'destroy']);
         Route::get('/reports/checkins', [ManagerPortfolioReportController::class, 'checkins'])->name('reports.checkins.index');
         Route::get('/reports/checkins/data', [ManagerPortfolioReportController::class, 'checkinsData'])->name('reports.checkins.data');
         Route::get('/reports/checkins/export', [ManagerPortfolioReportController::class, 'checkinsExport'])->name('reports.checkins.export');

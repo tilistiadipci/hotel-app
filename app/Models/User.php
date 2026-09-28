@@ -128,6 +128,11 @@ class User extends Authenticatable
             ->withTimestamps();
     }
 
+    public function managerLicenses()
+    {
+        return $this->hasMany(ManagerLicense::class, 'manager_id');
+    }
+
     public function profile()
     {
         return $this->hasOne(UserProfile::class, 'user_id', 'id');
@@ -171,5 +176,12 @@ class User extends Authenticatable
             ->all();
 
         return in_array($currentCategory, $normalizedCategories, true);
+    }
+
+    public function requiresHotelContextOnCreate(): bool
+    {
+        $category = Role::query()->find($this->role_id)?->category;
+
+        return ! in_array($category, ['master', 'superadmin', 'manager'], true);
     }
 }

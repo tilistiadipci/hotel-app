@@ -53,6 +53,11 @@ class Hotel extends Model
         return $this->hasMany(HotelLicense::class);
     }
 
+    public function playerLicenses()
+    {
+        return $this->hasMany(PlayerLicense::class);
+    }
+
     public function activeLicense()
     {
         return $this->hasOne(HotelLicense::class)
