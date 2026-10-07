@@ -67,9 +67,11 @@ class PlayerPublishController extends Controller
                     return e($visible);
                 })
                 ->addColumn('theme_name', fn (PlayerPublish $publish): string => e($publish->theme?->name ?? '-'))
+                ->addColumn('publish_key', fn (PlayerPublish $publish): string => $publish->getRouteKey())
                 ->addColumn('action', function (PlayerPublish $publish): string {
                     $showUrl = route('publish.show', $publish);
                     $editUrl = route('publish.edit', $publish);
+                    $deleteKey = e($publish->getRouteKey());
                     $deleteTitle = trans('common.delete');
                     $detailTitle = trans('common.detail');
                     $editTitle = trans('common.edit');
@@ -82,7 +84,7 @@ class PlayerPublishController extends Controller
                             <a href="{$editUrl}" class="action-pill neutral" title="{$editTitle}" data-toggle="tooltip">
                                 <i class="fa fa-edit"></i>
                             </a>
-                            <button type="button" class="action-pill danger" title="{$deleteTitle}" data-toggle="tooltip" onclick="deletePublish({$publish->id})">
+                            <button type="button" class="action-pill danger" title="{$deleteTitle}" data-toggle="tooltip" onclick="deletePublish('{$deleteKey}')">
                                 <i class="fa fa-trash"></i>
                             </button>
                         </div>
@@ -92,15 +94,33 @@ class PlayerPublishController extends Controller
                 ->make(true);
         }
 
+        $totalActivePlayers = Player::query()->where('is_active', true)->count();
+        $playersWithoutContent = Player::query()->where('is_active', true)->doesntHave('publishes')->count();
+
         return view('pages.publish.index', [
             'page' => 'publish',
             'icon' => 'fa fa-paper-plane',
+            'totalActivePlayers' => $totalActivePlayers,
+            'playersWithoutContent' => $playersWithoutContent,
         ]);
     }
 
     public function create()
     {
+        if (! $this->hasPlayersWithoutContent()) {
+            return redirect()
+                ->route('publish.index')
+                ->with('warning', trans('common.publish.players_without_content_none', [
+                    'total' => Player::query()->where('is_active', true)->count(),
+                ]));
+        }
+
         return view('pages.publish.create', $this->formData());
+    }
+
+    private function hasPlayersWithoutContent(): bool
+    {
+        return Player::query()->where('is_active', true)->doesntHave('publishes')->exists();
     }
 
     public function edit(PlayerPublish $publish)
@@ -125,10 +145,14 @@ class PlayerPublishController extends Controller
 
         if (! empty($payload['channels'])) {
             $publishedChannels = collect($payload['channels'])->keyBy('tv_channel_id');
-            $channels = $channels->map(function (array $channel) use ($publishedChannels): array {
+            $channels = $channels->map(function (array $channel) use ($publishedChannels, $publish): array {
                 $published = $publishedChannels->get($channel['id']);
 
                 if (! $published) {
+                    // While editing, channels added to the hotel after this
+                    // publish was saved must not appear selected implicitly.
+                    $channel['is_selected'] = ! $publish;
+
                     return $channel;
                 }
 
@@ -151,14 +175,15 @@ class PlayerPublishController extends Controller
             'formMethod' => $publish ? 'PUT' : 'POST',
             'submitLabel' => $publish ? trans('common.publish.update_publish') : trans('common.publish.title'),
             'playerGroups' => $this->groups->query()
-                ->with(['players' => fn ($query) => $query->where('is_active', true)->orderBy('name')->with('masterTv')])
-                ->withCount(['players' => fn ($query) => $query->where('is_active', true)])
+                ->with(['players' => fn ($query) => $query->where('is_active', true)->withoutContentFrom($publish)->orderBy('name')->with('masterTv')])
+                ->withCount(['players' => fn ($query) => $query->where('is_active', true)->withoutContentFrom($publish)])
                 ->orderBy('name')
                 ->get(),
             'players' => $this->players->query()
                 ->with(['playerGroup', 'masterTv'])
                 ->whereNull('deleted_at')
                 ->where('is_active', true)
+                ->withoutContentFrom($publish)
                 ->orderBy('name')
                 ->get(),
             'themeOptions' => $themes->map(fn ($theme): array => [
@@ -188,6 +213,14 @@ class PlayerPublishController extends Controller
 
     public function store(Request $request)
     {
+        if (! $this->hasPlayersWithoutContent()) {
+            return redirect()
+                ->route('publish.index')
+                ->with('warning', trans('common.publish.players_without_content_none', [
+                    'total' => Player::query()->where('is_active', true)->count(),
+                ]));
+        }
+
         $validated = $this->validatedPublishData($request);
         $publish = $this->publisher->publish($validated);
 
@@ -198,7 +231,7 @@ class PlayerPublishController extends Controller
 
     public function update(Request $request, PlayerPublish $publish)
     {
-        $validated = $this->validatedPublishData($request);
+        $validated = $this->validatedPublishData($request, $publish);
         $publish = $this->publisher->publish($validated, $publish);
 
         return redirect()
@@ -206,7 +239,7 @@ class PlayerPublishController extends Controller
             ->with('success', trans('common.publish.update_success', ['count' => $publish->targets->count()]));
     }
 
-    private function validatedPublishData(Request $request): array
+    private function validatedPublishData(Request $request, ?PlayerPublish $existing = null): array
     {
         $request->merge([
             'use_custom_content' => $request->boolean('use_custom_content'),
@@ -292,7 +325,7 @@ class PlayerPublishController extends Controller
 
         $this->validateMenuParents($validated['menus'] ?? []);
 
-        $players = $this->publisher->resolvePlayers($validated);
+        $players = $this->publisher->resolvePlayers($validated, $existing);
         if ($players->isEmpty()) {
             throw ValidationException::withMessages(['target_mode' => trans('common.publish.no_target_player')]);
         }
@@ -304,7 +337,7 @@ class PlayerPublishController extends Controller
 
     private function applySelectedGroups(array $data): array
     {
-        if (! empty($data['menu_group_id'])) {
+        if (! empty($data['menu_group_id']) && empty($data['menus'])) {
             $group = PublishMenuGroup::query()->with('items')->findOrFail($data['menu_group_id']);
             $data['menus'] = $group->items->map(fn ($item): array => [
                 'key' => $item->menu_key,
@@ -317,7 +350,7 @@ class PlayerPublishController extends Controller
             ])->all();
         }
 
-        if (! empty($data['channel_group_id'])) {
+        if (! empty($data['channel_group_id']) && empty($data['channels'])) {
             $group = PublishChannelGroup::query()->with('items')->findOrFail($data['channel_group_id']);
             $data['channels'] = $group->items->map(fn ($item): array => [
                 'tv_channel_id' => (int) $item->tv_channel_id,
@@ -326,7 +359,7 @@ class PlayerPublishController extends Controller
             ])->all();
         }
 
-        if (! empty($data['content_group_id'])) {
+        if (! empty($data['content_group_id']) && empty($data['catalogs'])) {
             $group = PublishContentGroup::query()->with('items')->findOrFail($data['content_group_id']);
             $data['catalogs'] = $group->items
                 ->groupBy('content_type')
@@ -492,7 +525,12 @@ class PlayerPublishController extends Controller
             ->sortBy('sort_order')
             ->values();
 
+        // A channel's own hotel_id (who created/owns it) can differ from the
+        // hotel it's assigned to (e.g. catalog channels owned by the Master
+        // hotel) - bypass TvChannel's tenant scope, same as
+        // PlayerTvChannelManager::editable()/effective() already do.
         $names = TvChannel::query()
+            ->withoutGlobalScope('hotel')
             ->whereIn('id', $activeChannels->pluck('tv_channel_id')->filter()->all())
             ->pluck('name', 'id');
 

@@ -79,6 +79,27 @@ class Player extends TenantModel
         return $this->belongsTo(MasterTv::class);
     }
 
+    public function publishes()
+    {
+        return $this->belongsToMany(PlayerPublish::class, 'player_publish_targets')
+            ->withTimestamps();
+    }
+
+    /**
+     * Players that don't already have content from some other publish.
+     * When $excluding is given (the publish currently being edited), its
+     * own targets don't count as "already published" - editing a publish
+     * must not hide the players it already targets.
+     */
+    public function scopeWithoutContentFrom($query, ?PlayerPublish $excluding = null)
+    {
+        return $query->whereDoesntHave('publishes', function ($q) use ($excluding) {
+            if ($excluding) {
+                $q->where('player_publishes.id', '!=', $excluding->id);
+            }
+        });
+    }
+
     public function bookings()
     {
         return $this->hasMany(Booking::class, 'player_id');

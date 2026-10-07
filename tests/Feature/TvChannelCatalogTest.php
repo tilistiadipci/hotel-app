@@ -12,6 +12,7 @@ use App\Services\M3uPlaylistService;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 use Tests\TestCase;
 
@@ -159,31 +160,42 @@ class TvChannelCatalogTest extends TestCase
             ->assertNotFound();
     }
 
-    public function test_m3u_import_updates_an_existing_channel_without_creating_a_duplicate(): void
+    public function test_m3u_import_merges_sources_into_one_channel_playlist_file(): void
     {
+        Storage::fake('public');
         $service = app(M3uPlaylistService::class);
         $masterId = Hotel::masterId();
         $firstPlaylist = <<<'M3U'
 #EXTM3U
 #EXTINF:-1 tvg-id="news.id" tvg-name="News ID" tvg-logo="https://example.test/news.png" group-title="Indonesia",News ID
+#EXTVLCOPT:http-referrer=https://first.example.test/
 https://stream.example.test/news.m3u8
 M3U;
-        $updatedPlaylist = str_replace('News ID', 'News ID HD', $firstPlaylist);
+        $secondPlaylist = <<<'M3U'
+#EXTM3U
+#EXTINF:-1 tvg-id="news.id" tvg-name="News ID" tvg-logo="https://example.test/news.png" group-title="Indonesia",News ID
+#EXTVLCOPT:http-referrer=https://second.example.test/
+https://backup.example.test/news.m3u8
+M3U;
 
-        $firstResult = $service->import($service->parse($firstPlaylist), $masterId);
-        $secondResult = $service->import($service->parse($updatedPlaylist), $masterId);
+        $firstResult = $service->import($service->parse($firstPlaylist), $masterId, 'Server 1');
+        $secondResult = $service->import($service->parse($secondPlaylist), $masterId, 'Server 2');
 
         $this->assertSame(1, $firstResult['created']);
         $this->assertSame(0, $secondResult['created']);
-        $this->assertSame(1, $secondResult['updated']);
+        $this->assertSame(1, $secondResult['merged']);
         $this->assertSame(1, TvChannel::query()->withoutGlobalScope('hotel')
             ->where('hotel_id', $masterId)->where('tvg_id', 'news.id')->count());
-        $this->assertDatabaseHas('tv_channels', [
-            'hotel_id' => $masterId,
-            'tvg_id' => 'news.id',
-            'name' => 'News ID HD',
-            'quality' => 'HD',
-        ]);
+
+        $channel = TvChannel::query()->withoutGlobalScope('hotel')
+            ->where('hotel_id', $masterId)->where('tvg_id', 'news.id')->firstOrFail();
+        $this->assertSame(2, $channel->sources()->count());
+        $this->assertSame('m3ustream/'.$channel->slug.'.m3u8', $channel->stream_url);
+
+        Storage::disk('public')->assertExists('m3ustream/'.$channel->slug.'.m3u8');
+        $playlistFile = Storage::disk('public')->get('m3ustream/'.$channel->slug.'.m3u8');
+        $this->assertStringContainsString('#EXTVLCOPT:http-referrer=https://first.example.test/', $playlistFile);
+        $this->assertStringContainsString('https://backup.example.test/news.m3u8', $playlistFile);
     }
 
     public function test_m3u_parser_uses_display_label_and_reads_remote_logo(): void
@@ -211,6 +223,7 @@ M3U;
         $superadmin = $this->user('superadmin');
 
         $response = $this->actingAs($superadmin)->post(route('tv-channels.import.preview'), [
+            'source_label' => 'Server 1',
             'playlist' => UploadedFile::fake()->createWithContent('preview.m3u8', $playlist),
         ]);
 
@@ -239,6 +252,7 @@ M3U;
         $this->actingAs($this->user('superadmin'))
             ->post(route('tv-channels.import.preview'), [
                 'direct_import' => 1,
+                'source_label' => 'Server 1',
                 'playlist' => UploadedFile::fake()->createWithContent('direct.m3u8', $playlist),
             ])
             ->assertRedirect(route('tv-channels.index'));
@@ -258,6 +272,7 @@ https://stream.example.test/ignored.m3u8
 M3U;
         $superadmin = $this->user('superadmin');
         $response = $this->actingAs($superadmin)->post(route('tv-channels.import.preview'), [
+            'source_label' => 'Server 1',
             'playlist' => UploadedFile::fake()->createWithContent('selection.m3u8', $playlist),
         ]);
         $token = basename((string) $response->headers->get('Location'));

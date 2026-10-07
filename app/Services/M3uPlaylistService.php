@@ -8,8 +8,10 @@ use Illuminate\Support\Str;
 
 class M3uPlaylistService
 {
-    public function __construct(private TvChannelChangeNotifier $channelNotifier)
-    {
+    public function __construct(
+        private TvChannelChangeNotifier $channelNotifier,
+        private TvChannelSourceManager $sources,
+    ) {
     }
 
     public function parse(string $contents): array
@@ -17,6 +19,7 @@ class M3uPlaylistService
         $lines = preg_split('/\R/u', preg_replace('/^\xEF\xBB\xBF/', '', $contents)) ?: [];
         $channels = [];
         $pending = null;
+        $entryLines = [];
 
         foreach ($lines as $line) {
             $line = trim($line);
@@ -26,69 +29,93 @@ class M3uPlaylistService
 
             if (str_starts_with($line, '#EXTINF:')) {
                 $pending = $this->parseExtinf($line);
+                $entryLines = [$line];
 
                 continue;
             }
 
-            if ($pending && ! str_starts_with($line, '#') && $this->isSupportedStreamUrl($line)) {
+            if (! $pending) {
+                continue;
+            }
+
+            $entryLines[] = $line;
+
+            if (! str_starts_with($line, '#') && $this->isSupportedStreamUrl($line)) {
                 $pending['stream_url'] = $line;
-                $pending['source_hash'] = hash('sha256', Str::lower($pending['name']).'|'.$line);
+                $pending['entry_text'] = implode("\n", $entryLines);
+                $pending['source_hash'] = hash('sha256', $pending['entry_text']);
                 $channels[] = $pending;
                 $pending = null;
+                $entryLines = [];
             }
         }
 
-        return collect($channels)
-            ->unique(fn ($channel) => $channel['tvg_id'] ?: $channel['source_hash'])
-            ->values()->all();
+        return $channels;
     }
 
+    /**
+     * Annotate each parsed row with the existing master channel it would
+     * match by tvg_id/slug/hash, if any - used only to pre-fill the import
+     * preview's merge-target dropdown. The admin's confirmed choice at
+     * import time (not this suggestion) decides what actually happens.
+     */
     public function markExisting(array $channels, string $masterHotelId): array
     {
         return collect($channels)->map(function (array $channel) use ($masterHotelId) {
-            $channel['existing'] = $this->findExisting($channel, $masterHotelId) !== null;
+            $match = $this->findExisting($channel, $masterHotelId);
+            $channel['existing'] = $match !== null;
+            $channel['existing_channel_id'] = $match?->id;
+            $channel['existing_channel_name'] = $match?->name;
 
             return $channel;
         })->all();
     }
 
-    public function import(array $channels, string $masterHotelId): array
+    /**
+     * @param  array<int, array>  $channels  each row must carry a 'merge_target' of
+     *                                        'new' or an existing TvChannel id, as
+     *                                        confirmed by the admin on the preview page.
+     */
+    public function import(array $channels, string $masterHotelId, ?string $sourceLabel = null): array
     {
         $created = 0;
-        $updated = 0;
+        $merged = 0;
         $touchedChannelIds = [];
 
-        DB::transaction(function () use ($channels, $masterHotelId, &$created, &$updated, &$touchedChannelIds): void {
+        DB::transaction(function () use ($channels, $masterHotelId, $sourceLabel, &$created, &$merged, &$touchedChannelIds): void {
             foreach ($channels as $index => $data) {
-                $channel = $this->findExisting($data, $masterHotelId);
-                $payload = [
-                    'name' => $data['name'],
-                    'tvg_id' => $data['tvg_id'] ?: null,
-                    'group_title' => $data['group_title'] ?: null,
-                    'source_type' => 'm3u',
-                    'source_logo_url' => $data['source_logo_url'] ?: null,
-                    'source_hash' => $data['source_hash'],
-                    'type' => 'streaming',
-                    'region' => $this->inferRegion($data['group_title']),
-                    'stream_url' => $data['stream_url'],
-                    'quality' => $this->inferQuality($data['name']),
-                    'sort_order' => $channel?->sort_order ?? $index,
-                    'is_active' => true,
-                ];
+                $target = $data['merge_target'] ?? 'new';
+                $channel = $target !== 'new'
+                    ? TvChannel::query()->withoutGlobalScope('hotel')
+                        ->where('hotel_id', $masterHotelId)->whereNull('deleted_at')
+                        ->find($target)
+                    : $this->findExisting($data, $masterHotelId);
 
                 if ($channel) {
-                    $channel->update($payload);
-                    $updated++;
-                    $touchedChannelIds[] = $channel->id;
-
-                    continue;
+                    $merged++;
+                } else {
+                    $channel = new TvChannel([
+                        'name' => $data['name'],
+                        'tvg_id' => $data['tvg_id'] ?: null,
+                        'group_title' => $data['group_title'] ?: null,
+                        'source_type' => 'm3u',
+                        'source_logo_url' => $data['source_logo_url'] ?: null,
+                        'source_hash' => $data['source_hash'],
+                        'type' => 'streaming',
+                        'region' => $this->inferRegion($data['group_title']),
+                        'stream_url' => $data['stream_url'],
+                        'quality' => $this->inferQuality($data['name']),
+                        'sort_order' => $index,
+                        'is_active' => true,
+                        'slug' => $this->uniqueSlug($data['tvg_id'] ?: $data['name'], $masterHotelId),
+                    ]);
+                    $channel->hotel_id = $masterHotelId;
+                    $channel->save();
+                    $created++;
                 }
 
-                $payload['slug'] = $this->uniqueSlug($data['tvg_id'] ?: $data['name'], $masterHotelId);
-                $channel = new TvChannel($payload);
-                $channel->hotel_id = $masterHotelId;
-                $channel->save();
-                $created++;
+                $this->sources->attach($channel, $data['stream_url'], $sourceLabel, $data['entry_text'] ?? null);
+                $touchedChannelIds[] = $channel->id;
             }
         });
 
@@ -100,7 +127,7 @@ class M3uPlaylistService
             $this->channelNotifier->notifyHotels($affectedHotelIds);
         }
 
-        return compact('created', 'updated');
+        return compact('created', 'merged');
     }
 
     private function parseExtinf(string $line): array
@@ -128,7 +155,8 @@ class M3uPlaylistService
                 if (! empty($data['tvg_id'])) {
                     $query->where('tvg_id', $data['tvg_id'])->orWhere('slug', Str::slug($data['tvg_id']));
                 } else {
-                    $query->where('source_hash', $data['source_hash']);
+                    $query->where('slug', Str::slug($data['name']))
+                        ->orWhere('source_hash', $data['source_hash']);
                 }
             })->first();
     }

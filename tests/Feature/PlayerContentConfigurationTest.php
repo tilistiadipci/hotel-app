@@ -7,8 +7,10 @@ use App\Models\HotelLicense;
 use App\Models\Player;
 use App\Models\Setting;
 use App\Models\Theme;
+use App\Models\TvChannel;
 use App\Repositories\PlayerMqttRepository;
 use App\Services\PlayerContentManager;
+use App\Services\PlayerTvChannelManager;
 use App\Tenancy\TenantContext;
 use Illuminate\Foundation\Testing\DatabaseTransactions;
 use Illuminate\Support\Facades\Hash;
@@ -79,6 +81,38 @@ class PlayerContentConfigurationTest extends TestCase
 
         $this->getJson(route('api.player.configuration.show'), $this->headers($hotel, $licenseKey, $foreignPlayer))
             ->assertUnauthorized();
+    }
+
+    public function test_custom_channel_editor_does_not_select_new_unconfigured_hotel_channels(): void
+    {
+        [$hotel] = $this->hotelWithLicense();
+        app(TenantContext::class)->set($hotel->id);
+        $player = $this->player($hotel);
+        $player->update(['use_custom_channels' => true]);
+
+        $selected = $this->tvChannel($hotel, 'Selected Channel');
+        $newChannel = $this->tvChannel($hotel, 'New Channel');
+        $player->tvChannels()->attach($selected->id, [
+            'is_active' => true,
+            'sort_order' => 0,
+        ]);
+
+        $editable = app(PlayerTvChannelManager::class)->editable($player->fresh())->keyBy('id');
+
+        $this->assertTrue($editable->get($selected->id)['is_selected']);
+        $this->assertFalse($editable->get($newChannel->id)['is_selected']);
+    }
+
+    public function test_global_channel_editor_selects_new_hotel_channels_by_default(): void
+    {
+        [$hotel] = $this->hotelWithLicense();
+        app(TenantContext::class)->set($hotel->id);
+        $player = $this->player($hotel);
+        $channel = $this->tvChannel($hotel, 'Global Channel');
+
+        $editable = app(PlayerTvChannelManager::class)->editable($player)->keyBy('id');
+
+        $this->assertTrue($editable->get($channel->id)['is_selected']);
     }
 
     public function test_hotel_admin_can_publish_player_content_and_trigger_sync(): void
@@ -191,6 +225,28 @@ class PlayerContentConfigurationTest extends TestCase
         $hotel->themes()->attach($theme->id, ['is_default' => true]);
 
         return $theme;
+    }
+
+    private function tvChannel(Hotel $hotel, string $name): TvChannel
+    {
+        $channel = new TvChannel([
+            'name' => $name,
+            'slug' => Str::slug($name).'-'.Str::lower(Str::random(8)),
+            'type' => 'streaming',
+            'region' => 'national',
+            'stream_url' => 'https://example.test/'.Str::slug($name).'.m3u8',
+            'sort_order' => 0,
+            'is_active' => true,
+        ]);
+        $channel->hotel_id = $hotel->id;
+        $channel->save();
+
+        $hotel->tvChannels()->attach($channel->id, [
+            'is_active' => true,
+            'sort_order' => 0,
+        ]);
+
+        return $channel;
     }
 
     private function setting(Hotel $hotel, string $key, string $value): void

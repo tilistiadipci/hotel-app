@@ -34,6 +34,8 @@
 
                     @include('pages.tv_channels.components.form', ['channel' => $channel])
                 </div>
+
+                @include('pages.tv_channels.components.sources-panel', ['channel' => $channel])
             </div>
         </div>
     </div>

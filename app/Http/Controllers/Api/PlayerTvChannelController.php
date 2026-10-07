@@ -39,13 +39,19 @@ class PlayerTvChannelController extends Controller
         $hotelChannels = $this->channelCache->remember($hotel->id, function () use ($hotel) {
             return TvChannel::query()
                 ->assignedToHotel($hotel->id)
-                ->with(['imageMedia', 'hotelImageMedia'])
+                ->with(['imageMedia', 'hotelImageMedia', 'sources' => fn ($query) => $query->where('is_active', true)])
                 ->get();
         });
 
         $channels = $this->channels->effective($player, $hotelChannels)
             ->map(function (TvChannel $channel) {
                 $streamUrl = $channel->custom_stream_url ?: $channel->stream_url;
+                // An override is a deliberate hotel-specific replacement, not a pool
+                // of failover sources. Imported M3U sources are written into the
+                // channel playlist file, so playback should point at that file.
+                $streamUrls = $channel->custom_stream_url
+                    ? [$channel->custom_stream_url]
+                    : [$streamUrl];
                 $remoteLogo = filter_var($channel->source_logo_url, FILTER_VALIDATE_URL)
                     && in_array(parse_url($channel->source_logo_url, PHP_URL_SCHEME), ['http', 'https'], true)
                         ? $channel->source_logo_url
@@ -61,6 +67,7 @@ class PlayerTvChannelController extends Controller
                     'quality' => $channel->custom_quality ?: $channel->quality,
                     'stream_type' => $this->streamType($streamUrl),
                     'stream_url' => $streamUrl,
+                    'stream_urls' => $streamUrls,
                     'logo_url' => $channel->hotelImageMedia
                         ? getMediaImageUrl($channel->hotelImageMedia->storage_path)
                         : ($channel->imageMedia

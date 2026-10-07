@@ -840,11 +840,22 @@
                 });
             });
 
+            const clearSelectedChannelGroup = () => {
+                const groupSelect = document.getElementById('channel_group_id');
+                if (groupSelect) groupSelect.value = '';
+            };
+
             document.getElementById('selectAllChannels')?.addEventListener('click', () => {
+                clearSelectedChannelGroup();
                 document.querySelectorAll('.publish-channel-toggle').forEach(input => input.checked = true);
             });
             document.getElementById('clearAllChannels')?.addEventListener('click', () => {
+                clearSelectedChannelGroup();
                 document.querySelectorAll('.publish-channel-toggle').forEach(input => input.checked = false);
+            });
+
+            document.querySelectorAll('.publish-channel-toggle, .channel-option input[name$="[sort_order]"]').forEach(input => {
+                input.addEventListener('change', clearSelectedChannelGroup);
             });
 
             document.getElementById('menu_group_id')?.addEventListener('change', event => {

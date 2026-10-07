@@ -438,6 +438,8 @@ Route::middleware(['auth', 'role.category:manager,admin,master,superadmin', 'hot
             Route::get('/{uid}/assignment', [TVChannelController::class, 'editAssignment'])->name('assignment.edit');
             Route::patch('/{uid}/assignment', [TVChannelController::class, 'updateAssignment'])->name('assignment.update');
             Route::post('/bulkDelete', [TVChannelController::class, 'bulkDelete'])->name('bulkDelete');
+            Route::post('/{uid}/sources', [TVChannelController::class, 'storeSource'])->name('sources.store');
+            Route::delete('/{uid}/sources/{source}', [TVChannelController::class, 'destroySource'])->name('sources.destroy');
         });
     Route::resource('tv-channels', TVChannelController::class);
 });

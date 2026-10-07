@@ -114,4 +114,9 @@ class TvChannel extends TenantModel
     {
         return $this->belongsToMany(MasterPaket::class, 'master_paket_tv_channel')->withTimestamps();
     }
+
+    public function sources()
+    {
+        return $this->hasMany(TvChannelSource::class)->orderBy('sort_order');
+    }
 }

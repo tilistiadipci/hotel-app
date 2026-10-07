@@ -6,7 +6,8 @@
     <div class="card"><form method="POST" action="{{ route('tv-channels.import.preview') }}" enctype="multipart/form-data" data-no-ajax>
         @csrf
         <div class="card-body">
-            <div class="alert alert-info"><i class="fa fa-info-circle mr-1"></i>Setiap entri #EXTINF akan otomatis dibuat sebagai satu channel. Channel lama dengan TVG ID yang sama akan diperbarui, bukan diduplikasi.</div>
+            <div class="alert alert-info"><i class="fa fa-info-circle mr-1"></i>Setiap entri #EXTINF akan menjadi channel baru atau sumber tambahan untuk channel yang sudah ada &mdash; Anda memilih sendiri di halaman preview berikutnya.</div>
+            <div class="form-group"><label for="source_label">{{ __('platform.tv_catalog.source_label') }}</label><input id="source_label" name="source_label" type="text" value="{{ old('source_label') }}" placeholder="{{ __('platform.tv_catalog.source_label_placeholder') }}" class="form-control @error('source_label') is-invalid @enderror" maxlength="100" required><small class="text-muted">{{ __('platform.tv_catalog.source_label_help') }}</small>@error('source_label')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror</div>
             <div class="form-group"><label for="playlist">{{ __('platform.tv_catalog.playlist_file') }}</label><input id="playlist" name="playlist" type="file" accept=".m3u,.m3u8" class="form-control-file @error('playlist') is-invalid @enderror" required>@error('playlist')<div class="invalid-feedback d-block">{{ $message }}</div>@enderror</div>
         </div>
         <div class="card-footer text-right"><a href="{{ route('tv-channels.index') }}" class="btn btn-secondary">{{ __('common.cancel') }}</a> <button class="btn btn-primary"><i class="fa fa-list mr-1"></i>Lihat dan Pilih Channel</button></div>

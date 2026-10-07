@@ -7,6 +7,7 @@ use App\Repositories\MediaRepository;
 use App\Repositories\TVChannelRepository;
 use App\Services\M3uPlaylistService;
 use App\Services\TvChannelChangeNotifier;
+use App\Services\TvChannelSourceManager;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
@@ -99,7 +100,7 @@ class TVChannelController extends Controller
         return view('pages.tv_channels.edit', [
             'page' => $this->page,
             'icon' => $this->icon,
-            'channel' => $channel->load('imageMedia'),
+            'channel' => $channel->load(['imageMedia', 'sources']),
         ]);
     }
 
@@ -217,7 +218,11 @@ class TVChannelController extends Controller
     public function importPreview(Request $request, M3uPlaylistService $playlist)
     {
         abort_unless($this->isMasterCatalog(), 403);
-        $file = $request->validate(['playlist' => ['required', 'file', 'max:10240']])['playlist'];
+        $validated = $request->validate([
+            'playlist' => ['required', 'file', 'max:10240'],
+            'source_label' => ['required', 'string', 'max:100'],
+        ]);
+        $file = $validated['playlist'];
         abort_unless(in_array(Str::lower($file->getClientOriginalExtension()), ['m3u', 'm3u8'], true), 422, __('platform.tv_catalog.invalid_extension'));
 
         $token = (string) Str::uuid();
@@ -238,13 +243,25 @@ class TVChannelController extends Controller
         $channels = $playlist->markExisting($channels, Hotel::masterId());
 
         if ($request->boolean('direct_import')) {
-            $result = $playlist->import($channels, Hotel::masterId());
+            // No interactive confirmation step here - fall back to the
+            // system's suggested match per row (same as before this table
+            // existed), since there's no preview page to confirm against.
+            $autoMatched = collect($channels)->map(function (array $channel) {
+                $channel['merge_target'] = $channel['existing_channel_id'] ?? 'new';
+
+                return $channel;
+            })->all();
+
+            $result = $playlist->import($autoMatched, Hotel::masterId(), $validated['source_label']);
 
             return redirect()->route('tv-channels.index')
                 ->with('success', __('platform.tv_catalog.import_done', $result));
         }
 
-        Storage::disk('local')->put('m3u-imports/'.$token.'.json', json_encode($channels, JSON_UNESCAPED_SLASHES));
+        Storage::disk('local')->put('m3u-imports/'.$token.'.json', json_encode([
+            'source_label' => $validated['source_label'],
+            'channels' => $channels,
+        ], JSON_UNESCAPED_SLASHES));
         $request->session()->put('m3u_import_token', $token);
 
         return redirect()->route('tv-channels.import.preview.show', $token);
@@ -268,13 +285,21 @@ class TVChannelController extends Controller
                 ->with('error', 'Preview import sudah tidak tersedia. Silakan upload kembali file playlist.');
         }
 
-        $channels = json_decode(Storage::disk('local')->get($path), true);
+        $payload = json_decode(Storage::disk('local')->get($path), true);
+        $channels = $payload['channels'] ?? null;
         if (! is_array($channels)) {
             return redirect()->route('tv-channels.import')
                 ->with('error', 'Data preview tidak valid. Silakan upload kembali file playlist.');
         }
+        $sourceLabel = $payload['source_label'] ?? '';
 
-        return view('pages.tv_channels.import-preview', compact('channels', 'token') + [
+        $existingChannels = \App\Models\TvChannel::query()->withoutGlobalScope('hotel')
+            ->where('hotel_id', Hotel::masterId())
+            ->whereNull('deleted_at')
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        return view('pages.tv_channels.import-preview', compact('channels', 'token', 'sourceLabel', 'existingChannels') + [
             'page' => $this->page,
             'icon' => $this->icon,
         ]);
@@ -287,17 +312,27 @@ class TVChannelController extends Controller
             'token' => ['required', 'uuid'],
             'selected' => ['required', 'array', 'min:1'],
             'selected.*' => ['required', 'string', 'size:64'],
+            'merge_target' => ['nullable', 'array'],
+            'merge_target.*' => ['nullable', 'string'],
         ]);
         $token = $validated['token'];
         abort_unless(hash_equals((string) $request->session()->pull('m3u_import_token'), $token), 419);
         $path = 'm3u-imports/'.$token.'.json';
         abort_unless(Storage::disk('local')->exists($path), 419);
-        $channels = json_decode(Storage::disk('local')->get($path), true);
+        $payload = json_decode(Storage::disk('local')->get($path), true);
+        $channels = $payload['channels'] ?? [];
+        $sourceLabel = $payload['source_label'] ?? null;
+        $mergeTargets = $validated['merge_target'] ?? [];
         $selected = array_fill_keys($validated['selected'], true);
         $channels = array_values(array_filter(
             is_array($channels) ? $channels : [],
             fn (array $channel) => isset($selected[$channel['source_hash'] ?? ''])
         ));
+        $channels = array_map(function (array $channel) use ($mergeTargets): array {
+            $channel['merge_target'] = $mergeTargets[$channel['source_hash']] ?? 'new';
+
+            return $channel;
+        }, $channels);
 
         if (empty($channels)) {
             throw ValidationException::withMessages([
@@ -306,9 +341,42 @@ class TVChannelController extends Controller
         }
 
         Storage::disk('local')->delete($path);
-        $result = $playlist->import($channels, Hotel::masterId());
+        $result = $playlist->import($channels, Hotel::masterId(), $sourceLabel);
 
         return redirect()->route('tv-channels.index')->with('success', __('platform.tv_catalog.import_done', $result));
+    }
+
+    public function storeSource(Request $request, string $uid, TvChannelSourceManager $sources)
+    {
+        abort_unless($this->isMasterCatalog(), 403);
+        $channel = $this->channelRepository->findUid($uid);
+        if (! $channel) {
+            return redirect()->route('error.404');
+        }
+
+        $data = $request->validate([
+            'label' => ['nullable', 'string', 'max:100'],
+            'stream_url' => ['required', 'string', 'max:5000'],
+        ]);
+
+        $sources->attach($channel, $data['stream_url'], $data['label'] ?? null);
+        $this->channelNotifier->notifyHotels($this->channelNotifier->hotelIdsAssignedTo($channel->id));
+
+        return redirect()->back()->with('success', __('platform.tv_catalog.source_added'));
+    }
+
+    public function destroySource(string $uid, int $source, TvChannelSourceManager $sources)
+    {
+        abort_unless($this->isMasterCatalog(), 403);
+        $channel = $this->channelRepository->findUid($uid);
+        if (! $channel) {
+            return redirect()->route('error.404');
+        }
+
+        $sources->detach($channel, $source);
+        $this->channelNotifier->notifyHotels($this->channelNotifier->hotelIdsAssignedTo($channel->id));
+
+        return redirect()->back()->with('success', __('platform.tv_catalog.source_deleted'));
     }
 
     public function updateAssignment(Request $request, string $uid)

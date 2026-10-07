@@ -14,10 +14,27 @@
                 ])
 
                 <div class="page-title-actions">
-                    <a href="{{ route('publish.create') }}" class="btn btn-primary">
-                        <i class="fa fa-plus mr-1"></i> {{ trans('common.publish.add_publish') }}
-                    </a>
+                    @if ($playersWithoutContent > 0)
+                        <a href="{{ route('publish.create') }}" class="btn btn-primary">
+                            <i class="fa fa-plus mr-1"></i> {{ trans('common.publish.add_publish') }}
+                        </a>
+                    @else
+                        <button type="button" class="btn btn-primary" disabled title="{{ trans('common.publish.players_without_content_none', ['total' => $totalActivePlayers]) }}" data-toggle="tooltip">
+                            <i class="fa fa-plus mr-1"></i> {{ trans('common.publish.add_publish') }}
+                        </button>
+                    @endif
                 </div>
+            </div>
+        </div>
+
+        <div class="alert {{ $playersWithoutContent > 0 ? 'alert-warning' : 'alert-success' }} d-flex align-items-center mb-3">
+            <i class="fa {{ $playersWithoutContent > 0 ? 'fa-exclamation-triangle' : 'fa-check-circle' }} mr-2"></i>
+            <div>
+                @if ($playersWithoutContent > 0)
+                    {{ trans('common.publish.players_without_content_notice', ['count' => $playersWithoutContent, 'total' => $totalActivePlayers]) }}
+                @else
+                    {{ trans('common.publish.players_without_content_none', ['total' => $totalActivePlayers]) }}
+                @endif
             </div>
         </div>
 
@@ -69,7 +86,7 @@
                         name: 'name',
                         render: function (data, type, row) {
                             const title = data || @json(trans('common.publish.untitled'));
-                            return `<a href="{{ url('publish') }}/${row.id}">${title}</a>`;
+                            return `<a href="{{ url('publish') }}/${row.publish_key}">${title}</a>`;
                         }
                     },
                     { data: 'published_at_display', name: 'published_at' },

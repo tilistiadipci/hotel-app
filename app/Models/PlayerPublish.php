@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Str;
 
 class PlayerPublish extends TenantModel
 {
@@ -13,6 +13,15 @@ class PlayerPublish extends TenantModel
         'published_at' => 'datetime',
     ];
 
+    protected static function booted(): void
+    {
+        static::creating(function (self $model) {
+            if (empty($model->uuid)) {
+                $model->uuid = Str::uuid()->toString();
+            }
+        });
+    }
+
     public function targets()
     {
         return $this->belongsToMany(Player::class, 'player_publish_targets')
@@ -22,5 +31,10 @@ class PlayerPublish extends TenantModel
     public function theme()
     {
         return $this->belongsTo(Theme::class);
+    }
+
+    public function getRouteKeyName(): string
+    {
+        return 'uuid';
     }
 }

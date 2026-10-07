@@ -28,7 +28,7 @@ class PlayerPublishManager
 
     public function publish(array $data, ?PlayerPublish $existing = null): PlayerPublish
     {
-        $players = $this->resolvePlayers($data);
+        $players = $this->resolvePlayers($data, $existing);
         $hotelId = app(TenantContext::class)->id();
 
         $publish = DB::transaction(function () use ($data, $players, $hotelId, $existing): PlayerPublish {
@@ -88,10 +88,10 @@ class PlayerPublishManager
         return $publish->load('targets');
     }
 
-    public function resolvePlayers(array $data): Collection
+    public function resolvePlayers(array $data, ?PlayerPublish $existing = null): Collection
     {
         $mode = $data['target_mode'] ?? 'players';
-        $query = Player::query()->where('is_active', true)->whereNull('deleted_at');
+        $query = Player::query()->where('is_active', true)->whereNull('deleted_at')->withoutContentFrom($existing);
 
         if ($mode === 'all') {
             return $query->orderBy('name')->get();

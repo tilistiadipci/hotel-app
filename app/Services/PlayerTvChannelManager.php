@@ -52,16 +52,18 @@ class PlayerTvChannelManager
 
     /**
      * The hotel's channel list annotated with this player's current
-     * selection, for prefilling the edit form. A channel the player has
-     * never customized defaults to selected, so turning "custom" on for
-     * the first time starts from "everything the hotel already shows".
+     * selection, for prefilling the edit form. Before custom mode is enabled,
+     * channels default to selected so the first customization starts from the
+     * hotel's full list. In custom mode, an unconfigured channel is unselected,
+     * matching effective() when a new channel is later assigned to the hotel.
      */
     public function editable(Player $player): Collection
     {
         $channels = $this->hotelChannels($player);
         $overrides = $player->tvChannels()->withoutGlobalScope('hotel')->get()->keyBy('id');
+        $selectMissingChannels = ! $player->exists || ! $player->use_custom_channels;
 
-        return $channels->values()->map(function (TvChannel $channel, int $index) use ($overrides): array {
+        return $channels->values()->map(function (TvChannel $channel, int $index) use ($overrides, $selectMissingChannels): array {
             $override = $overrides->get($channel->id);
 
             return [
@@ -71,7 +73,9 @@ class PlayerTvChannelManager
                 'group' => $channel->group_title,
                 'type' => $channel->custom_type ?: $channel->type,
                 'region' => $channel->custom_region ?: $channel->region,
-                'is_selected' => $override ? (bool) $override->pivot->is_active : true,
+                'is_selected' => $override
+                    ? (bool) $override->pivot->is_active
+                    : $selectMissingChannels,
                 'sort_order' => $override ? (int) $override->pivot->sort_order : $index,
             ];
         })->sortBy('sort_order')->values();
