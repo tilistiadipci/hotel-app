@@ -5,16 +5,16 @@ namespace App\Http\Controllers;
 use App\Repositories\MediaRepository;
 use Illuminate\Http\Request;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Str;
 use Illuminate\Validation\ValidationException;
-use App\Http\Controllers\HelperController;
 
 class MediaController extends Controller
 {
     protected MediaRepository $mediaRepository;
+
     private string $page = 'media-library';
+
     private string $icon = 'metismenu-icon pe-7s-photo';
 
     public function __construct(MediaRepository $mediaRepository)
@@ -34,9 +34,9 @@ class MediaController extends Controller
         $videoTotal = $videosPage->total();
         $audioTotal = $audiosPage->total();
 
-        $images = collect($imagesPage->items())->map(fn($m) => $this->transformMedia($m));
-        $videos = collect($videosPage->items())->map(fn($m) => $this->transformMedia($m));
-        $audios = collect($audiosPage->items())->map(fn($m) => $this->transformMedia($m));
+        $images = collect($imagesPage->items())->map(fn ($m) => $this->transformMedia($m));
+        $videos = collect($videosPage->items())->map(fn ($m) => $this->transformMedia($m));
+        $audios = collect($audiosPage->items())->map(fn ($m) => $this->transformMedia($m));
 
         $usageBytes = $this->getDiskUsageBytes(config('filesystems.disks.media.root'));
         $syncSourcePath = $this->syncSourceRoot();
@@ -82,11 +82,11 @@ class MediaController extends Controller
         $perPage = $perPage > 0 ? $perPage : 10;
 
         $media = $this->mediaRepository->query()
-            ->when($type, fn($q) => $q->where('type', $type))
+            ->when($type, fn ($q) => $q->where('type', $type))
             ->latest()
             ->paginate($perPage);
 
-        $items = collect($media->items())->map(fn($m) => $this->transformMedia($m))->values();
+        $items = collect($media->items())->map(fn ($m) => $this->transformMedia($m))->values();
 
         return response()->json([
             'status' => true,
@@ -110,7 +110,7 @@ class MediaController extends Controller
         $customName = trim($request->input('name', '')) ?: null;
         $duration = max(0, (int) $request->input('duration', 0));
 
-        if (!$identifier || $chunkNumber < 1 || $totalChunks < 1) {
+        if (! $identifier || $chunkNumber < 1 || $totalChunks < 1) {
             return response('Invalid request', 400);
         }
 
@@ -118,10 +118,10 @@ class MediaController extends Controller
         $allowedExtensions = ['mp4', 'mkv', 'webm', 'avi'];
         $extension = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
 
-        if (!$extension || !in_array($extension, $allowedExtensions, true)) {
+        if (! $extension || ! in_array($extension, $allowedExtensions, true)) {
             return response()->json([
                 'status' => false,
-                'message' => 'Format video tidak didukung. Gunakan MP4, MKV, WEBM, atau AVI.'
+                'message' => 'Format video tidak didukung. Gunakan MP4, MKV, WEBM, atau AVI.',
             ], 422);
         }
 
@@ -130,11 +130,11 @@ class MediaController extends Controller
         if ($totalSize > $maxSize) {
             return response()->json([
                 'status' => false,
-                'message' => 'Ukuran video melebihi batas maksimum ' . $this->formatLimitLabel($maxVideoMb) . '.'
+                'message' => 'Ukuran video melebihi batas maksimum '.$this->formatLimitLabel($maxVideoMb).'.',
             ], 422);
         }
 
-        $tempDir = storage_path('app/chunks/videos/' . $identifier);
+        $tempDir = storage_path('app/chunks/videos/'.$identifier);
 
         if (is_file($tempDir)) {
             File::delete($tempDir);
@@ -144,52 +144,54 @@ class MediaController extends Controller
 
         // Handle chunk check (GET)
         if ($request->isMethod('get')) {
-            $chunkPath = $tempDir . '/chunk_' . $chunkNumber;
+            $chunkPath = $tempDir.'/chunk_'.$chunkNumber;
+
             return is_file($chunkPath) ? response('OK', 200) : response('Not Found', 404);
         }
 
         // Simpan chunk
         $chunk = $request->file('file');
-        if (!$chunk || !$chunk->isValid()) {
+        if (! $chunk || ! $chunk->isValid()) {
             return response('Invalid chunk', 400);
         }
 
-        $chunk->move($tempDir, 'chunk_' . $chunkNumber);
+        $chunk->move($tempDir, 'chunk_'.$chunkNumber);
 
         $allChunksUploaded = true;
         for ($i = 1; $i <= $totalChunks; $i++) {
-            if (!is_file($tempDir . '/chunk_' . $i)) {
+            if (! is_file($tempDir.'/chunk_'.$i)) {
                 $allChunksUploaded = false;
                 break;
             }
         }
 
         // Jangan merge sebelum semua chunk lengkap.
-        if (!$allChunksUploaded) {
+        if (! $allChunksUploaded) {
             return response()->json([
                 'uploaded' => $chunkNumber,
-                'total' => $totalChunks
+                'total' => $totalChunks,
             ]);
         }
 
         // Gabung chunk
-        $safeFilename = now()->format('YmdHis') . '_' .
-            Str::slug(pathinfo($filename, PATHINFO_FILENAME)) . '.' . $extension;
+        $safeFilename = now()->format('YmdHis').'_'.
+            Str::slug(pathinfo($filename, PATHINFO_FILENAME)).'.'.$extension;
 
-        $finalRelative = 'videos/' . $safeFilename;
+        $finalRelative = 'videos/'.$safeFilename;
         $finalPath = $this->mediaAbsolutePath($finalRelative);
 
         // Ensure destination directory exists
         $this->ensureDirectoryExistsSafely(dirname($finalPath));
 
         $out = fopen($finalPath, 'wb');
-        if (!$out) {
+        if (! $out) {
             File::deleteDirectory($tempDir);
+
             return response('Cannot create file', 500);
         }
 
         for ($i = 1; $i <= $totalChunks; $i++) {
-            $chunkFile = $tempDir . '/chunk_' . $i;
+            $chunkFile = $tempDir.'/chunk_'.$i;
             $in = fopen($chunkFile, 'rb');
 
             if ($in) {
@@ -199,6 +201,7 @@ class MediaController extends Controller
                 fclose($out);
                 File::delete($finalPath);
                 File::deleteDirectory($tempDir);
+
                 return response("Missing chunk {$i}", 500);
             }
         }
@@ -216,7 +219,7 @@ class MediaController extends Controller
             'video/x-msvideo',
         ];
 
-        if (!in_array($realMime, $allowedMimes, true)) {
+        if (! in_array($realMime, $allowedMimes, true)) {
             File::delete($finalPath);
             File::deleteDirectory($tempDir);
 
@@ -261,15 +264,15 @@ class MediaController extends Controller
         ];
 
         if ($type === 'image') {
-            $rules['file'] = 'required|file|mimes:jpg,jpeg,png|max:' . (int) config('media_upload.limits_kb.image', 102400);
+            $rules['file'] = 'required|file|mimes:jpg,jpeg,png|max:'.(int) config('media_upload.limits_kb.image', 102400);
         }
 
         if ($type === 'audio') {
-            $rules['file'] = 'required|file|mimes:mp3,wav,flac,aac,m4a,ogg|max:' . (int) config('media_upload.limits_kb.audio', 512000);
+            $rules['file'] = 'required|file|mimes:mp3,wav,flac,aac,m4a,ogg|max:'.(int) config('media_upload.limits_kb.audio', 512000);
         }
 
         if ($type === 'video') {
-            $rules['file'] = 'required|file|mimes:mp4,mkv,webm,avi|max:' . (int) config('media_upload.limits_kb.video', 2097152);
+            $rules['file'] = 'required|file|mimes:mp4,mkv,webm,avi|max:'.(int) config('media_upload.limits_kb.video', 2097152);
         }
 
         $validated = $request->validate($rules);
@@ -318,10 +321,62 @@ class MediaController extends Controller
         ]);
     }
 
+    public function storeUrl(Request $request)
+    {
+        $data = $request->validate([
+            'image_url' => [
+                'required',
+                'string',
+                'max:2000',
+                function (string $attribute, mixed $value, \Closure $fail): void {
+                    if (! filter_var($value, FILTER_VALIDATE_URL)
+                        || ! in_array(strtolower((string) parse_url($value, PHP_URL_SCHEME)), ['http', 'https'], true)) {
+                        $fail('URL gambar harus menggunakan alamat http:// atau https:// yang valid.');
+                    }
+                },
+            ],
+            'name' => ['nullable', 'string', 'max:255'],
+        ]);
+
+        $url = trim($data['image_url']);
+        $existing = $this->mediaRepository->query()
+            ->where('type', 'image')
+            ->where('storage_path', $url)
+            ->first();
+
+        if ($existing) {
+            return response()->json([
+                'status' => true,
+                'media' => $this->transformMedia($existing),
+            ]);
+        }
+
+        $path = (string) parse_url($url, PHP_URL_PATH);
+        $filename = basename($path);
+        $extension = strtolower(pathinfo($path, PATHINFO_EXTENSION));
+        $allowedExtensions = ['jpg', 'jpeg', 'png', 'webp', 'gif', 'avif', 'svg'];
+        $extension = in_array($extension, $allowedExtensions, true) ? $extension : null;
+        $fallbackName = pathinfo($filename, PATHINFO_FILENAME)
+            ?: (string) parse_url($url, PHP_URL_HOST)
+            ?: 'External Image';
+
+        $media = $this->mediaRepository->createFromUpload('image', $url, [
+            'extension' => $extension,
+            'mime' => $extension ? 'image/'.($extension === 'jpg' ? 'jpeg' : $extension) : null,
+            'name' => trim($data['name'] ?? '') ?: $fallbackName,
+            'original' => $filename ?: $fallbackName,
+        ]);
+
+        return response()->json([
+            'status' => true,
+            'media' => $this->transformMedia($media),
+        ]);
+    }
+
     public function destroy(string $uid)
     {
         $media = $this->mediaRepository->findUid($uid);
-        if (!$media) {
+        if (! $media) {
             return response()->json(['status' => false, 'message' => 'Media not found'], 404);
         }
 
@@ -341,7 +396,7 @@ class MediaController extends Controller
         $updated = 0;
         foreach ($data['items'] as $item) {
             $media = $this->mediaRepository->findUid($item['uuid']);
-            if (!$media) {
+            if (! $media) {
                 continue;
             }
             $media->name = $item['name'];
@@ -374,7 +429,7 @@ class MediaController extends Controller
     public function sync(Request $request)
     {
         $sourceRoot = $this->syncSourceRoot();
-        $destRoot = rtrim(config('filesystems.disks.media.root'), "/\\");
+        $destRoot = rtrim(config('filesystems.disks.media.root'), '/\\');
 
         $result = [
             'synced' => 0,
@@ -384,7 +439,7 @@ class MediaController extends Controller
             'messages' => [],
         ];
 
-        if (!is_dir($sourceRoot)) {
+        if (! is_dir($sourceRoot)) {
             return response()->json([
                 'status' => true,
                 'message' => trans('common.media_sync_done'),
@@ -394,20 +449,21 @@ class MediaController extends Controller
 
         $files = File::files($sourceRoot);
         foreach ($files as $file) {
-            if (!$file->isFile()) {
+            if (! $file->isFile()) {
                 continue;
             }
 
             $originalName = $file->getFilename();
             $extension = strtolower($file->getExtension());
             $type = $this->resolveMediaTypeByExtension($extension);
-            if (!$type) {
+            if (! $type) {
                 $result['skipped']++;
                 $result['details'][] = [
                     'file' => $originalName,
                     'status' => 'skipped',
                     'message' => 'Extension not allowed.',
                 ];
+
                 continue;
             }
 
@@ -427,7 +483,7 @@ class MediaController extends Controller
                     'message' => $syncResult['message'],
                 ];
 
-                if (!empty($syncResult['message']) && str_contains($syncResult['message'], 'Duration not detected')) {
+                if (! empty($syncResult['message']) && str_contains($syncResult['message'], 'Duration not detected')) {
                     $result['messages'][] = $syncResult['message'];
                 }
             } catch (\Throwable $e) {
@@ -468,7 +524,7 @@ class MediaController extends Controller
             'items' => [],
         ];
 
-        if (!is_dir($sourceRoot)) {
+        if (! is_dir($sourceRoot)) {
             return response()->json([
                 'status' => true,
                 'data' => $preview,
@@ -477,7 +533,7 @@ class MediaController extends Controller
 
         $files = File::files($sourceRoot);
         foreach ($files as $file) {
-            if (!$file->isFile()) {
+            if (! $file->isFile()) {
                 continue;
             }
 
@@ -496,15 +552,15 @@ class MediaController extends Controller
                 'image' => 'images',
                 default => 'videos',
             };
-            $relativePath = $destDir . '/' . $safeBase . '.' . $extension;
+            $relativePath = $destDir.'/'.$safeBase.'.'.$extension;
             $existsInDb = $type
                 ? $this->mediaRepository->query()
                     ->where('storage_path', $relativePath)
                     ->orWhere('original_filename', $originalName)
                     ->exists()
                 : false;
-            $destRoot = rtrim(config('filesystems.disks.media.root'), "/\\");
-            $destPath = $destRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
+            $destRoot = rtrim(config('filesystems.disks.media.root'), '/\\');
+            $destPath = $destRoot.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
             $existsInStorage = $type ? is_file($destPath) : false;
 
             if ($sizeExceeded) {
@@ -512,7 +568,7 @@ class MediaController extends Controller
             }
 
             $issue = null;
-            if (!$type) {
+            if (! $type) {
                 $issue = 'Extension not allowed.';
             } elseif ($existsInDb) {
                 $issue = 'Duplicate name exists in database.';
@@ -555,7 +611,7 @@ class MediaController extends Controller
         $type = $request->input('type');
 
         $sourcePath = $this->syncSourceAbsolutePath($sourceRelative);
-        if (!$sourcePath || !is_file($sourcePath)) {
+        if (! $sourcePath || ! is_file($sourcePath)) {
             return response()->json([
                 'status' => false,
                 'message' => 'Source file not found.',
@@ -576,7 +632,7 @@ class MediaController extends Controller
     public function syncClear(Request $request)
     {
         $sourceRoot = $this->syncSourceRoot();
-        if (!is_dir($sourceRoot)) {
+        if (! is_dir($sourceRoot)) {
             return response()->json([
                 'status' => true,
                 'message' => trans('common.media_sync_clear_done'),
@@ -587,6 +643,7 @@ class MediaController extends Controller
             File::cleanDirectory($sourceRoot);
         } catch (\Throwable $e) {
             report($e);
+
             return response()->json([
                 'status' => false,
                 'message' => trans('common.media_sync_clear_failed'),
@@ -602,7 +659,7 @@ class MediaController extends Controller
     public function syncClearIssues(Request $request)
     {
         $items = $request->input('items', []);
-        if (!is_array($items) || empty($items)) {
+        if (! is_array($items) || empty($items)) {
             return response()->json([
                 'status' => false,
                 'message' => trans('common.no_data'),
@@ -617,7 +674,7 @@ class MediaController extends Controller
                 continue;
             }
             $path = $this->syncSourceAbsolutePath($relative);
-            if (!$path || !is_file($path)) {
+            if (! $path || ! is_file($path)) {
                 continue;
             }
             try {
@@ -681,14 +738,15 @@ class MediaController extends Controller
     private function getImageDimensions(string $relativePath, UploadedFile $file): array
     {
         // try stored media disk path then fallback to public then temp
-        $mediaRoot = rtrim(config('filesystems.disks.media.root'), "/\\");
-        $storedAbsolute = $mediaRoot . DIRECTORY_SEPARATOR . ltrim($relativePath, "/\\");
-        if (!is_file($storedAbsolute)) {
-            $publicPath = public_path('storage/' . ltrim($relativePath, '/'));
+        $mediaRoot = rtrim(config('filesystems.disks.media.root'), '/\\');
+        $storedAbsolute = $mediaRoot.DIRECTORY_SEPARATOR.ltrim($relativePath, '/\\');
+        if (! is_file($storedAbsolute)) {
+            $publicPath = public_path('storage/'.ltrim($relativePath, '/'));
             $storedAbsolute = is_file($publicPath) ? $publicPath : ($file->getRealPath() ?: $file->getPathname());
         }
         $path = $storedAbsolute;
         $size = @getimagesize($path);
+
         return [
             'width' => $size[0] ?? null,
             'height' => $size[1] ?? null,
@@ -698,12 +756,13 @@ class MediaController extends Controller
     private function mediaAbsolutePath(string $relativePath): string
     {
         $root = config('filesystems.disks.media.root');
-        return rtrim($root, "/\\") . DIRECTORY_SEPARATOR . ltrim($relativePath, "/\\");
+
+        return rtrim($root, '/\\').DIRECTORY_SEPARATOR.ltrim($relativePath, '/\\');
     }
 
     private function syncSourceRoot(): string
     {
-        return rtrim((string) config('filesystems.disks.media.root'), "/\\") . DIRECTORY_SEPARATOR . 'upload-sync';
+        return rtrim((string) config('filesystems.disks.media.root'), '/\\').DIRECTORY_SEPARATOR.'upload-sync';
     }
 
     private function syncSourceAbsolutePath(string $relativePath): ?string
@@ -713,12 +772,12 @@ class MediaController extends Controller
             return null;
         }
 
-        return $this->syncSourceRoot() . DIRECTORY_SEPARATOR . $normalized;
+        return $this->syncSourceRoot().DIRECTORY_SEPARATOR.$normalized;
     }
 
     private function deleteMediaWithFile($media): void
     {
-        if (!$media) {
+        if (! $media) {
             return;
         }
         // skip shared placeholder to avoid deleting the default asset
@@ -726,6 +785,7 @@ class MediaController extends Controller
             $media->deleted_by = auth()->id();
             $media->deleted_at = now();
             $media->save();
+
             return;
         }
 
@@ -753,7 +813,7 @@ class MediaController extends Controller
         try {
             File::ensureDirectoryExists($path, 0755, true);
         } catch (\Throwable $e) {
-            if (!is_dir($path)) {
+            if (! is_dir($path)) {
                 throw $e;
             }
         }
@@ -762,6 +822,7 @@ class MediaController extends Controller
     private function guessMimeFromExtension(string $ext): ?string
     {
         $ext = strtolower($ext);
+
         return match ($ext) {
             'mp4' => 'video/mp4',
             'mov' => 'video/quicktime',
@@ -800,6 +861,7 @@ class MediaController extends Controller
         if (in_array($extension, $this->allowedExtensionsByType('image'), true)) {
             return 'image';
         }
+
         return null;
     }
 
@@ -818,22 +880,22 @@ class MediaController extends Controller
 
     private function probeDuration(string $path): ?int
     {
-        if (!is_file($path)) {
+        if (! is_file($path)) {
             return null;
         }
 
         $ffprobe = trim((string) env('FFPROBE_PATH', 'ffprobe'));
         $ffprobe = $ffprobe !== '' ? $ffprobe : 'ffprobe';
-        $cmd = '"' . $ffprobe . '" -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 ' .
+        $cmd = '"'.$ffprobe.'" -v error -show_entries format=duration -of default=noprint_wrappers=1:nokey=1 '.
             escapeshellarg($path);
 
         $output = @shell_exec($cmd);
-        if (!$output) {
+        if (! $output) {
             return null;
         }
 
         $seconds = (float) trim($output);
-        if (!is_finite($seconds) || $seconds <= 0) {
+        if (! is_finite($seconds) || $seconds <= 0) {
             return null;
         }
 
@@ -843,23 +905,24 @@ class MediaController extends Controller
     private function syncSingleFile(string $sourcePath, string $originalName, string $type, string $extension): array
     {
         $allowedExt = $this->allowedExtensionsByType($type);
-        if (!in_array($extension, $allowedExt, true)) {
+        if (! in_array($extension, $allowedExt, true)) {
             return [
                 'status' => 'skipped',
                 'message' => 'Extension not allowed.',
             ];
         }
 
-        $maxBytes = (int) config('media_upload.limits_bytes.' . $type, 0);
+        $maxBytes = (int) config('media_upload.limits_bytes.'.$type, 0);
         if ($maxBytes > 0 && is_file($sourcePath) && filesize($sourcePath) > $maxBytes) {
-            $limitMb = (int) config('media_upload.limits_mb.' . $type, 0);
+            $limitMb = (int) config('media_upload.limits_mb.'.$type, 0);
+
             return [
                 'status' => 'skipped',
                 'message' => "Size exceeds limit ({$limitMb} MB).",
             ];
         }
 
-        $destRoot = rtrim(config('filesystems.disks.media.root'), "/\\");
+        $destRoot = rtrim(config('filesystems.disks.media.root'), '/\\');
         $baseName = pathinfo($originalName, PATHINFO_FILENAME);
         $safeBase = Str::slug($baseName);
         $destDir = match ($type) {
@@ -869,8 +932,8 @@ class MediaController extends Controller
             default => 'others',
         };
 
-        $relativePath = $destDir . '/' . $safeBase . '.' . $extension;
-        $destPath = $destRoot . DIRECTORY_SEPARATOR . str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
+        $relativePath = $destDir.'/'.$safeBase.'.'.$extension;
+        $destPath = $destRoot.DIRECTORY_SEPARATOR.str_replace('/', DIRECTORY_SEPARATOR, $relativePath);
         $this->ensureDirectoryExistsSafely(dirname($destPath));
 
         if (is_file($destPath)) {
@@ -922,6 +985,7 @@ class MediaController extends Controller
             ];
         } catch (\Throwable $e) {
             report($e);
+
             return [
                 'status' => 'failed',
                 'message' => trans('common.media_sync_item_failed'),
@@ -937,10 +1001,10 @@ class MediaController extends Controller
                 ? number_format($sizeGb, 0)
                 : number_format($sizeGb, 2);
 
-            return $formatted . 'GB';
+            return $formatted.'GB';
         }
 
-        return $sizeMb . 'MB';
+        return $sizeMb.'MB';
     }
 
     private function transformMedia($m)
@@ -966,8 +1030,8 @@ class MediaController extends Controller
 
     private function getDiskUsageBytes(string $root): int
     {
-        $root = rtrim($root, "/\\");
-        if (!is_dir($root)) {
+        $root = rtrim($root, '/\\');
+        if (! is_dir($root)) {
             return 0;
         }
         $size = 0;
@@ -977,6 +1041,7 @@ class MediaController extends Controller
                 $size += $file->getSize();
             }
         }
+
         return $size;
     }
 
@@ -989,7 +1054,8 @@ class MediaController extends Controller
             $value /= 1024;
             $i++;
         }
-        return round($value, 2) . ' ' . $units[$i];
+
+        return round($value, 2).' '.$units[$i];
     }
 
     private function publicUrl(string $relativePath, string $type): string
@@ -1002,8 +1068,8 @@ class MediaController extends Controller
         }
 
         // For video/audio return relative path; consumer should stream/serve via controller if needed
-        $mediaRoot = rtrim(config('filesystems.disks.media.root'), "/\\");
-        $abs = $mediaRoot . DIRECTORY_SEPARATOR . ltrim($relativePath, "/\\");
+        $mediaRoot = rtrim(config('filesystems.disks.media.root'), '/\\');
+        $abs = $mediaRoot.DIRECTORY_SEPARATOR.ltrim($relativePath, '/\\');
         if (is_file($abs)) {
             return $relativePath; // return relative; caller can prepend if needed
         }

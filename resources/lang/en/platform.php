@@ -41,6 +41,7 @@ return [
         'playlist_editor_help' => 'Edit the channel playlist file directly. Every entry must contain an #EXTINF line and a valid stream URL.',
         'playlist_changed_notice' => 'This content differs from the saved file and has not been saved yet.',
         'playlist_save' => 'Save Playlist Content',
+        'playlist_download' => 'Download M3U8',
         'playlist_saved' => 'The playlist content was updated.',
         'sources_add_label' => 'Add Source',
         'sources_empty' => 'This channel has no additional sources yet.',

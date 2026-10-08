@@ -1,4 +1,4 @@
-<div class="modal fade" id="mediaPickerModal" tabindex="-1" role="dialog" aria-hidden="true" data-library-url="{{ route('media.library') }}" data-upload-url="{{ route('media.store') }}">
+<div class="modal fade" id="mediaPickerModal" tabindex="-1" role="dialog" aria-hidden="true" data-library-url="{{ route('media.library') }}" data-upload-url="{{ route('media.store') }}" data-url-store="{{ route('media.storeUrl') }}">
     <div class="modal-dialog modal-xl" role="document">
         <div class="modal-content">
             <div class="modal-header">
@@ -22,6 +22,15 @@
                     <small class="text-muted">Pilih tab sesuai tipe sebelum upload.</small>
                 </div>
 
+                <div class="input-group mb-3" id="globalMediaUrlGroup">
+                    <input type="url" class="form-control" id="globalMediaUrl" placeholder="https://example.com/image.jpg">
+                    <div class="input-group-append">
+                        <button type="button" class="btn btn-outline-primary" id="globalUseMediaUrl">
+                            <i class="fa fa-link mr-1"></i>Gunakan URL Gambar
+                        </button>
+                    </div>
+                </div>
+
                 <div id="mediaLibraryBody" class="position-relative" style="min-height: 200px;">
                     <div class="text-center py-4 text-muted">Memuat...</div>
                 </div>
@@ -39,6 +48,9 @@
         const libraryBody = $('#mediaLibraryBody');
         const uploadInput = $('#mediaUploadInput');
         const tabs = $('#mediaPickerTabs [data-media-tab]');
+        const mediaUrlGroup = $('#globalMediaUrlGroup');
+        const mediaUrlInput = $('#globalMediaUrl');
+        const useMediaUrlButton = $('#globalUseMediaUrl');
         let currentType = 'image';
         let currentTargetInput = null;
         let currentTargetPreview = null;
@@ -65,6 +77,7 @@
             } else {
                 uploadInput.attr('accept', 'audio/*');
             }
+            mediaUrlGroup.toggleClass('d-none', type !== 'image');
         }
 
         tabs.on('click', function(e) {
@@ -129,6 +142,37 @@
                 complete: function() {
                     uploadInput.prop('disabled', false);
                 }
+            });
+        });
+
+        useMediaUrlButton.on('click', function() {
+            const imageUrl = String(mediaUrlInput.val() || '').trim();
+            if (!/^https?:\/\//i.test(imageUrl)) {
+                alert('Masukkan URL gambar http:// atau https:// yang valid.');
+                return;
+            }
+
+            useMediaUrlButton.prop('disabled', true);
+            $.post(modal.data('url-store'), {
+                _token: '{{ csrf_token() }}',
+                image_url: imageUrl,
+            }).done(function(res) {
+                if (!res.status || !res.media) return;
+                if (currentTargetInput) {
+                    $(currentTargetInput).val(res.media.id).trigger('change');
+                }
+                if (currentTargetPreview) {
+                    const previewEl = $(currentTargetPreview);
+                    previewEl.attr('src', res.media.thumb_url || res.media.url || imageUrl);
+                    const wrap = previewEl.closest('.d-none');
+                    if (wrap.length) wrap.removeClass('d-none');
+                }
+                mediaUrlInput.val('');
+                modal.modal('hide');
+            }).fail(function(xhr) {
+                alert(xhr.responseJSON?.message || 'URL gambar tidak dapat disimpan.');
+            }).always(function() {
+                useMediaUrlButton.prop('disabled', false);
             });
         });
 

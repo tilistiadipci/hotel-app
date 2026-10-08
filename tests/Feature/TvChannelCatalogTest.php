@@ -217,6 +217,31 @@ M3U;
         $this->assertSame('https://example.test/rcti.png', $channels[0]['source_logo_url']);
     }
 
+    public function test_superadmin_can_add_an_external_image_url_to_the_media_picker(): void
+    {
+        $imageUrl = 'https://cdn.example.test/channel/logo.webp?version=2';
+
+        $response = $this->actingAs($this->user('superadmin'))
+            ->postJson(route('media.storeUrl'), [
+                'image_url' => $imageUrl,
+                'name' => 'External Channel Logo',
+            ])
+            ->assertOk()
+            ->assertJsonPath('status', true)
+            ->assertJsonPath('media.type', 'image')
+            ->assertJsonPath('media.storage_path', $imageUrl)
+            ->assertJsonPath('media.url', $imageUrl)
+            ->assertJsonPath('media.thumb_url', $imageUrl);
+
+        $this->assertDatabaseHas('medias', [
+            'id' => $response->json('media.id'),
+            'name' => 'External Channel Logo',
+            'type' => 'image',
+            'storage_path' => $imageUrl,
+        ]);
+        $this->assertSame($imageUrl, getMediaImageUrl($imageUrl));
+    }
+
     public function test_superadmin_can_edit_the_complete_channel_playlist(): void
     {
         Storage::fake('public');

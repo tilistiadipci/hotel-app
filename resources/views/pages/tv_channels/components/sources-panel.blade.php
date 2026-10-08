@@ -18,6 +18,9 @@
                 </small>
             </div>
             <div class="text-right">
+                <button type="button" class="btn btn-outline-success mr-2" id="downloadPlaylistButton">
+                    <i class="fa fa-download mr-1"></i>{{ __('platform.tv_catalog.playlist_download') }}
+                </button>
                 <button type="submit" class="btn btn-primary" id="savePlaylistButton" disabled>
                     <i class="fa fa-save mr-1"></i>{{ __('platform.tv_catalog.playlist_save') }}
                 </button>
@@ -41,6 +44,19 @@
             }
 
             $textarea.on('input', updatePlaylistChangedState);
+
+            $('#downloadPlaylistButton').on('click', function () {
+                const blob = new Blob([$textarea.val()], { type: 'application/vnd.apple.mpegurl;charset=utf-8' });
+                const url = URL.createObjectURL(blob);
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = @json(($channel->slug ?: 'channel-'.$channel->id).'.m3u8');
+                document.body.appendChild(link);
+                link.click();
+                link.remove();
+                URL.revokeObjectURL(url);
+            });
+
             updatePlaylistChangedState();
         });
     </script>

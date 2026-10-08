@@ -43,6 +43,10 @@
         const pickerProgressBar = $('#mediaPickerProgressBar');
         const uploadNameInput = document.getElementById('uploadName');
         const pickerHelp = document.getElementById('mediaPickerHelp');
+        const mediaUrlGroup = $('#mediaUrlGroup');
+        const mediaPickerUrl = $('#mediaPickerUrl');
+        const mediaPickerUrlError = $('#mediaPickerUrlError');
+        const btnUseMediaUrl = $('#btnUseMediaUrl');
         const videoChunkMaxSize = mediaUploadLimitsBytes.video || (2048 * 1024 * 1024);
         const pickerAcceptMap = {
             image: 'image/*',
@@ -449,6 +453,9 @@
             pickerVideoInput && (pickerVideoInput.value = '');
             pickerProgress.addClass('d-none');
             pickerProgressBar.css('width', '0%').text('0%');
+            mediaUrlGroup.toggleClass('d-none', type !== 'image');
+            mediaPickerUrl.val('');
+            mediaPickerUrlError.addClass('d-none').text('');
             // set accept & help text sesuai tipe
             if (pickerInput) pickerInput.setAttribute('accept', pickerAcceptMap[type] || 'image/*,audio/*,video/*');
             if (pickerHelp) {
@@ -544,6 +551,45 @@
                 audioLabel && (audioLabel.textContent = name);
             }
             closePicker();
+        });
+
+        btnUseMediaUrl.on('click', function() {
+            const imageUrl = String(mediaPickerUrl.val() || '').trim();
+            mediaPickerUrlError.addClass('d-none').text('');
+
+            if (!/^https?:\/\//i.test(imageUrl)) {
+                mediaPickerUrlError.removeClass('d-none').text('Masukkan URL gambar http:// atau https:// yang valid.');
+                return;
+            }
+
+            btnUseMediaUrl.prop('disabled', true);
+            $.ajax({
+                url: @json(route('media.storeUrl')),
+                method: 'POST',
+                data: {
+                    _token: @json(csrf_token()),
+                    image_url: imageUrl,
+                },
+            }).done(function(res) {
+                if (!res.status || !res.media) return;
+
+                const media = res.media;
+                if (handlePickerSelection(media)) return;
+
+                const imageTarget = resolveImageTarget();
+                imageTarget.input && (imageTarget.input.value = media.id);
+                imageTarget.label && (imageTarget.label.textContent = media.name || media.original_filename);
+                if (imageTarget.previewImage && imageTarget.previewWrap) {
+                    imageTarget.previewImage.src = media.thumb_url || media.url || imageUrl;
+                    imageTarget.previewWrap.classList.remove('d-none');
+                }
+                imageTarget.currentCover && imageTarget.currentCover.classList.add('d-none');
+                closePicker();
+            }).fail(function(xhr) {
+                mediaPickerUrlError.removeClass('d-none').text(extractAjaxErrorMessage(xhr, 'URL gambar tidak dapat disimpan.'));
+            }).always(function() {
+                btnUseMediaUrl.prop('disabled', false);
+            });
         });
 
         // Init resumable for video uploads in modal picker

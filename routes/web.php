@@ -407,6 +407,7 @@ Route::middleware(['auth', 'role.category:manager,admin,master,superadmin', 'hot
         ->name('media.')
         ->group(function () {
             Route::get('/library', [MediaController::class, 'library'])->name('library');
+            Route::post('/url', [MediaController::class, 'storeUrl'])->name('storeUrl');
             Route::post('/bulkDelete', [MediaController::class, 'bulkDelete'])->name('bulkDelete');
             Route::post('/bulkUpdate', [MediaController::class, 'bulkUpdate'])->name('bulkUpdate');
             Route::match(['get', 'post'], '/upload-chunk', [MediaController::class, 'uploadChunk'])->name('uploadChunk');

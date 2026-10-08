@@ -41,6 +41,7 @@ return [
         'playlist_editor_help' => 'Edit langsung seluruh isi file playlist channel. Setiap entri harus memiliki #EXTINF dan URL stream yang valid.',
         'playlist_changed_notice' => 'Isi ini sudah berubah dari file yang tersimpan dan belum disimpan.',
         'playlist_save' => 'Simpan Isi Playlist',
+        'playlist_download' => 'Download M3U8',
         'playlist_saved' => 'Isi playlist berhasil diperbarui.',
         'sources_add_label' => 'Tambah Sumber',
         'sources_empty' => 'Channel ini belum punya sumber tambahan.',

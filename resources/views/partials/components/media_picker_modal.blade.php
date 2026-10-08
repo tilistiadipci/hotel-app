@@ -37,6 +37,19 @@
                         id="mediaPickerProgressBar">0%</div>
                 </div>
             </div>
+            <div class="form-group mb-0 d-none" id="mediaUrlGroup">
+                <label class="small mb-1">URL Gambar</label>
+                <div class="input-group input-group-sm">
+                    <input type="url" class="form-control" id="mediaPickerUrl" placeholder="https://example.com/image.jpg">
+                    <div class="input-group-append">
+                        <button type="button" class="btn btn-outline-primary" id="btnUseMediaUrl">
+                            <i class="fa fa-link mr-1"></i>Gunakan URL
+                        </button>
+                    </div>
+                </div>
+                <small class="text-muted">URL akan disimpan sebagai media gambar tanpa mengunduh file ke server.</small>
+                <div class="invalid-feedback d-block d-none" id="mediaPickerUrlError"></div>
+            </div>
         </div>
         <div class="custom-modal__footer d-flex justify-content-end mt-3">
             <button type="button" class="btn btn-secondary mr-2" data-modal-close>Close</button>
