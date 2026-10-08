@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\TvChannel;
 use App\Models\TvChannelSource;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -14,14 +15,21 @@ use Illuminate\Support\Facades\Storage;
  */
 class TvChannelSourceManager
 {
-    public function attach(TvChannel $channel, string $streamUrl, ?string $label = null, ?string $entryText = null): TvChannelSource
-    {
+    public function attach(
+        TvChannel $channel,
+        string $streamUrl,
+        ?string $label = null,
+        ?string $entryText = null,
+        bool $syncPlaylist = true
+    ): TvChannelSource {
         $entryText = $this->normalizeEntryText($entryText ?: $streamUrl);
         $hash = hash('sha256', $entryText);
         $existing = $channel->sources()->where('source_hash', $hash)->first();
 
         if ($existing) {
-            $this->syncPlaylist($channel);
+            if ($syncPlaylist) {
+                $this->syncPlaylist($channel);
+            }
 
             return $existing;
         }
@@ -37,7 +45,9 @@ class TvChannelSourceManager
             'is_active' => true,
         ]);
 
-        $this->syncPlaylist($channel);
+        if ($syncPlaylist) {
+            $this->syncPlaylist($channel);
+        }
 
         return $source;
     }
@@ -47,6 +57,58 @@ class TvChannelSourceManager
         $channel->sources()->where('id', $sourceId)->delete();
 
         $this->syncPlaylist($channel);
+    }
+
+    /**
+     * Replace the channel's complete generated playlist while retaining labels
+     * for entries whose M3U block did not change.
+     *
+     * @param  array<int, array{stream_url: string, entry_text: string}>  $entries
+     */
+    public function replacePlaylist(TvChannel $channel, array $entries): void
+    {
+        $existingLabels = $channel->sources()
+            ->get()
+            ->mapWithKeys(fn (TvChannelSource $source) => [
+                $source->source_hash => $source->label,
+            ]);
+
+        DB::transaction(function () use ($channel, $entries, $existingLabels): void {
+            $channel->sources()->delete();
+
+            foreach ($entries as $entry) {
+                $entryText = $this->normalizeEntryText($entry['entry_text']);
+                $label = $existingLabels->get(hash('sha256', $entryText));
+
+                $this->attach(
+                    $channel,
+                    $entry['stream_url'],
+                    $label,
+                    $entryText,
+                    false
+                );
+            }
+
+            $this->syncPlaylist($channel);
+        });
+    }
+
+    public function playlistContents(TvChannel $channel): string
+    {
+        $path = (string) $channel->stream_url;
+
+        if ($path !== '' && Storage::disk('public')->exists($path)) {
+            return Storage::disk('public')->get($path);
+        }
+
+        $contents = $channel->sources()
+            ->where('is_active', true)
+            ->orderBy('sort_order')
+            ->get()
+            ->map(fn (TvChannelSource $source) => $this->normalizeEntryText($source->entry_text ?: $source->stream_url))
+            ->implode("\n\n");
+
+        return '#EXTM3U'.($contents !== '' ? "\n".$contents."\n" : "\n");
     }
 
     public function syncPrimary(TvChannel $channel): void

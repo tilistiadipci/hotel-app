@@ -48,7 +48,13 @@ class TvChannelCatalogTest extends TestCase
         $assigned = $this->channel($masterId, 'Assigned Channel');
         $hidden = $this->channel($masterId, 'Hidden Channel');
         $hotel = $this->hotel('TV-C');
-        $hotel->tvChannels()->attach($assigned->id, ['is_active' => true, 'sort_order' => 2]);
+        $hotel->tvChannels()->attach($assigned->id, [
+            'is_active' => true,
+            'sort_order' => 2,
+            'custom_stream_url' => 'https://legacy.example.test/channel.m3u8',
+            'custom_frequency' => 'IPTV',
+            'custom_quality' => 'HD',
+        ]);
         $admin = $this->user('admin', $hotel);
         $masterStreamUrl = $assigned->stream_url;
 
@@ -69,9 +75,9 @@ class TvChannelCatalogTest extends TestCase
             'custom_name' => 'Channel Kamar',
             'custom_type' => 'streaming',
             'custom_region' => 'international',
-            'custom_stream_url' => 'https://hotel.example.test/channel.m3u8',
+            'custom_stream_url' => 'https://legacy.example.test/channel.m3u8',
             'custom_frequency' => 'IPTV',
-            'custom_quality' => '4K',
+            'custom_quality' => 'HD',
             'sort_order' => 7,
             'is_active' => 0,
         ])->assertRedirect();
@@ -82,9 +88,6 @@ class TvChannelCatalogTest extends TestCase
             'custom_name' => 'Channel Kamar',
             'custom_type' => 'streaming',
             'custom_region' => 'international',
-            'custom_stream_url' => 'https://hotel.example.test/channel.m3u8',
-            'custom_frequency' => 'IPTV',
-            'custom_quality' => '4K',
             'sort_order' => 7,
             'is_active' => false,
         ]);
@@ -93,7 +96,9 @@ class TvChannelCatalogTest extends TestCase
             ->get(route('tv-channels.assignment.edit', $assigned->uuid))
             ->assertOk()
             ->assertSee('Kelola Channel Hotel')
-            ->assertSee('https://hotel.example.test/channel.m3u8')
+            ->assertDontSee('name="custom_stream_url"', false)
+            ->assertDontSee('name="custom_frequency"', false)
+            ->assertDontSee('name="custom_quality"', false)
             ->assertDontSee($masterStreamUrl)
             ->assertSee('name="image"', false);
     }
@@ -118,7 +123,6 @@ class TvChannelCatalogTest extends TestCase
         $this->actingAs($manager)
             ->withSession(['active_hotel_id' => $managedHotel->id])
             ->patch(route('tv-channels.assignment.update', $first->uuid), [
-                'custom_stream_url' => 'https://manager.example.test/channel.m3u8',
                 'sort_order' => 1,
                 'is_active' => 1,
             ])->assertRedirect();
@@ -126,7 +130,7 @@ class TvChannelCatalogTest extends TestCase
         $this->assertDatabaseHas('hotel_tv_channel', [
             'hotel_id' => $managedHotel->id,
             'tv_channel_id' => $first->id,
-            'custom_stream_url' => 'https://manager.example.test/channel.m3u8',
+            'sort_order' => 1,
         ]);
 
         $this->actingAs($manager)
@@ -211,6 +215,111 @@ M3U;
         $this->assertCount(1, $channels);
         $this->assertSame('RCTI', $channels[0]['name']);
         $this->assertSame('https://example.test/rcti.png', $channels[0]['source_logo_url']);
+    }
+
+    public function test_superadmin_can_edit_the_complete_channel_playlist(): void
+    {
+        Storage::fake('public');
+        $channel = $this->channel(Hotel::masterId(), 'Manual Playlist Channel');
+        $sources = app(\App\Services\TvChannelSourceManager::class);
+        $sources->attach(
+            $channel,
+            'https://stream.example.test/first.m3u8',
+            'Server 1',
+            "#EXTINF:-1,First Source\nhttps://stream.example.test/first.m3u8"
+        );
+
+        $newEntry = <<<'M3U'
+#EXTM3U
+#EXTINF:-1 group-title="CHANNEL | INDONESIA",TRANS 7 HD
+#EXTVLCOPT:http-user-agent=Mozilla/5.0
+https://stream.example.test/trans7.m3u8
+M3U;
+
+        $this->actingAs($this->user('superadmin'))
+            ->post(route('tv-channels.sources.store', $channel->uuid), [
+                'playlist_text' => $newEntry,
+            ])
+            ->assertRedirect()
+            ->assertSessionHasNoErrors();
+
+        $channel->refresh();
+        $this->assertSame(1, $channel->sources()->count());
+        $this->assertDatabaseMissing('tv_channel_sources', [
+            'tv_channel_id' => $channel->id,
+            'stream_url' => 'https://stream.example.test/first.m3u8',
+        ]);
+        $this->assertDatabaseHas('tv_channel_sources', [
+            'tv_channel_id' => $channel->id,
+            'stream_url' => 'https://stream.example.test/trans7.m3u8',
+        ]);
+
+        $playlistFile = Storage::disk('public')->get($channel->stream_url);
+        $this->assertSame(1, substr_count($playlistFile, '#EXTM3U'));
+        $this->assertStringNotContainsString('https://stream.example.test/first.m3u8', $playlistFile);
+        $this->assertStringContainsString('#EXTVLCOPT:http-user-agent=Mozilla/5.0', $playlistFile);
+        $this->assertStringContainsString('https://stream.example.test/trans7.m3u8', $playlistFile);
+    }
+
+    public function test_superadmin_can_merge_selected_channels_into_one_playlist_and_keep_sources(): void
+    {
+        Storage::fake('public');
+        $first = $this->channel(Hotel::masterId(), 'Merge First');
+        $second = $this->channel(Hotel::masterId(), 'Merge Second');
+        app(\App\Services\TvChannelSourceManager::class)->attach(
+            $second,
+            'https://stream.example.test/merge-second.m3u8',
+            'Backup',
+            "#EXTINF:-1 group-title=\"Indonesia\",Merge Second\n#EXTVLCOPT:http-user-agent=MergeTest\nhttps://stream.example.test/merge-second.m3u8"
+        );
+
+        $this->actingAs($this->user('superadmin'))
+            ->post(route('tv-channels.merge'), [
+                'name' => 'Merged Indonesia',
+                'channel_uids' => [$first->uuid, $second->uuid],
+                'delete_sources' => 0,
+            ])
+            ->assertRedirect(route('tv-channels.index'))
+            ->assertSessionHasNoErrors();
+
+        $merged = TvChannel::query()->withoutGlobalScope('hotel')
+            ->where('source_type', 'merged')
+            ->where('name', 'Merged Indonesia')
+            ->firstOrFail();
+
+        $this->assertSame(2, $merged->sources()->count());
+        $playlistFile = Storage::disk('public')->get($merged->stream_url);
+        $this->assertSame(1, substr_count($playlistFile, '#EXTM3U'));
+        $this->assertStringContainsString('#EXTINF:-1,Merge First', $playlistFile);
+        $this->assertStringContainsString('https://example.test/merge-first.m3u8', $playlistFile);
+        $this->assertStringContainsString('#EXTVLCOPT:http-user-agent=MergeTest', $playlistFile);
+        $this->assertStringContainsString('https://stream.example.test/merge-second.m3u8', $playlistFile);
+        $this->assertNull($first->fresh()->deleted_at);
+        $this->assertNull($second->fresh()->deleted_at);
+    }
+
+    public function test_merge_can_soft_delete_the_source_channels(): void
+    {
+        Storage::fake('public');
+        $first = $this->channel(Hotel::masterId(), 'Delete Merge First');
+        $second = $this->channel(Hotel::masterId(), 'Delete Merge Second');
+
+        $this->actingAs($this->user('superadmin'))
+            ->post(route('tv-channels.merge'), [
+                'name' => 'Delete Merge Result',
+                'channel_uids' => [$first->uuid, $second->uuid],
+                'delete_sources' => 1,
+            ])
+            ->assertRedirect(route('tv-channels.index'))
+            ->assertSessionHasNoErrors();
+
+        $this->assertSoftDeleted('tv_channels', ['id' => $first->id]);
+        $this->assertSoftDeleted('tv_channels', ['id' => $second->id]);
+        $this->assertDatabaseHas('tv_channels', [
+            'name' => 'Delete Merge Result',
+            'source_type' => 'merged',
+            'deleted_at' => null,
+        ]);
     }
 
     public function test_m3u_preview_redirects_to_a_refreshable_get_page(): void

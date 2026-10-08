@@ -7,6 +7,7 @@ use App\Repositories\MediaRepository;
 use App\Repositories\TVChannelRepository;
 use App\Services\M3uPlaylistService;
 use App\Services\TvChannelChangeNotifier;
+use App\Services\TvChannelMergeService;
 use App\Services\TvChannelSourceManager;
 use App\Tenancy\TenantContext;
 use Illuminate\Http\Request;
@@ -89,7 +90,7 @@ class TVChannelController extends Controller
         }
     }
 
-    public function edit(string $uid)
+    public function edit(string $uid, TvChannelSourceManager $sources)
     {
         abort_unless($this->isMasterCatalog(), 403);
         $channel = $this->channelRepository->findUid($uid);
@@ -101,6 +102,7 @@ class TVChannelController extends Controller
             'page' => $this->page,
             'icon' => $this->icon,
             'channel' => $channel->load(['imageMedia', 'sources']),
+            'playlistContents' => $sources->playlistContents($channel),
         ]);
     }
 
@@ -206,6 +208,33 @@ class TVChannelController extends Controller
         } catch (\Exception $e) {
             return $this->debugErrorResJson($e);
         }
+    }
+
+    public function merge(Request $request, TvChannelMergeService $merger)
+    {
+        abort_unless($this->isMasterCatalog(), 403);
+        $data = $request->validate([
+            'name' => ['required', 'string', 'max:150'],
+            'channel_uids' => ['required', 'array', 'min:2'],
+            'channel_uids.*' => ['required', 'uuid', 'distinct'],
+            'delete_sources' => ['nullable', 'boolean'],
+        ]);
+
+        $result = $merger->merge(
+            $data['channel_uids'],
+            $data['name'],
+            (bool) ($data['delete_sources'] ?? false)
+        );
+
+        $this->channelNotifier->notifyHotels($result['affected_hotel_ids']);
+
+        return redirect()->route('tv-channels.index')->with(
+            'success',
+            __('platform.tv_catalog.merge_done', [
+                'name' => $result['channel']->name,
+                'count' => $result['source_count'],
+            ])
+        );
     }
 
     public function importForm()
@@ -346,8 +375,12 @@ class TVChannelController extends Controller
         return redirect()->route('tv-channels.index')->with('success', __('platform.tv_catalog.import_done', $result));
     }
 
-    public function storeSource(Request $request, string $uid, TvChannelSourceManager $sources)
-    {
+    public function storeSource(
+        Request $request,
+        string $uid,
+        M3uPlaylistService $playlist,
+        TvChannelSourceManager $sources
+    ) {
         abort_unless($this->isMasterCatalog(), 403);
         $channel = $this->channelRepository->findUid($uid);
         if (! $channel) {
@@ -355,14 +388,22 @@ class TVChannelController extends Controller
         }
 
         $data = $request->validate([
-            'label' => ['nullable', 'string', 'max:100'],
-            'stream_url' => ['required', 'string', 'max:5000'],
+            'playlist_text' => ['required', 'string', 'max:100000'],
         ]);
 
-        $sources->attach($channel, $data['stream_url'], $data['label'] ?? null);
+        $entries = $playlist->parse($data['playlist_text']);
+
+        if (empty($entries)) {
+            throw ValidationException::withMessages([
+                'playlist_text' => __('platform.tv_catalog.invalid_source_entry'),
+            ]);
+        }
+
+        $sources->replacePlaylist($channel, $entries);
+
         $this->channelNotifier->notifyHotels($this->channelNotifier->hotelIdsAssignedTo($channel->id));
 
-        return redirect()->back()->with('success', __('platform.tv_catalog.source_added'));
+        return redirect()->back()->with('success', __('platform.tv_catalog.playlist_saved'));
     }
 
     public function destroySource(string $uid, int $source, TvChannelSourceManager $sources)
@@ -390,9 +431,6 @@ class TVChannelController extends Controller
             'custom_name' => ['nullable', 'string', 'max:150'],
             'custom_type' => ['nullable', Rule::in(['digital', 'streaming'])],
             'custom_region' => ['nullable', Rule::in(['national', 'international'])],
-            'custom_stream_url' => ['nullable', 'string', 'max:5000'],
-            'custom_frequency' => ['nullable', 'string', 'max:60'],
-            'custom_quality' => ['nullable', 'string', 'max:20'],
             'image' => ['nullable', 'image', 'mimes:jpeg,png,jpg,webp', 'max:1024'],
             'remove_custom_image' => ['nullable', 'boolean'],
         ]);
@@ -425,9 +463,6 @@ class TVChannelController extends Controller
                 'custom_name' => filled($data['custom_name'] ?? null) ? $data['custom_name'] : null,
                 'custom_type' => $data['custom_type'] ?? null,
                 'custom_region' => $data['custom_region'] ?? null,
-                'custom_stream_url' => filled($data['custom_stream_url'] ?? null) ? $data['custom_stream_url'] : null,
-                'custom_frequency' => filled($data['custom_frequency'] ?? null) ? $data['custom_frequency'] : null,
-                'custom_quality' => filled($data['custom_quality'] ?? null) ? $data['custom_quality'] : null,
                 'custom_image_id' => $customImageId,
                 'updated_at' => now(),
             ]);

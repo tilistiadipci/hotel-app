@@ -1,7 +1,3 @@
-@php
-    $sources = $channel->sources ?? collect();
-@endphp
-
 <div class="card mb-3">
     <div class="card-header-tab card-header">
         <div class="card-header-title font-size-lg text-capitalize font-weight-normal">
@@ -9,52 +5,62 @@
         </div>
     </div>
     <div class="card-body">
-        <p class="text-muted">{{ __('platform.tv_catalog.sources_panel_help') }}</p>
+        <p class="text-muted">{{ __('platform.tv_catalog.playlist_editor_help') }}</p>
 
-        @if ($sources->isEmpty())
-            <p class="text-muted">{{ __('platform.tv_catalog.sources_empty') }}</p>
-        @else
-            <div class="table-responsive mb-3">
-                <table class="table table-sm table-bordered">
-                    <thead>
-                        <tr>
-                            <th style="width:160px">{{ __('platform.tv_catalog.source_label') }}</th>
-                            <th>Stream URL</th>
-                            <th style="width:80px" class="text-center">{!! trans('common.action') !!}</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        @foreach ($sources as $source)
-                            <tr>
-                                <td>{{ $source->label ?: '-' }}</td>
-                                <td><code>{{ Str::limit($source->stream_url, 90) }}</code></td>
-                                <td class="text-center">
-                                    <form method="POST" action="{{ route('tv-channels.sources.destroy', [$channel->uuid, $source->id]) }}" onsubmit="return confirm('{{ __('common.are_you_sure') }}');">
-                                        @csrf
-                                        @method('DELETE')
-                                        <button type="submit" class="btn btn-sm btn-outline-danger"><i class="fa fa-trash"></i></button>
-                                    </form>
-                                </td>
-                            </tr>
-                        @endforeach
-                    </tbody>
-                </table>
-            </div>
-        @endif
-
-        <form method="POST" action="{{ route('tv-channels.sources.store', $channel->uuid) }}" class="form-row align-items-end">
+        <form method="POST" action="{{ route('tv-channels.sources.store', $channel->uuid) }}">
             @csrf
-            <div class="col-md-3 form-group mb-0">
-                <label>{{ __('platform.tv_catalog.source_label') }}</label>
-                <input type="text" name="label" class="form-control" maxlength="100" placeholder="{{ __('platform.tv_catalog.source_label_placeholder') }}">
+            <div class="form-group playlist-editor" id="playlistEditor">
+                <label for="playlistText">{{ __('platform.tv_catalog.playlist_text') }}</label>
+                <textarea id="playlistText" name="playlist_text" rows="16" class="form-control font-monospace @error('playlist_text') is-invalid @enderror" required>{{ old('playlist_text', $playlistContents) }}</textarea>
+                @error('playlist_text')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                <small class="form-text text-warning d-none" id="playlistChangedNotice">
+                    <i class="fa fa-exclamation-circle mr-1"></i>{{ __('platform.tv_catalog.playlist_changed_notice') }}
+                </small>
             </div>
-            <div class="col-md-7 form-group mb-0">
-                <label>Stream URL</label>
-                <input type="text" name="stream_url" class="form-control" required>
-            </div>
-            <div class="col-md-2 form-group mb-0">
-                <button type="submit" class="btn btn-primary btn-block"><i class="fa fa-plus mr-1"></i>{{ __('platform.tv_catalog.sources_add_label') }}</button>
+            <div class="text-right">
+                <button type="submit" class="btn btn-primary" id="savePlaylistButton" disabled>
+                    <i class="fa fa-save mr-1"></i>{{ __('platform.tv_catalog.playlist_save') }}
+                </button>
             </div>
         </form>
     </div>
 </div>
+
+@section('js')
+    @parent
+    <script>
+        $(function () {
+            const $textarea = $('#playlistText');
+            const originalPlaylist = @json($playlistContents);
+
+            function updatePlaylistChangedState() {
+                const changed = $textarea.val() !== originalPlaylist;
+                $('#playlistEditor').toggleClass('is-changed', changed);
+                $('#playlistChangedNotice').toggleClass('d-none', !changed);
+                $('#savePlaylistButton').prop('disabled', !changed);
+            }
+
+            $textarea.on('input', updatePlaylistChangedState);
+            updatePlaylistChangedState();
+        });
+    </script>
+@endsection
+
+@section('css')
+    @parent
+    <style>
+        .playlist-editor {
+            border-left: 4px solid transparent;
+            padding-left: .75rem;
+            transition: border-color .2s ease;
+        }
+
+        .playlist-editor.is-changed {
+            border-left-color: #f0ad4e;
+        }
+
+        .playlist-editor textarea {
+            white-space: pre;
+        }
+    </style>
+@endsection
