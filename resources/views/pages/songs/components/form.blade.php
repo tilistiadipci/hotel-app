@@ -133,6 +133,9 @@
                 @include('partials.components.media_picker_upload_image', [
                     'data' => $song ?? null,
                     'required' => false,
+                    'label' => 'Gambar Musik',
+                    'helpText' => 'Format JPG, JPEG, atau PNG. Maksimal 300 × 300 piksel dan 300 KB.',
+                    'uploadProfile' => 'music_vod',
                 ])
 
                 @include('partials.components.media_picker_upload_audio', [

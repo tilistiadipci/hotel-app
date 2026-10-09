@@ -15,6 +15,18 @@ class HotelWilayahTest extends TestCase
 {
     use DatabaseTransactions;
 
+    public function test_superadmin_can_search_wilayah_from_the_platform_endpoint(): void
+    {
+        $this->seedWilayah();
+        [$superadmin] = $this->userAndHotel('superadmin');
+
+        $this->actingAs($superadmin)
+            ->getJson(route('platform.wilayah-indonesia.search', ['q' => '10110']))
+            ->assertOk()
+            ->assertJsonPath('results.0.id', '31.71.01.1001')
+            ->assertJsonPath('results.0.kode_pos', '10110');
+    }
+
     public function test_admin_can_search_wilayah_by_postal_code_and_save_adm4(): void
     {
         $this->seedWilayah();
@@ -58,6 +70,36 @@ class HotelWilayahTest extends TestCase
         $this->assertSame('31.71.01.1001', $hotel->fresh()->adm4);
     }
 
+    public function test_manager_can_search_wilayah_for_an_assigned_hotel_without_active_hotel_session(): void
+    {
+        $this->seedWilayah();
+        [$manager] = $this->userAndHotel('manager');
+        $hotel = $this->hotel('MAN-SEARCH-WIL');
+        $manager->managedHotels()->attach($hotel->id, ['is_active' => true]);
+
+        $this->actingAs($manager)
+            ->getJson(route('manager.hotels.wilayah-indonesia.search', [
+                'hotel' => $hotel,
+                'q' => '10110',
+            ]))
+            ->assertOk()
+            ->assertJsonPath('results.0.id', '31.71.01.1001')
+            ->assertJsonPath('results.0.kode_pos', '10110');
+    }
+
+    public function test_manager_cannot_search_wilayah_for_an_unassigned_hotel(): void
+    {
+        [$manager] = $this->userAndHotel('manager');
+        $hotel = $this->hotel('MAN-OTHER-WIL');
+
+        $this->actingAs($manager)
+            ->getJson(route('manager.hotels.wilayah-indonesia.search', [
+                'hotel' => $hotel,
+                'q' => '10110',
+            ]))
+            ->assertForbidden();
+    }
+
     private function seedWilayah(): void
     {
         DB::table('master_provinsi')->updateOrInsert(['id' => '31'], ['nama' => 'DKI Jakarta']);
@@ -80,10 +122,15 @@ class HotelWilayahTest extends TestCase
     private function userAndHotel(string $category): array
     {
         $hotel = $this->hotel(strtoupper($category).'-WIL');
-        $role = Role::query()->firstOrCreate(
-            ['category' => $category],
-            ['name' => ucfirst($category), 'description' => 'Test '.$category]
-        );
+        $role = Role::query()->where('category', $category)->first();
+        if (! $role) {
+            $role = new Role;
+            $role->forceFill([
+                'category' => $category,
+                'name' => ucfirst($category),
+                'description' => 'Test '.$category,
+            ])->save();
+        }
         $user = User::query()->withoutGlobalScope('hotel')->create([
             'username' => $category.'_'.Str::lower(Str::random(8)),
             'email' => Str::lower(Str::random(8)).'@example.test',

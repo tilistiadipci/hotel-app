@@ -58,7 +58,13 @@ class SuperadminHotelSettingsTest extends TestCase
             ->get(route('platform.hotels.edit', ['hotel' => $hotel, 'tab' => 'settings']))
             ->assertOk()
             ->assertSee(trans('platform.hotel_settings.settings_tab'))
-            ->assertSee(trans('platform.hotel_settings.scope_notice', ['hotel' => $hotel->name]));
+            ->assertSee(trans('platform.hotel_settings.scope_notice', ['hotel' => $hotel->name]))
+            ->assertSee('data-wilayah-search-url="'.route('platform.wilayah-indonesia.search').'"', false)
+            ->assertSee('window.initializeWilayahSelect = function(root)', false)
+            ->assertSee("$('select.select2:not(.js-wilayah-select)').select2", false)
+            ->assertSee('id="setting_menu_live_tv_status"', false)
+            ->assertSee('type="checkbox"', false)
+            ->assertDontSee('<select id="setting_menu_live_tv_status"', false);
     }
 
     public function test_superadmin_can_update_only_the_selected_hotels_settings_and_theme(): void

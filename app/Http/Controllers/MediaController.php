@@ -78,6 +78,7 @@ class MediaController extends Controller
     public function library(Request $request)
     {
         $type = $request->get('type', 'image');
+        $uploadProfile = $request->get('upload_profile');
         $perPage = (int) $request->get('per_page', 10);
         $perPage = $perPage > 0 ? $perPage : 10;
 
@@ -91,7 +92,11 @@ class MediaController extends Controller
         return response()->json([
             'status' => true,
             'items' => $items,
-            'next_url' => $media->appends(['type' => $type, 'per_page' => $perPage])->nextPageUrl(),
+            'next_url' => $media->appends([
+                'type' => $type,
+                'per_page' => $perPage,
+                'upload_profile' => $uploadProfile,
+            ])->nextPageUrl(),
             'current_page' => $media->currentPage(),
             'last_page' => $media->lastPage(),
         ]);
@@ -261,10 +266,13 @@ class MediaController extends Controller
             'type' => 'nullable|in:image,video,audio',
             'name' => 'nullable|string|max:255',
             'duration' => 'nullable|integer|min:0',
+            'upload_profile' => 'nullable|in:music_vod',
         ];
 
         if ($type === 'image') {
-            $rules['file'] = 'required|file|mimes:jpg,jpeg,png|max:'.(int) config('media_upload.limits_kb.image', 102400);
+            $rules['file'] = $request->input('upload_profile') === 'music_vod'
+                ? 'required|image|mimes:jpg,jpeg,png|max:300|dimensions:max_width=300,max_height=300'
+                : 'required|file|mimes:jpg,jpeg,png|max:'.(int) config('media_upload.limits_kb.image', 102400);
         }
 
         if ($type === 'audio') {

@@ -314,7 +314,7 @@ class SongController extends Controller
             ],
             'audio' => 'nullable|file|mimes:mp3,wav,flac,aac,m4a,ogg|max:307200', // 300MB
             'duration' => 'nullable|integer|min:0',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:1024',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:300|dimensions:max_width=300,max_height=300',
             'image_media_id' => 'nullable|integer|exists:medias,id',
             'audio_media_id' => 'nullable|integer|exists:medias,id',
             'sort_order' => 'required|integer|min:0',

@@ -93,6 +93,9 @@
                 <li class="{{ $page == 'media-library' ? 'mm-active' : '' }}">
                     <a href="{{ route('platform.media-library.index') }}" class="{{ $page == 'media-library' ? 'mm-active' : '' }}"><i class="metismenu-icon fa fa-file"></i> Media Library</a>
                 </li>
+                <li class="{{ $page == 'mqtt-sync' ? 'mm-active' : '' }}">
+                    <a href="{{ route('platform.mqtt-sync.index') }}" class="{{ $page == 'mqtt-sync' ? 'mm-active' : '' }}"><i class="metismenu-icon fa fa-sync-alt"></i> Sync to TV MQTT</a>
+                </li>
                 <li class="{{ $page == 'mqtt-docs' ? 'mm-active' : '' }}">
                     <a href="{{ route('docs.mqtt') }}" class="{{ $page == 'mqtt-docs' ? 'mm-active' : '' }}"><i class="metismenu-icon fa fa-book"></i> Dokumentasi MQTT</a>
                 </li>

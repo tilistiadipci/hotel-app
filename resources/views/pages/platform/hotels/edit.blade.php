@@ -68,8 +68,7 @@
     </div>
 @endsection
 
-@section('js')
-@parent
+@push('page_js')
 <script>
 $('#channelSearch').on('input',function(){
     const term=$(this).val().toLowerCase();
@@ -77,5 +76,7 @@ $('#channelSearch').on('input',function(){
     $('.channel-group').each(function(){$(this).toggle($(this).find('.channel-option:visible').length>0);});
 });
 </script>
-@include('partials.components.wilayah_select_script')
-@endsection
+@include('partials.components.wilayah_select_script', [
+    'wilayahSearchUrl' => route('platform.wilayah-indonesia.search'),
+])
+@endpush

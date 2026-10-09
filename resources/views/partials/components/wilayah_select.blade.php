@@ -3,12 +3,14 @@
     $wilayahElementId = $id ?? 'adm4';
     $wilayahValue = old($wilayahInputName, $value ?? null);
     $wilayahSelected = $selected ?? null;
+    $wilayahSearchUrl = $searchUrl ?? route('wilayah-indonesia.search');
 @endphp
 
 <div class="form-group mb-0">
     <label for="{{ $wilayahElementId }}">Wilayah Hotel (Kelurahan/Desa)</label>
     <select id="{{ $wilayahElementId }}" name="{{ $wilayahInputName }}"
         class="form-control js-wilayah-select @error($wilayahInputName) is-invalid @enderror"
+        data-wilayah-search-url="{{ $wilayahSearchUrl }}"
         data-placeholder="Cari kelurahan, kecamatan, kota/kabupaten, provinsi, atau kode pos">
         <option value=""></option>
         @if ($wilayahValue && $wilayahSelected && (string) $wilayahSelected->id === (string) $wilayahValue)

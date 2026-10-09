@@ -584,12 +584,19 @@
     <script src="{{ asset('js/select2.min.js') }}"></script>
 
     <script>
+        @include('partials.components.wilayah_select_initializer')
+
         setTimeout(function() {
-            $('.select2').select2({
+            $('select.select2:not(.js-wilayah-select)').select2({
                 theme: "bootstrap4",
                 placeholder: "Select an option",
             });
+            window.initializeWilayahSelect(document);
         }, 500);
+
+        document.addEventListener('cms:page-loaded', function() {
+            window.initializeWilayahSelect(document);
+        });
     </script>
 
     <script>
@@ -772,6 +779,7 @@
     <script src="{{ asset('js/cms-ajax.js') }}?v={{ filemtime(public_path('js/cms-ajax.js')) }}"></script>
     <span id="cms-page-scripts-start" hidden></span>
     @yield('js')
+    @stack('page_js')
     <span id="cms-page-scripts-end" hidden></span>
 </body>
 

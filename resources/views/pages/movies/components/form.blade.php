@@ -123,6 +123,9 @@
                 <!-- START Cover Image Upload -->
                 @include('partials.components.media_picker_upload_image', [
                     'data' => $movie ?? null,
+                    'label' => 'Gambar Background VOD',
+                    'helpText' => 'Format JPG, JPEG, atau PNG. Maksimal 300 × 300 piksel dan 300 KB.',
+                    'uploadProfile' => 'music_vod',
                 ])
                 <!-- END Cover Image Upload -->
 

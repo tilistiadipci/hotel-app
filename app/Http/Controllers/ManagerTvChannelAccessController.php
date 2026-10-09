@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Hotel;
 use App\Models\TvChannel;
+use App\Services\TvChannelChangeNotifier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -53,7 +54,7 @@ class ManagerTvChannelAccessController extends Controller
         ]);
     }
 
-    public function update(Request $request, Hotel $hotel)
+    public function update(Request $request, Hotel $hotel, TvChannelChangeNotifier $notifier)
     {
         $hotel = $this->findManagedHotel($request, $hotel->id);
         $masterId = Hotel::masterId();
@@ -91,6 +92,8 @@ class ManagerTvChannelAccessController extends Controller
                     ]);
             }
         });
+
+        $notifier->notifyHotel($hotel->id);
 
         return redirect()->route('manager.tv-channels.index', ['hotel_id' => $hotel->id])
             ->with('success', 'Akses TV channel untuk '.$hotel->name.' berhasil disimpan.');

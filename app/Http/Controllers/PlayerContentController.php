@@ -202,7 +202,7 @@ class PlayerContentController extends Controller
 
         try {
             $this->mqtt->publishPlayerUpdate($player->fresh(), 'menus');
-            $this->mqtt->publishPlayerUpdate($player->fresh(), 'channels');
+            $this->mqtt->publishPlayerUpdate($player->fresh(), 'tv_channels');
         } catch (\Throwable $exception) {
             report($exception);
         }

@@ -20,6 +20,7 @@ use App\Http\Controllers\ManagerHotelContextController;
 use App\Http\Controllers\ManagerHotelController;
 use App\Http\Controllers\ManagerHotelSettingsController;
 use App\Http\Controllers\ManagerHotelUserController;
+use App\Http\Controllers\ManagerLicenseController;
 use App\Http\Controllers\ManagerPortfolioController;
 use App\Http\Controllers\ManagerPortfolioReportController;
 use App\Http\Controllers\ManagerTvChannelAccessController;
@@ -34,14 +35,14 @@ use App\Http\Controllers\MenuTransactionReportController;
 use App\Http\Controllers\MovieCategoryController;
 use App\Http\Controllers\MovieController;
 use App\Http\Controllers\MqttDocumentationController;
+use App\Http\Controllers\MqttSyncController;
 use App\Http\Controllers\PlaceCategoryController;
 use App\Http\Controllers\PlaceController;
-use App\Http\Controllers\PlatformLicenseController;
 use App\Http\Controllers\PlatformDashboardController;
+use App\Http\Controllers\PlatformLicenseController;
 use App\Http\Controllers\PlayerController;
 use App\Http\Controllers\PlayerGroupController;
 use App\Http\Controllers\PlayerPublishController;
-use App\Http\Controllers\ManagerLicenseController;
 use App\Http\Controllers\ProfileController;
 use App\Http\Controllers\PublicLandingPageController;
 use App\Http\Controllers\RunningTextController;
@@ -98,9 +99,14 @@ Route::middleware(['auth', 'role.category:master,superadmin'])
     ->name('platform.')
     ->group(function () {
         Route::get('/dashboard', [PlatformDashboardController::class, 'index'])->name('dashboard');
+        Route::get('/mqtt-sync', [MqttSyncController::class, 'index'])->name('mqtt-sync.index');
+        Route::get('/mqtt-sync/hotels/{hotel}/players', [MqttSyncController::class, 'players'])->name('mqtt-sync.players');
+        Route::post('/mqtt-sync', [MqttSyncController::class, 'store'])->name('mqtt-sync.store');
         Route::get('/landing-page', [LandingPageController::class, 'edit'])->name('landing-page.edit');
         Route::put('/landing-page', [LandingPageController::class, 'update'])->name('landing-page.update');
         Route::put('/hotels/{hotel}/settings', [HotelSettingController::class, 'update'])->name('hotels.settings.update');
+        Route::get('/wilayah-indonesia/search', [WilayahIndonesiaController::class, 'search'])
+            ->name('wilayah-indonesia.search');
         Route::put('/hotels/{hotel}/tv-channels', [HotelController::class, 'updateTvChannels'])->name('hotels.tv-channels.update');
         Route::resource('hotels', HotelController::class)->except('destroy');
         Route::resource('hotel-admins', HotelAdminController::class)
@@ -149,6 +155,7 @@ Route::middleware(['auth', 'role.category:manager'])
         Route::put('/tv-channels/{hotel}', [ManagerTvChannelAccessController::class, 'update'])->name('tv-channels.update');
         Route::post('/hotels/{hotel}/activate', [ManagerHotelContextController::class, 'update'])->name('hotels.activate');
         Route::get('/hotels/{hotel}/settings', [ManagerHotelSettingsController::class, 'edit'])->name('hotels.settings.edit');
+        Route::get('/hotels/{hotel}/wilayah-indonesia/search', [ManagerHotelSettingsController::class, 'searchWilayah'])->name('hotels.wilayah-indonesia.search');
         Route::put('/hotels/{hotel}/settings', [ManagerHotelSettingsController::class, 'update'])->name('hotels.settings.update');
         Route::patch('/hotels/{hotel}/status', [ManagerHotelController::class, 'updateStatus'])->name('hotels.status');
         Route::post('/hotel-context/clear', [ManagerHotelContextController::class, 'clear'])->name('hotel-context.clear');

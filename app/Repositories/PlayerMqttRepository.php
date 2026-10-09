@@ -10,6 +10,23 @@ use InvalidArgumentException;
 
 class PlayerMqttRepository
 {
+    public const UPDATE_TYPE_LABELS = [
+        'checkin' => 'Check-in tamu',
+        'checkout' => 'Check-out tamu',
+        'tv_channels' => 'TV Channels',
+        'menus' => 'Menu dan tenant',
+        'theme' => 'Theme',
+        'configuration' => 'Konfigurasi hotel/player',
+        'media' => 'Media library',
+        'movies' => 'Film / VOD',
+        'music' => 'Musik dan playlist',
+        'places' => 'Tempat terdekat',
+        'guides' => 'Panduan hotel',
+        'running_texts' => 'Running text',
+        'application' => 'Aplikasi player',
+        'all' => 'Semua data',
+    ];
+
     public const UPDATE_TYPES = [
         'checkin',
         'checkout',
@@ -17,6 +34,27 @@ class PlayerMqttRepository
         'menus',
         'theme',
         'configuration',
+        'media',
+        'movies',
+        'music',
+        'places',
+        'guides',
+        'running_texts',
+        'application',
+        'all',
+    ];
+
+    public const MANUAL_SYNC_TYPES = [
+        'tv_channels',
+        'menus',
+        'theme',
+        'configuration',
+        'media',
+        'movies',
+        'music',
+        'places',
+        'guides',
+        'running_texts',
         'application',
         'all',
     ];
@@ -24,8 +62,7 @@ class PlayerMqttRepository
     public function __construct(
         private readonly MqttService $mqtt,
         private readonly HotelConfigurationManager $configurationManager,
-    ) {
-    }
+    ) {}
 
     public function publishPlayerUpdate(Player $player, string $type, string $action = 'sync'): void
     {
@@ -34,13 +71,27 @@ class PlayerMqttRepository
         if (! $hotel) {
             throw new InvalidArgumentException('Player is not assigned to a hotel.');
         }
+
+        $this->configurationManager->apply($hotel);
         $this->publishUpdate($hotel, (string) $player->serial, $type, $action);
     }
 
-    public function publishHotelUpdate(Hotel $hotel, string $type, string $action = 'sync'): void
+    public function publishHotelUpdate(Hotel $hotel, string $type, string $action = 'sync'): int
     {
         $hotel->loadMissing('configuration');
-        $this->publishUpdate($hotel, 'all', $type, $action);
+        $this->configurationManager->apply($hotel);
+
+        $players = $hotel->relationLoaded('players')
+            ? $hotel->players
+            : $hotel->players()->where('is_active', true)->get();
+
+        $players = $players->filter(fn (Player $player) => $player->is_active && filled($player->serial));
+
+        foreach ($players as $player) {
+            $this->publishUpdate($hotel, (string) $player->serial, $type, $action);
+        }
+
+        return $players->count();
     }
 
     public function subscribePlayerUpdates(Hotel $hotel, string $playerSerial, callable $handler): void
@@ -64,7 +115,6 @@ class PlayerMqttRepository
             throw new InvalidArgumentException("Unsupported player MQTT update type [{$type}].");
         }
 
-        $this->configurationManager->apply($hotel);
         $payload = json_encode([
             'type' => $type,
             'action' => $action,

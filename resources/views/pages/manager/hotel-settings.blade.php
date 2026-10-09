@@ -21,5 +21,7 @@
 
 @section('js')
     @parent
-    @include('partials.components.wilayah_select_script')
+    @include('partials.components.wilayah_select_script', [
+        'wilayahSearchUrl' => route('manager.hotels.wilayah-indonesia.search', $hotel),
+    ])
 @endsection

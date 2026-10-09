@@ -215,7 +215,7 @@
     </div>
 </form>
 
-@section('js')
+@push('page_js')
 <script>
 $(function () {
     const $managerSelect = $('#manager_ids');
@@ -243,4 +243,4 @@ $(function () {
     applyMqttSource();
 });
 </script>
-@endsection
+@endpush

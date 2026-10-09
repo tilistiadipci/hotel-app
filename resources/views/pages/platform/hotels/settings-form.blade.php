@@ -9,6 +9,11 @@
         $isManagerSettings => route('manager.portfolio'),
         default => route('platform.hotels.index'),
     };
+    $wilayahSearchUrl = match (true) {
+        $isManagerSettings => route('manager.hotels.wilayah-indonesia.search', $hotel),
+        auth()->user()?->hasRoleCategory('master', 'superadmin') => route('platform.wilayah-indonesia.search'),
+        default => route('wilayah-indonesia.search'),
+    };
 @endphp
 
 <div class="alert alert-info">
@@ -108,6 +113,7 @@
                             'id' => 'settings_hotel_adm4',
                             'value' => $hotel->adm4,
                             'selected' => $hotelWilayah,
+                            'searchUrl' => $wilayahSearchUrl,
                         ])
                     </div>
                     <div class="card-footer text-right">
@@ -129,27 +135,65 @@
 
                     <div class="card-body">
                         <div class="row">
-                            @foreach ($group['fields'] as $key => $field)
-                                <div class="col-lg-6">
-                                    <div class="form-group">
-                                        <label for="setting_{{ $key }}">{{ $field['label'] }}</label>
-                                        @if ($field['type'] === 'select')
-                                            <select id="setting_{{ $key }}" name="settings[{{ $key }}]" class="form-control @error('settings.'.$key) is-invalid @enderror">
-                                                @foreach ($field['options'] as $value => $label)
-                                                    <option value="{{ $value }}" @selected((string) old('settings.'.$key, $hotelSettings[$key] ?? $field['default']) === (string) $value)>{{ $label }}</option>
-                                                @endforeach
-                                            </select>
-                                        @else
-                                            <input id="setting_{{ $key }}" name="settings[{{ $key }}]" type="{{ $field['type'] }}"
-                                                @if ($field['type'] === 'number') step="any" @endif
+                            @if ($groupKey === 'menus')
+                                @foreach ($group['fields'] as $key => $field)
+                                    @continue(!str_ends_with($key, '_label'))
+                                    @php
+                                        $statusKey = str_replace('_label', '_status', $key);
+                                        $statusField = $group['fields'][$statusKey] ?? null;
+                                        $statusValue = $statusField
+                                            ? old('settings.'.$statusKey, $hotelSettings[$statusKey] ?? $statusField['default'])
+                                            : null;
+                                    @endphp
+                                    <div class="col-lg-6">
+                                        <div class="form-group">
+                                            <div class="d-flex align-items-center justify-content-between mb-1">
+                                                <label for="setting_{{ $key }}" class="mb-0">{{ $field['label'] }}</label>
+                                                @if ($statusField)
+                                                    <div class="custom-control custom-switch ml-3">
+                                                        <input type="hidden" name="settings[{{ $statusKey }}]" value="inactive">
+                                                        <input type="checkbox"
+                                                            id="setting_{{ $statusKey }}"
+                                                            name="settings[{{ $statusKey }}]"
+                                                            value="active"
+                                                            class="custom-control-input @error('settings.'.$statusKey) is-invalid @enderror"
+                                                            @checked($statusValue === 'active')>
+                                                        <label class="custom-control-label" for="setting_{{ $statusKey }}">{{ trans('common.active') }}</label>
+                                                    </div>
+                                                @endif
+                                            </div>
+                                            <input id="setting_{{ $key }}" name="settings[{{ $key }}]" type="text"
                                                 @if ($field['max']) maxlength="{{ $field['max'] }}" @endif
                                                 class="form-control @error('settings.'.$key) is-invalid @enderror"
                                                 value="{{ old('settings.'.$key, $hotelSettings[$key] ?? $field['default']) }}">
-                                        @endif
-                                        @error('settings.'.$key)<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                            @error('settings.'.$key)<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                            @error('settings.'.$statusKey)<div class="text-danger small mt-1">{{ $message }}</div>@enderror
+                                        </div>
                                     </div>
-                                </div>
-                            @endforeach
+                                @endforeach
+                            @else
+                                @foreach ($group['fields'] as $key => $field)
+                                    <div class="col-lg-6">
+                                        <div class="form-group">
+                                            <label for="setting_{{ $key }}">{{ $field['label'] }}</label>
+                                            @if ($field['type'] === 'select')
+                                                <select id="setting_{{ $key }}" name="settings[{{ $key }}]" class="form-control @error('settings.'.$key) is-invalid @enderror">
+                                                    @foreach ($field['options'] as $value => $label)
+                                                        <option value="{{ $value }}" @selected((string) old('settings.'.$key, $hotelSettings[$key] ?? $field['default']) === (string) $value)>{{ $label }}</option>
+                                                    @endforeach
+                                                </select>
+                                            @else
+                                                <input id="setting_{{ $key }}" name="settings[{{ $key }}]" type="{{ $field['type'] }}"
+                                                    @if ($field['type'] === 'number') step="any" @endif
+                                                    @if ($field['max']) maxlength="{{ $field['max'] }}" @endif
+                                                    class="form-control @error('settings.'.$key) is-invalid @enderror"
+                                                    value="{{ old('settings.'.$key, $hotelSettings[$key] ?? $field['default']) }}">
+                                            @endif
+                                            @error('settings.'.$key)<div class="invalid-feedback">{{ $message }}</div>@enderror
+                                        </div>
+                                    </div>
+                                @endforeach
+                            @endif
                         </div>
                     </div>
                     <div class="card-footer text-right">

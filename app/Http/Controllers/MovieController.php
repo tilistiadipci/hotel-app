@@ -272,7 +272,7 @@ class MovieController extends Controller
                 uniqueNotDeleted('movies', 'title', $movieId),
             ],
             'description' => 'required|string',
-            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:2048',
+            'image' => 'nullable|image|mimes:jpeg,png,jpg|max:300|dimensions:max_width=300,max_height=300',
             'image_media_id' => 'nullable|integer|exists:medias,id',
             'video' => 'nullable|file|mimes:mp4,mov,mkv,webm,avi|max:1024000', // ~1GB
             'uploaded_video_filename' => 'nullable|string',

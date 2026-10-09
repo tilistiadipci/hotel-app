@@ -91,6 +91,27 @@
             };
         }
 
+        function activeUploadProfile() {
+            return pickerContext && pickerContext.uploadProfile ? pickerContext.uploadProfile : null;
+        }
+
+        function readImageDimensions(file) {
+            return new Promise((resolve, reject) => {
+                const image = new Image();
+                const url = URL.createObjectURL(file);
+                image.onload = function() {
+                    const dimensions = { width: image.naturalWidth, height: image.naturalHeight };
+                    URL.revokeObjectURL(url);
+                    resolve(dimensions);
+                };
+                image.onerror = function() {
+                    URL.revokeObjectURL(url);
+                    reject(new Error('Gambar tidak dapat dibaca.'));
+                };
+                image.src = url;
+            });
+        }
+
         function extractAjaxErrorMessage(xhr, fallback = 'Upload gagal.') {
             if (!xhr) return fallback;
 
@@ -417,7 +438,8 @@
             }
             const params = url ? {} : {
                 type,
-                per_page: 6
+                per_page: 6,
+                upload_profile: activeUploadProfile()
             };
             $.get(url || "{{ route('media.library') }}", params, function(res) {
                 if (res.status) {
@@ -440,11 +462,10 @@
             const type = options.type || 'image';
 
             pickerType = type;
-            pickerContext = typeof options.onSelect === 'function'
-                ? {
-                    onSelect: options.onSelect
-                }
-                : null;
+            pickerContext = {
+                onSelect: typeof options.onSelect === 'function' ? options.onSelect : null,
+                uploadProfile: options.uploadProfile || null,
+            };
 
             $('#modalMediaPickerTitle').text('Pilih ' + type.charAt(0).toUpperCase() + type.slice(1));
             modalPicker.attr('data-type', type).addClass('is-open').attr('aria-hidden', 'false');
@@ -453,14 +474,16 @@
             pickerVideoInput && (pickerVideoInput.value = '');
             pickerProgress.addClass('d-none');
             pickerProgressBar.css('width', '0%').text('0%');
-            mediaUrlGroup.toggleClass('d-none', type !== 'image');
+            mediaUrlGroup.toggleClass('d-none', type !== 'image' || !!activeUploadProfile());
             mediaPickerUrl.val('');
             mediaPickerUrlError.addClass('d-none').text('');
             // set accept & help text sesuai tipe
             if (pickerInput) pickerInput.setAttribute('accept', pickerAcceptMap[type] || 'image/*,audio/*,video/*');
             if (pickerHelp) {
                 pickerHelp.textContent = type === 'image' ?
-                    `Format: JPG, JPEG, PNG. Max. ${formatLimitLabel(mediaUploadLimitsMb.image)}` :
+                    (activeUploadProfile() === 'music_vod'
+                        ? 'Format: JPG, JPEG, PNG. Maksimal 300 × 300 piksel dan 300 KB.'
+                        : `Format: JPG, JPEG, PNG. Max. ${formatLimitLabel(mediaUploadLimitsMb.image)}`) :
                     (type === 'audio' ?
                         `Format: MP3, WAV, FLAC, AAC, M4A, OGG. Max. ${formatLimitLabel(mediaUploadLimitsMb.audio)}` :
                         `Format: MP4, MKV, WEBM, AVI. Max. ${formatLimitLabel(mediaUploadLimitsMb.video)}`);
@@ -728,6 +751,27 @@
                 return;
             }
 
+            if (pickerType === 'image' && activeUploadProfile() === 'music_vod') {
+                if (file.size > 300 * 1024) {
+                    alert('Ukuran gambar maksimal 300 KB.');
+                    this.value = '';
+                    return;
+                }
+
+                try {
+                    const dimensions = await readImageDimensions(file);
+                    if (dimensions.width > 300 || dimensions.height > 300) {
+                        alert('Dimensi gambar maksimal 300 × 300 piksel.');
+                        this.value = '';
+                        return;
+                    }
+                } catch (error) {
+                    alert(error.message || 'Gambar tidak dapat dibaca.');
+                    this.value = '';
+                    return;
+                }
+            }
+
             // validasi size berdasarkan type
             let maxSize = 0;
 
@@ -755,6 +799,9 @@
             formData.append('_token', "{{ csrf_token() }}");
             formData.append('file', file);
             formData.append('type', pickerType);
+            if (activeUploadProfile()) {
+                formData.append('upload_profile', activeUploadProfile());
+            }
             formData.append('name', (uploadNameInput ? uploadNameInput.value : '') || file.name);
             if (durationVal) {
                 formData.append('duration', durationVal);
@@ -819,7 +866,10 @@
 
         btnPickImage && btnPickImage.addEventListener('click', () => {
             currentImageTarget = 1;
-            openPicker('image');
+            openPicker({
+                type: 'image',
+                uploadProfile: btnPickImage.dataset.uploadProfile || null,
+            });
         });
         btnPickImage2 && btnPickImage2.addEventListener('click', () => {
             currentImageTarget = 2;

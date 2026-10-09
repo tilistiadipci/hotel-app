@@ -4,7 +4,6 @@ namespace App\Http\Controllers;
 
 use App\Models\Media;
 use App\Repositories\SettingRepository;
-use App\Repositories\PlayerMqttRepository;
 use App\Services\WilayahIndonesiaService;
 use Carbon\Carbon;
 use Illuminate\Http\RedirectResponse;
@@ -338,18 +337,6 @@ class SettingWebsiteController extends Controller
             }
 
             session(['settings_refresh' => true]);
-        }
-
-        if (in_array($section, ['customize_menu', 'customize_menu_active'], true)) {
-            $hotel = $request->attributes->get('active_hotel');
-
-            if ($hotel) {
-                try {
-                    app(PlayerMqttRepository::class)->publishHotelUpdate($hotel, 'menus');
-                } catch (\Throwable $exception) {
-                    report($exception);
-                }
-            }
         }
 
         $settings = $this->settingRepository->getSettings(true);

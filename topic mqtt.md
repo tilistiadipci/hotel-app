@@ -26,7 +26,6 @@ Hotel yang dibuat melalui registrasi memakai konfigurasi `.env` secara default. 
 | `hotel-app/hotels/{hotel_code}/players/{player_serial}/event` | Subscribe | Player Publish | Semua aktivitas player |
 | `hotel-app/hotels/{hotel_code}/players/{player_serial}/update` | Publish | Player Subscribe | Update satu player |
 | `hotel-app/hotels/{hotel_code}/players/{player_serial}/notification` | Publish | Player Subscribe | Notifikasi satu player |
-| `hotel-app/hotels/{hotel_code}/players/all/update` | Publish | Semua Player Subscribe | Update semua player dalam satu hotel |
 | `hotel-app/hotels/{hotel_code}/players/all/notification` | Publish | Semua Player Subscribe | Notifikasi semua player dalam satu hotel |
 | `hotel-app/hotels/{hotel_code}/orders` | Subscribe | Player Publish | Semua order dari satu hotel |
 
@@ -117,17 +116,21 @@ Jika ada aktivitas baru, cukup tambahkan nilai `event`. Tidak perlu membuat topi
 
 ## 4. Update Data Player
 
+### Cara pengiriman dari CMS
+
+- **Admin hotel dan manager:** setiap perubahan master data langsung melakukan fan-out ke topic serial setiap player aktif pada hotel tersebut.
+- **Pengaturan khusus player:** perubahan dikirim hanya ke topic serial player tersebut.
+- **Superadmin:** perubahan master data tidak dikirim otomatis. Gunakan menu **Sync to TV MQTT**, pilih hotel, player (opsional), dan jenis data yang akan disinkronkan. Jika player dikosongkan, backend tetap mengirim satu pesan per serial player aktif.
+
+Pesan MQTT hanya menjadi pemicu. Frontend/player harus mengambil ulang data terbaru dari API setelah menerima pesan.
+
 Satu player:
 
 ```text
 hotel-app/hotels/{hotel_code}/players/{player_serial}/update
 ```
 
-Semua player dalam satu hotel:
-
-```text
-hotel-app/hotels/{hotel_code}/players/all/update
-```
+Untuk sinkronisasi seluruh hotel, backend tidak memakai topic `players/all/update`. Backend mengambil seluruh player aktif, lalu menerbitkan pesan satu per satu ke topic serial masing-masing. Contoh jika hotel mempunyai 10 player aktif, backend menerbitkan 10 pesan ke 10 topic berbeda.
 
 ```json
 {
@@ -139,7 +142,7 @@ hotel-app/hotels/{hotel_code}/players/all/update
 }
 ```
 
-Field `hotel_code` dan `player_serial` selalu dikirim agar satu handler dapat memvalidasi tujuan pesan. Untuk topic broadcast, nilai `player_serial` adalah `all`.
+Field `hotel_code` dan `player_serial` selalu dikirim agar satu handler dapat memvalidasi tujuan pesan. Nilai `player_serial` selalu berisi serial player tujuan, termasuk ketika sync diminta untuk seluruh hotel.
 
 Nilai `type` yang didukung:
 
@@ -151,8 +154,44 @@ Nilai `type` yang didukung:
 | `menus` | Menu global hotel atau content khusus player berubah | Ambil ulang `GET /api/player/configuration` |
 | `theme` | Tema atau detail tema berubah | Ambil konfigurasi tema terbaru |
 | `configuration` | Pengaturan hotel/player berubah | Ambil konfigurasi terbaru |
+| `media` | Media library berubah | Muat ulang aset/media yang digunakan |
+| `movies` | Film/VOD atau kategorinya berubah | Sinkronkan katalog film/VOD |
+| `music` | Lagu atau playlist berubah | Sinkronkan katalog musik dan playlist |
+| `places` | Tempat terdekat atau kategorinya berubah | Sinkronkan daftar tempat terdekat |
+| `guides` | Panduan hotel atau kategorinya berubah | Sinkronkan panduan hotel |
+| `running_texts` | Running text berubah | Sinkronkan running text |
 | `application` | Versi/aplikasi player berubah | Jalankan pemeriksaan pembaruan aplikasi |
 | `all` | Sinkronisasi penuh diminta | Sinkronkan seluruh data player |
+
+### Handler frontend berdasarkan `type`
+
+Frontend cukup memakai satu handler pada dua topic update yang disubscribe. Gunakan nilai `type` sebagai penentu data yang diambil ulang:
+
+```javascript
+switch (message.type) {
+  case 'tv_channels':
+    await syncTvChannels();
+    break;
+  case 'theme':
+  case 'configuration':
+  case 'menus':
+    await syncPlayerConfiguration();
+    break;
+  case 'media':
+  case 'movies':
+  case 'music':
+  case 'places':
+  case 'guides':
+  case 'running_texts':
+    await syncCatalog(message.type);
+    break;
+  case 'all':
+    await syncAllPlayerData();
+    break;
+}
+```
+
+Nilai yang saat ini valid adalah `checkin`, `checkout`, `tv_channels`, `menus`, `theme`, `configuration`, `media`, `movies`, `music`, `places`, `guides`, `running_texts`, `application`, dan `all`.
 
 ### Event check-in
 
@@ -323,11 +362,10 @@ hotel-app/hotels/+/orders
 ```text
 hotel-app/hotels/{hotel_code}/players/{player_serial}/update
 hotel-app/hotels/{hotel_code}/players/{player_serial}/notification
-hotel-app/hotels/{hotel_code}/players/all/update
 hotel-app/hotels/{hotel_code}/players/all/notification
 ```
 
-Player sebaiknya subscribe ke topic serial miliknya dan topic `all`. Topic serial menerima event khusus seperti check-in/check-out, sedangkan topic `all` menerima perubahan bersama seperti daftar TV channel.
+Player wajib subscribe ke topic update berdasarkan kode hotel dan serial miliknya. Topic `all` hanya diperlukan jika frontend juga mendukung notifikasi broadcast; sinkronisasi master data selalu diterima melalui topic serial.
 
 ## Contoh Bio Experience Hotel
 
@@ -337,7 +375,6 @@ hotel-app/hotels/BIO-HOTEL/players/BIO-TV-001/status
 hotel-app/hotels/BIO-HOTEL/players/BIO-TV-001/event
 hotel-app/hotels/BIO-HOTEL/players/BIO-TV-001/update
 hotel-app/hotels/BIO-HOTEL/players/BIO-TV-001/notification
-hotel-app/hotels/BIO-HOTEL/players/all/update
 hotel-app/hotels/BIO-HOTEL/players/all/notification
 hotel-app/hotels/BIO-HOTEL/orders
 ```

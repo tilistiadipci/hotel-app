@@ -17,8 +17,7 @@ class TvChannelChangeNotifier
     public function __construct(
         private TvChannelCacheService $cache,
         private PlayerMqttRepository $playerMqtt,
-    ) {
-    }
+    ) {}
 
     public function notifyHotel(string $hotelId): void
     {
@@ -37,6 +36,12 @@ class TvChannelChangeNotifier
         }
 
         $this->cache->flush();
+
+        // Superadmin explicitly controls delivery from the "Sync to TV MQTT"
+        // screen. Hotel admin and manager changes are delivered immediately.
+        if (! (auth()->user()?->hasRoleCategory('manager', 'admin') ?? false)) {
+            return;
+        }
 
         $this->hotels($hotelIds)->each(fn (Hotel $hotel) => $this->publishSync($hotel));
     }
