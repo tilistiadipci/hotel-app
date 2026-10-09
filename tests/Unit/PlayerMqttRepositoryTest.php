@@ -91,4 +91,25 @@ class PlayerMqttRepositoryTest extends TestCase
         $this->assertSame(2, $published);
         $this->assertEqualsCanonicalizing(['BIO-TV-001', 'BIO-TV-002'], $publishedSerials);
     }
+
+    public function test_it_publishes_notification_to_each_player_notification_topic(): void
+    {
+        $hotel = new Hotel(['code' => 'NOTIF-HOTEL']);
+        $hotel->setRelation('configuration', new HotelConfiguration);
+        $player = new Player(['serial' => 'NOTIF-TV-001', 'is_active' => true]);
+        $player->setRelation('hotel', $hotel);
+        $mqtt = Mockery::mock(MqttService::class);
+        $configuration = Mockery::mock(HotelConfigurationManager::class);
+        $configuration->shouldReceive('apply')->once()->with($hotel);
+        $mqtt->shouldReceive('publish')->once()->with(
+            'hotel-app/hotels/NOTIF-HOTEL/players/NOTIF-TV-001/notification',
+            Mockery::on(fn ($payload) => str_contains($payload, 'Uji MQTT')),
+            false
+        );
+        $repository = new PlayerMqttRepository($mqtt, $configuration);
+
+        $repository->publishPlayerNotification($player, [
+            'type' => 'warning', 'title' => 'Uji MQTT', 'message' => 'Tes',
+        ]);
+    }
 }

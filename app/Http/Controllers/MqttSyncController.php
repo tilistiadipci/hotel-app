@@ -65,9 +65,17 @@ class MqttSyncController extends Controller
 
         try {
             if ($player) {
-                $mqtt->publishPlayerUpdate($player, $validated['type']);
+                if ($validated['type'] === 'notification') {
+                    $mqtt->publishPlayerNotification($player, $this->testNotification());
+                } else {
+                    $mqtt->publishPlayerUpdate($player, $validated['type']);
+                }
             } else {
-                $mqtt->publishHotelUpdate($hotel, $validated['type']);
+                if ($validated['type'] === 'notification') {
+                    $mqtt->publishHotelNotification($hotel, $this->testNotification());
+                } else {
+                    $mqtt->publishHotelUpdate($hotel, $validated['type']);
+                }
             }
         } catch (Throwable $exception) {
             report($exception);
@@ -78,5 +86,16 @@ class MqttSyncController extends Controller
         $target = $player ? $player->serial : 'semua player';
 
         return back()->with('success', "Sync {$validated['type']} berhasil dikirim ke {$target} di {$hotel->name}.");
+    }
+
+    private function testNotification(): array
+    {
+        return [
+            'type' => 'notification',
+            'title' => 'Uji Notifikasi MQTT',
+            'message' => 'Ini adalah pesan uji dari Superadmin.',
+            'display' => 'popup',
+            'duration' => 30,
+        ];
     }
 }

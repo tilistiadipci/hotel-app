@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Warning as WarningModel;
 use App\Repositories\PlayerGroupRepository;
+use App\Repositories\PlayerMqttRepository;
 use App\Repositories\PlayerRepository;
 use App\Repositories\SettingRepository;
 use App\Repositories\WarningRepository;
@@ -16,17 +17,23 @@ use Illuminate\Validation\ValidationException;
 class WarningController extends Controller
 {
     protected WarningRepository $warningRepository;
+
     protected PlayerRepository $playerRepository;
+
     protected PlayerGroupRepository $playerGroupRepository;
+
     protected SettingRepository $settingRepository;
+
     private string $page = 'warnings';
+
     private string $icon = 'fa fa-bell';
 
     public function __construct(
         WarningRepository $warningRepository,
         PlayerRepository $playerRepository,
         PlayerGroupRepository $playerGroupRepository,
-        SettingRepository $settingRepository
+        SettingRepository $settingRepository,
+        private readonly PlayerMqttRepository $playerMqtt
     ) {
         $this->warningRepository = $warningRepository;
         $this->playerRepository = $playerRepository;
@@ -65,7 +72,7 @@ class WarningController extends Controller
             if ($this->settingRepository->getValueByKey('alert_notification', 'inactive') === 'active') {
                 $firebase = new FirebaseService();
                 foreach ($warnings as $warning) {
-                    $topic = 'warning_player_' . $warning->player->serial;
+                    $topic = 'warning_player_'.$warning->player->serial;
 
                     try {
                         $result = $firebase->sendToTopic($topic, [
@@ -78,19 +85,20 @@ class WarningController extends Controller
 
                         Log::info("FCM sent to topic {$topic}", ['result' => $result]);
                     } catch (\Exception $e) {
-                        Log::error("FCM ERROR: " . $e->getMessage());
+                        Log::error('FCM ERROR: '.$e->getMessage());
                     }
                 }
             }
 
             return redirect()
                 ->route('warnings.create')
-                ->with('success', 'Warning berhasil dikirim ke ' . $warnings->count() . ' TV target.');
+                ->with('success', 'Warning berhasil dikirim ke '.$warnings->count().' TV target.');
         } catch (ValidationException $e) {
             return redirect()->back()->withInput()->withErrors($e->errors());
         } catch (\Exception $e) {
             $this->debugError($e);
-            return redirect()->back()->withInput()->with('error', "Internal server error");
+
+            return redirect()->back()->withInput()->with('error', 'Internal server error');
         }
     }
 
@@ -121,9 +129,10 @@ class WarningController extends Controller
     private function validateRequest(Request $request): array
     {
         $data = $request->validate([
-            'type' => ['required', 'in:' . implode(',', WarningModel::TYPE_KEYS)],
+            'type' => ['required', 'in:'.implode(',', WarningModel::TYPE_KEYS)],
             'other_type' => ['nullable', 'string', 'max:120'],
-            'priority' => ['required', 'in:' . implode(',', WarningModel::PRIORITY_KEYS)],
+            'priority' => ['required', 'in:'.implode(',', WarningModel::PRIORITY_KEYS)],
+            'message' => ['nullable', 'string', 'max:2000'],
             'target_mode' => ['required', 'in:all,groups,players'],
             'target_group_ids' => ['nullable', 'array'],
             'target_group_ids.*' => ['integer', 'exists:player_groups,id'],
@@ -171,5 +180,25 @@ class WarningController extends Controller
             'warning_ids' => $warnings->pluck('id')->all(),
             'players' => $warnings->pluck('serial')->all(),
         ]);
+
+        foreach ($warnings as $warning) {
+            try {
+                $this->playerMqtt->publishPlayerNotification($warning->player, [
+                    'type' => 'warning',
+                    'title' => 'Peringatan '.($warning->other_type ?: ucfirst((string) $warning->type)),
+                    'message' => (string) $warning->message,
+                    'display' => 'fullscreen',
+                    'duration' => 30,
+                    'priority' => $warning->priority,
+                    'scheduled' => (int) $warning->scheduled,
+                ]);
+            } catch (\Throwable $exception) {
+                Log::error('MQTT notification failed.', [
+                    'warning_id' => $warning->id,
+                    'player_id' => $warning->player_id,
+                    'error' => $exception->getMessage(),
+                ]);
+            }
+        }
     }
 }

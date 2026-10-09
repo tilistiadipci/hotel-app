@@ -39,7 +39,9 @@
                     <select name="type" id="type" class="form-control" required>
                         <option value="">Pilih jenis data</option>
                         @foreach($types as $value => $label)
-                            <option value="{{ $value }}" @selected(old('type') === $value)>{{ $label }} ({{ $value }})</option>
+                            <option value="{{ $value }}" @selected(old('type') === $value)>
+                                {{ $label }}{{ $value === 'notification' ? ' (Uji coba)' : '' }} ({{ $value }})
+                            </option>
                         @endforeach
                     </select>
                 </div>

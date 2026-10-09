@@ -21,7 +21,8 @@ class MqttSyncTest extends TestCase
         $this->actingAs($this->user('superadmin'))
             ->get(route('platform.mqtt-sync.index'))
             ->assertOk()
-            ->assertSee('Sync to TV MQTT');
+            ->assertSee('Sync to TV MQTT')
+            ->assertSee('Notifikasi / alarm (Uji coba) (notification)', false);
 
         $this->actingAs($this->user('admin', $this->hotel()))
             ->get(route('platform.mqtt-sync.index'))
@@ -65,6 +66,33 @@ class MqttSyncTest extends TestCase
                 'hotel_id' => $hotel->id,
                 'player_id' => $player->id,
                 'type' => 'theme',
+            ])
+            ->assertSessionHas('success');
+    }
+
+    public function test_superadmin_can_send_a_test_notification_to_one_player(): void
+    {
+        $hotel = $this->hotel();
+        $player = Player::query()->create([
+            'hotel_id' => $hotel->id,
+            'name' => 'TV Uji Notifikasi',
+            'serial' => 'NOTIF-'.Str::upper(Str::random(8)),
+            'is_active' => true,
+        ]);
+        $mqtt = Mockery::mock(PlayerMqttRepository::class);
+        $mqtt->shouldReceive('publishPlayerNotification')
+            ->once()
+            ->with(Mockery::on(fn (Player $target) => $target->is($player)), Mockery::on(
+                fn (array $payload) => $payload['type'] === 'notification'
+                    && $payload['title'] === 'Uji Notifikasi MQTT'
+            ));
+        $this->app->instance(PlayerMqttRepository::class, $mqtt);
+
+        $this->actingAs($this->user('superadmin'))
+            ->post(route('platform.mqtt-sync.store'), [
+                'hotel_id' => $hotel->id,
+                'player_id' => $player->id,
+                'type' => 'notification',
             ])
             ->assertSessionHas('success');
     }

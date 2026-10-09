@@ -24,6 +24,7 @@ class PlayerMqttRepository
         'guides' => 'Panduan hotel',
         'running_texts' => 'Running text',
         'application' => 'Aplikasi player',
+        'notification' => 'Notifikasi / alarm',
         'all' => 'Semua data',
     ];
 
@@ -41,6 +42,7 @@ class PlayerMqttRepository
         'guides',
         'running_texts',
         'application',
+        'notification',
         'all',
     ];
 
@@ -56,6 +58,7 @@ class PlayerMqttRepository
         'guides',
         'running_texts',
         'application',
+        'notification',
         'all',
     ];
 
@@ -101,6 +104,40 @@ class PlayerMqttRepository
         $this->mqtt->subscribe($this->updateTopic($hotel->code, $playerSerial), $handler);
     }
 
+    public function publishPlayerNotification(Player $player, array $notification): void
+    {
+        $player->loadMissing('hotel.configuration');
+        $hotel = $player->hotel;
+        if (! $hotel) {
+            throw new InvalidArgumentException('Player is not assigned to a hotel.');
+        }
+
+        $this->configurationManager->apply($hotel);
+        $this->publishNotification($hotel, (string) $player->serial, $notification);
+    }
+
+    public function publishHotelNotification(Hotel $hotel, array $notification): int
+    {
+        $hotel->loadMissing('configuration');
+        $this->configurationManager->apply($hotel);
+        $players = $hotel->players()->where('is_active', true)->get()
+            ->filter(fn (Player $player) => filled($player->serial));
+
+        foreach ($players as $player) {
+            $this->publishNotification($hotel, (string) $player->serial, $notification);
+        }
+
+        return $players->count();
+    }
+
+    public function notificationTopic(string $hotelCode, string $playerSerial): string
+    {
+        $this->assertTopicSegment($hotelCode, 'hotel code');
+        $this->assertTopicSegment($playerSerial, 'player serial');
+
+        return "hotel-app/hotels/{$hotelCode}/players/{$playerSerial}/notification";
+    }
+
     public function updateTopic(string $hotelCode, string $playerSerial): string
     {
         $this->assertTopicSegment($hotelCode, 'hotel code');
@@ -124,6 +161,28 @@ class PlayerMqttRepository
         ], JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR);
 
         $this->mqtt->publish($this->updateTopic($hotel->code, $playerSerial), $payload, false);
+    }
+
+    private function publishNotification(Hotel $hotel, string $playerSerial, array $notification): void
+    {
+        $payload = array_merge([
+            'type' => 'notification',
+            'title' => 'Notifikasi Hotel',
+            'message' => '',
+            'display' => 'popup',
+            'duration' => 30,
+            'timestamp' => now()->toIso8601String(),
+        ], $notification, [
+            'hotel_code' => $hotel->code,
+            'player_serial' => $playerSerial,
+            'timestamp' => $notification['timestamp'] ?? now()->toIso8601String(),
+        ]);
+
+        $this->mqtt->publish(
+            $this->notificationTopic($hotel->code, $playerSerial),
+            json_encode($payload, JSON_UNESCAPED_SLASHES | JSON_THROW_ON_ERROR),
+            false
+        );
     }
 
     private function assertTopicSegment(string $value, string $name): void
