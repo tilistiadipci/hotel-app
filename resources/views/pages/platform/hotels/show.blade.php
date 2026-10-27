@@ -169,10 +169,9 @@
             </div>
             <div class="col-lg-7">
                 <div class="card hotel-detail-card mb-4">
-                    <div class="card-header"><i class="fa fa-server mr-2 text-primary"></i>Storage dan MQTT</div>
+                    <div class="card-header"><i class="fa fa-server mr-2 text-primary"></i>MQTT</div>
                     <div class="card-body">
                         <dl class="row hotel-info-list mb-0">
-                            <dt class="col-sm-4">Root media</dt><dd class="col-sm-8"><code>{{ $configuration?->media_root ?? '-' }}</code></dd>
                             @php
                                 $customMqtt = (bool) $configuration?->use_custom_mqtt;
                                 $mqttDefaults = config('mqtt-client.environment_defaults');

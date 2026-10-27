@@ -62,7 +62,7 @@ class HotelSettingsManager
         return [
             'hotelSettings' => $this->values($hotel),
             'hotelSettingGroups' => $this->definitions(),
-            'hotelImageMedia' => Media::query()
+            'hotelImageMedia' => Media::query()->forHotel($hotel->id)
                 ->where('type', 'image')
                 ->orderBy('name')
                 ->get(['id', 'name', 'original_filename']),

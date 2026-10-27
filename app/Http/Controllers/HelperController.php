@@ -122,7 +122,7 @@ class HelperController extends Controller
         $folder = trim($folder, '/');
         $nameWithoutExt = \Illuminate\Support\Str::slug(pathinfo($file->getClientOriginalName(), PATHINFO_FILENAME));
         $ext = $file->getClientOriginalExtension();
-        $fileName = now()->format('YmdHis') . '_' . $nameWithoutExt . ($ext ? '.' . $ext : '');
+        $fileName = now()->format('YmdHis') . '_' . $nameWithoutExt . '_' . \Illuminate\Support\Str::lower(\Illuminate\Support\Str::random(8)) . ($ext ? '.' . $ext : '');
         $relativePath = ($folder ? $folder . '/' : '') . $fileName;
 
         if ($file->getRealPath()) {

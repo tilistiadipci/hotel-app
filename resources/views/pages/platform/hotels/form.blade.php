@@ -108,27 +108,6 @@
         <div class="position-relative row form-group"><label for="admin_password_confirmation" class="col-sm-3 col-form-label text-sm-right">Konfirmasi Password</label><div class="col-sm-9"><input id="admin_password_confirmation" name="admin_password_confirmation" type="password" class="form-control"></div></div>
         @endunless
 
-        <h5 class="mt-5">Storage Media</h5>
-        <hr class="mb-4">
-
-        <div class="position-relative row form-group">
-            <div class="col-sm-3 col-form-label text-sm-right">Folder Media Hotel</div>
-            <div class="col-sm-9">
-                @if ($configuration?->media_root)
-                    <div class="form-control-plaintext">
-                        <code>{{ $configuration->media_root }}</code>
-                    </div>
-                @else
-                    <div class="form-control-plaintext text-muted">
-                        Dibuat otomatis dari nama hotel setelah disimpan.
-                    </div>
-                @endif
-                <small class="text-primary font-italic">
-                    Folder bersifat unik dan tidak perlu diisi. Jika nama folder sudah digunakan, sistem otomatis menambahkan angka di belakangnya.
-                </small>
-            </div>
-        </div>
-
         <h5 class="mt-5">MQTT</h5>
         <hr class="mb-4">
 

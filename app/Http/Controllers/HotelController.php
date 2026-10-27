@@ -158,8 +158,8 @@ class HotelController extends Controller
             'players' => $players->count(),
             'active_players' => $players->where('is_active', true)->count(),
             'occupied_players' => Booking::query()->forHotel($hotel->id)->active()->distinct()->count('player_id'),
-            'media' => Media::query()->count(),
-            'media_bytes' => (int) Media::query()->sum('size'),
+            'media' => Media::query()->forHotel($hotel->id)->count(),
+            'media_bytes' => (int) Media::query()->forHotel($hotel->id)->sum('size'),
             'transactions' => MenuTransaction::query()->forHotel($hotel->id)->count(),
             'monthly_revenue' => (float) MenuTransaction::query()->forHotel($hotel->id)
                 ->whereBetween('created_at', [now()->startOfMonth(), now()->endOfMonth()])

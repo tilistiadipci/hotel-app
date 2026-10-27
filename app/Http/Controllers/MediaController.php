@@ -180,7 +180,7 @@ class MediaController extends Controller
 
         // Gabung chunk
         $safeFilename = now()->format('YmdHis').'_'.
-            Str::slug(pathinfo($filename, PATHINFO_FILENAME)).'.'.$extension;
+            Str::slug(pathinfo($filename, PATHINFO_FILENAME)).'_'.Str::lower(Str::random(8)).'.'.$extension;
 
         $finalRelative = 'videos/'.$safeFilename;
         $finalPath = $this->mediaAbsolutePath($finalRelative);
@@ -797,8 +797,14 @@ class MediaController extends Controller
             return;
         }
 
+        $isUsedByAnotherMedia = $this->mediaRepository->query()
+            ->withoutGlobalScope('hotel')
+            ->where('storage_path', $media->storage_path)
+            ->whereKeyNot($media->getKey())
+            ->exists();
+
         $abs = $this->mediaAbsolutePath($media->storage_path);
-        if (is_file($abs)) {
+        if (! $isUsedByAnotherMedia && is_file($abs)) {
             @unlink($abs);
         }
 

@@ -96,10 +96,10 @@ class MusicVodImageUploadTest extends TestCase
             ->assertJsonPath('media.height', 600);
     }
 
-    public function test_media_uploads_are_stored_once_and_visible_from_every_hotel(): void
+    public function test_media_uploads_are_stored_once_but_only_listed_for_the_uploading_hotel(): void
     {
         Storage::fake('media');
-        [, $firstAdmin] = $this->hotelAdmin();
+        [$firstHotel, $firstAdmin] = $this->hotelAdmin();
         [, $secondAdmin] = $this->hotelAdmin();
         $this->fakeMqtt();
 
@@ -116,12 +116,12 @@ class MusicVodImageUploadTest extends TestCase
 
         $this->assertStringStartsWith('images/', $storagePath);
         Storage::disk('media')->assertExists($storagePath);
-        $this->assertDatabaseHas('medias', ['id' => $mediaId, 'hotel_id' => null]);
+        $this->assertDatabaseHas('medias', ['id' => $mediaId, 'hotel_id' => $firstHotel->id]);
 
         $this->actingAs($secondAdmin)
             ->getJson(route('media.library', ['type' => 'image']))
             ->assertOk()
-            ->assertJsonFragment(['id' => $mediaId]);
+            ->assertJsonMissing(['id' => $mediaId]);
     }
 
     public function test_music_vod_picker_still_lists_existing_hotel_images_without_dimension_metadata(): void

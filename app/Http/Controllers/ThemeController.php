@@ -204,8 +204,10 @@ class ThemeController extends Controller
                 }
 
                 foreach ($imageMediaIds as $mediaId) {
-                    $media = Media::query()->find($mediaId);
-                    $canUseMedia = $media && $media->type === 'image';
+                    $media = Media::query()->withoutGlobalScope('hotel')->find($mediaId);
+                    $canUseMedia = $media
+                        && $media->type === 'image'
+                        && (! $media->hotel_id || $media->hotel_id === $hotelId || $existingImageMediaIds->contains($media->id));
 
                     if (! $canUseMedia) {
                         throw ValidationException::withMessages([
