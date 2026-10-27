@@ -144,6 +144,7 @@ return [
             'guide_status' => 'Status Guide',
             'nearby_status' => 'Status Nearby',
             'shopping_status' => 'Status Shopping',
+            'mobile_status' => 'Status Mobile',
         ],
     ],
 ];

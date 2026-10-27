@@ -215,6 +215,7 @@ class SettingWebsiteController extends Controller
                 'menu_guide_label' => ['required', 'string', 'max:100'],
                 'menu_nearby_label' => ['required', 'string', 'max:100'],
                 'menu_shopping_label' => ['required', 'string', 'max:100'],
+                'menu_mobile_label' => ['required', 'string', 'max:100'],
             ];
 
             if ($this->canManageAppMenus(auth()->user())) {
@@ -226,6 +227,7 @@ class SettingWebsiteController extends Controller
                     'menu_guide_status' => ['required', Rule::in(['active', 'inactive'])],
                     'menu_nearby_status' => ['required', Rule::in(['active', 'inactive'])],
                     'menu_shopping_status' => ['required', Rule::in(['active', 'inactive'])],
+                    'menu_mobile_status' => ['required', Rule::in(['active', 'inactive'])],
                 ];
             }
 
@@ -240,6 +242,7 @@ class SettingWebsiteController extends Controller
                 'menu_guide_label' => 'Menu Guide Label',
                 'menu_nearby_label' => 'Menu Nearby Label',
                 'menu_shopping_label' => 'Menu Shopping Label',
+                'menu_mobile_label' => 'Menu Mobile Label',
             ];
 
             if ($this->canManageAppMenus(auth()->user())) {
@@ -251,6 +254,7 @@ class SettingWebsiteController extends Controller
                     'menu_guide_status' => 'Menu Guide Status',
                     'menu_nearby_status' => 'Menu Nearby Status',
                     'menu_shopping_status' => 'Menu Shopping Status',
+                    'menu_mobile_status' => 'Menu Mobile Status',
                 ];
             }
 

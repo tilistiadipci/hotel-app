@@ -847,6 +847,7 @@ return [
         'menu_guide' => 'Guide',
         'menu_nearby' => 'Nearby',
         'menu_shopping' => 'Shopping',
+        'menu_mobile' => 'Mobile',
         'other_apps_desc' => 'Pilih aplikasi lain yang ingin diaktifkan pada menu.',
         'netflix' => 'Netflix',
         'vidio' => 'Vidio',

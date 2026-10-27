@@ -119,6 +119,8 @@ return new class extends Migration
             ['menus', 'menu_nearby_status', 'Menu Nearby Status', 'select', 'active', $status, null],
             ['menus', 'menu_shopping_label', 'Menu Shopping Label', 'text', 'Shopping', null, 80],
             ['menus', 'menu_shopping_status', 'Menu Shopping Status', 'select', 'active', $status, null],
+            ['menus', 'menu_mobile_label', 'Menu Mobile Label', 'text', 'Mobile', null, 80],
+            ['menus', 'menu_mobile_status', 'Menu Mobile Status', 'select', 'active', $status, null],
 
             ['apps', 'customize_menu_active', 'Customize Menu Other Active', 'select', 'inactive', $status, null],
             ['apps', 'other_apps_netflix', 'Netflix', 'select', 'inactive', $status, null],

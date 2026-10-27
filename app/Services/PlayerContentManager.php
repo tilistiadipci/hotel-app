@@ -20,6 +20,7 @@ class PlayerContentManager
         'guide' => ['name' => 'Guide', 'label_key' => 'menu_guide_label', 'status_key' => 'menu_guide_status', 'icon' => 'guide', 'placement' => 'main', 'default_active' => true],
         'nearby' => ['name' => 'Nearby / Places', 'label_key' => 'menu_nearby_label', 'status_key' => 'menu_nearby_status', 'icon' => 'place', 'placement' => 'main', 'default_active' => true],
         'shopping' => ['name' => 'Shopping', 'label_key' => 'menu_shopping_label', 'status_key' => 'menu_shopping_status', 'icon' => 'shopping', 'placement' => 'main', 'default_active' => true],
+        'mobile' => ['name' => 'Mobile', 'label_key' => 'menu_mobile_label', 'status_key' => 'menu_mobile_status', 'icon' => 'mobile', 'placement' => 'main', 'default_active' => true],
         'netflix' => ['name' => 'Netflix', 'label_key' => null, 'status_key' => 'other_apps_netflix', 'icon' => 'netflix', 'placement' => 'submenu', 'parent' => 'streaming_tv', 'default_active' => false, 'requires_apps' => true],
         'vidio' => ['name' => 'Vidio', 'label_key' => null, 'status_key' => 'other_apps_vidio', 'icon' => 'vidio', 'placement' => 'submenu', 'parent' => 'streaming_tv', 'default_active' => false, 'requires_apps' => true],
         'disney' => ['name' => 'Disney+', 'label_key' => null, 'status_key' => 'other_apps_disney', 'icon' => 'disney', 'placement' => 'submenu', 'parent' => 'streaming_tv', 'default_active' => false, 'requires_apps' => true],
@@ -45,6 +46,7 @@ class PlayerContentManager
         return [
             'home' => 'Home', 'tv' => 'TV', 'streaming' => 'Streaming', 'music' => 'Music',
             'movie' => 'Movie', 'guide' => 'Guide', 'place' => 'Place', 'shopping' => 'Shopping',
+            'mobile' => 'Mobile',
             'apps' => 'Apps', 'netflix' => 'Netflix', 'vidio' => 'Vidio', 'disney' => 'Disney+',
             'wetv' => 'WeTV', 'prime' => 'Prime Video', 'youtube' => 'YouTube',
         ];

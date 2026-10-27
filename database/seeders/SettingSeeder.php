@@ -280,6 +280,22 @@ class SettingSeeder extends Seeder
             ],
             [
                 'uuid' => (string) Str::uuid(),
+                'name' => 'Menu Mobile Label',
+                'key' => 'menu_mobile_label',
+                'value' => 'Mobile',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'uuid' => (string) Str::uuid(),
+                'name' => 'Menu Mobile Status',
+                'key' => 'menu_mobile_status',
+                'value' => 'active',
+                'created_at' => $now,
+                'updated_at' => $now,
+            ],
+            [
+                'uuid' => (string) Str::uuid(),
                 'name' => 'Customize Menu Other Active',
                 'key' => 'customize_menu_other_active',
                 'value' => 'inactive',

@@ -548,7 +548,7 @@
             const themes = {{ Illuminate\Support\Js::from($themeOptions->keyBy('id')) }};
             const iconClasses = {
                 home: 'fa-home', tv: 'fa-television', streaming: 'fa-play-circle', music: 'fa-music',
-                movie: 'fa-film', guide: 'fa-map', place: 'fa-map-marker', shopping: 'fa-shopping-bag',
+                movie: 'fa-film', guide: 'fa-map', place: 'fa-map-marker', shopping: 'fa-shopping-bag', mobile: 'fa-mobile',
                 apps: 'fa-th-large', netflix: 'fa-play', vidio: 'fa-play-circle', disney: 'fa-star',
                 wetv: 'fa-play', prime: 'fa-play-circle', youtube: 'fa-youtube-play'
             };

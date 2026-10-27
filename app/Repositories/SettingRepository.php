@@ -39,6 +39,8 @@ class SettingRepository extends BaseRepository
             'menu_nearby_status' => $this->getValueByKey('menu_nearby_status', 'active'),
             'menu_shopping_label' => $this->getValueByKey('menu_shopping_label', 'Shopping'),
             'menu_shopping_status' => $this->getValueByKey('menu_shopping_status', 'active'),
+            'menu_mobile_label' => $this->getValueByKey('menu_mobile_label', 'Mobile'),
+            'menu_mobile_status' => $this->getValueByKey('menu_mobile_status', 'active'),
             'customize_menu_active' => $this->getValueByKey('customize_menu_active', 'inactive'),
             'other_apps_netflix' => $this->getValueByKey('other_apps_netflix', 'inactive'),
             'other_apps_vidio' => $this->getValueByKey('other_apps_vidio', 'inactive'),

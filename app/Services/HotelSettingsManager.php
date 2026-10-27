@@ -168,6 +168,8 @@ class HotelSettingsManager
                     'menu_nearby_status' => $this->field('Menu Nearby Status', trans('platform.hotel_settings.fields.nearby_status'), 'select', 'active', $status),
                     'menu_shopping_label' => $this->field('Menu Shopping Label', trans('common.settings_page.menu_shopping'), 'text', 'Shopping', null, 80),
                     'menu_shopping_status' => $this->field('Menu Shopping Status', trans('platform.hotel_settings.fields.shopping_status'), 'select', 'active', $status),
+                    'menu_mobile_label' => $this->field('Menu Mobile Label', trans('common.settings_page.menu_mobile'), 'text', 'Mobile', null, 80),
+                    'menu_mobile_status' => $this->field('Menu Mobile Status', trans('platform.hotel_settings.fields.mobile_status'), 'select', 'active', $status),
                 ],
             ],
             'apps' => [

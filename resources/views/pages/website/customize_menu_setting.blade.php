@@ -21,6 +21,7 @@
                     <input type="hidden" name="menu_guide_status" value="inactive">
                     <input type="hidden" name="menu_nearby_status" value="inactive">
                     <input type="hidden" name="menu_shopping_status" value="inactive">
+                    <input type="hidden" name="menu_mobile_status" value="inactive">
                 @endif
 
                 <div class="card-body">
@@ -196,7 +197,7 @@
                         @endif
                     </div>
 
-                    <div class="form-group row align-items-center mb-0">
+                    <div class="form-group row align-items-center">
                         <label for="menu_shopping_label"
                             class="col-sm-3 col-form-label">{{ trans('common.settings_page.menu_shopping') }}</label>
                         <div class="{{ $inputColumnClass }}">
@@ -217,6 +218,32 @@
                                     <label class="custom-control-label" for="menu_shopping_status"></label>
                                 </div>
                                 @error('menu_shopping_status')
+                                    <div class="text-danger small mt-1">{{ $message }}</div>
+                                @enderror
+                            </div>
+                        @endif
+                    </div>
+
+                    <div class="form-group row align-items-center mb-0">
+                        <label for="menu_mobile_label"
+                            class="col-sm-3 col-form-label">{{ trans('common.settings_page.menu_mobile') }}</label>
+                        <div class="{{ $inputColumnClass }}">
+                            <input type="text" class="form-control @error('menu_mobile_label') is-invalid @enderror"
+                                id="menu_mobile_label" name="menu_mobile_label"
+                                value="{{ old('menu_mobile_label', $settings['menu_mobile_label'] ?? 'Mobile') }}">
+                            @error('menu_mobile_label')
+                                <div class="text-danger small mt-1">{{ $message }}</div>
+                            @enderror
+                        </div>
+                        @if ($canManageAppMenus)
+                            <div class="col-sm-2">
+                                <div class="custom-control custom-switch mt-2 mt-sm-0">
+                                    <input type="checkbox" class="custom-control-input menu-item-toggle"
+                                        id="menu_mobile_status" name="menu_mobile_status" value="active"
+                                        {{ old('menu_mobile_status', $settings['menu_mobile_status'] ?? 'active') === 'active' ? 'checked' : '' }}>
+                                    <label class="custom-control-label" for="menu_mobile_status"></label>
+                                </div>
+                                @error('menu_mobile_status')
                                     <div class="text-danger small mt-1">{{ $message }}</div>
                                 @enderror
                             </div>

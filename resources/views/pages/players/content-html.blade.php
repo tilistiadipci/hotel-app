@@ -14,7 +14,7 @@
 </head>
 <body>
 @php
-    $icons = ['home'=>'⌂','tv'=>'▣','streaming'=>'▶','music'=>'♫','movie'=>'●','guide'=>'☷','place'=>'⌖','shopping'=>'◆','apps'=>'▦','netflix'=>'N','vidio'=>'V','disney'=>'D','wetv'=>'W','prime'=>'P','youtube'=>'▶'];
+    $icons = ['home'=>'⌂','tv'=>'▣','streaming'=>'▶','music'=>'♫','movie'=>'●','guide'=>'☷','place'=>'⌖','shopping'=>'◆','mobile'=>'▯','apps'=>'▦','netflix'=>'N','vidio'=>'V','disney'=>'D','wetv'=>'W','prime'=>'P','youtube'=>'▶'];
     $mainMenus = $menus->where('placement', 'main');
     $submenus = $menus->where('placement', 'submenu');
     $menusByKey = $allMenus->keyBy('key');

@@ -859,6 +859,7 @@ return [
         'menu_guide' => 'Guide',
         'menu_nearby' => 'Nearby',
         'menu_shopping' => 'Shopping',
+        'menu_mobile' => 'Mobile',
         'other_apps_desc' => 'Choose which additional apps should be active in the menu.',
         'netflix' => 'Netflix',
         'vidio' => 'Vidio',
