@@ -128,7 +128,7 @@ class SuperadminHotelSettingsTest extends TestCase
         ]);
     }
 
-    public function test_superadmin_cannot_assign_media_or_theme_from_another_hotel(): void
+    public function test_superadmin_can_assign_shared_media_but_not_a_theme_from_another_hotel(): void
     {
         $superadmin = $this->superadmin();
         $firstHotel = $this->hotel('BOUND-A');
@@ -140,19 +140,25 @@ class SuperadminHotelSettingsTest extends TestCase
         ]);
         $secondHotel->themes()->attach($foreignTheme->id, ['is_default' => true]);
 
-        $response = $this->actingAs($superadmin)
-            ->from(route('platform.hotels.edit', ['hotel' => $firstHotel, 'tab' => 'settings']))
+        $this->actingAs($superadmin)
             ->put(route('platform.hotels.settings.update', $firstHotel), [
-                'theme_id' => $foreignTheme->id,
                 'settings' => ['general_app_logo' => $foreignLogo->id],
-            ]);
+            ])
+            ->assertRedirect();
 
-        $response->assertSessionHasErrors(['theme_id', 'settings.general_app_logo']);
-        $this->assertDatabaseMissing('settings', [
+        $this->assertDatabaseHas('settings', [
             'hotel_id' => $firstHotel->id,
             'key' => 'general_app_logo',
             'value' => (string) $foreignLogo->id,
         ]);
+
+        $response = $this->actingAs($superadmin)
+            ->from(route('platform.hotels.edit', ['hotel' => $firstHotel, 'tab' => 'settings']))
+            ->put(route('platform.hotels.settings.update', $firstHotel), [
+                'theme_id' => $foreignTheme->id,
+            ]);
+
+        $response->assertSessionHasErrors(['theme_id']);
     }
 
     private function superadmin(): User

@@ -156,10 +156,6 @@ if (!function_exists('getMediaImageUrl')) {
         // jika path tidak full url, tambahkan base url media storage
         // api/media?type=image&path=images/movies/sample_cover.jpg
         $query = ['type' => 'image', 'path' => $path, 'w' => $width, 'h' => $height];
-        $hotelCode = $hotelCode ?: app(\App\Tenancy\TenantContext::class)->hotel()?->code;
-        if ($hotelCode) {
-            $query['hotel'] = $hotelCode;
-        }
 
         return rtrim(config('app.app_service_api'), '/') . '/media?' . http_build_query($query);
     }
@@ -180,9 +176,6 @@ if (!function_exists('getMediaVideoUrl')) {
         // jika path tidak full url, tambahkan base url media storage
         // api/media?type=video&path=videos/movies/sample_video.mp4
         $query = ['type' => 'video', 'path' => $path];
-        if ($hotelCode = app(\App\Tenancy\TenantContext::class)->hotel()?->code) {
-            $query['hotel'] = $hotelCode;
-        }
 
         return rtrim(config('app.app_service_api'), '/') . '/media?' . http_build_query($query);
     }
@@ -200,9 +193,6 @@ if (!function_exists('getMediaAudioUrl')) {
         }
 
         $query = ['type' => 'audio', 'path' => $path];
-        if ($hotelCode = app(\App\Tenancy\TenantContext::class)->hotel()?->code) {
-            $query['hotel'] = $hotelCode;
-        }
 
         return rtrim(config('app.app_service_api'), '/') . '/media?' . http_build_query($query);
     }

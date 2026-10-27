@@ -9,7 +9,7 @@ use Tests\TestCase;
 
 class HotelConfigurationManagerTest extends TestCase
 {
-    public function test_it_applies_hotel_storage_and_mqtt_configuration(): void
+    public function test_it_applies_mqtt_configuration_without_changing_shared_media_storage(): void
     {
         $hotel = new Hotel(['name' => 'Hotel Test']);
         $hotel->setRelation('configuration', new HotelConfiguration([
@@ -26,8 +26,7 @@ class HotelConfigurationManagerTest extends TestCase
 
         app(HotelConfigurationManager::class)->apply($hotel);
 
-        $expectedRoot = rtrim(config('filesystems.media_base_root'), '/\\').DIRECTORY_SEPARATOR.'hotel-test';
-        $this->assertSame($expectedRoot, config('filesystems.disks.media.root'));
+        $this->assertSame(config('filesystems.media_base_root'), config('filesystems.disks.media.root'));
         $this->assertSame('broker.hotel.test', config('mqtt-client.connections.default.host'));
         $this->assertSame(1884, config('mqtt-client.connections.default.port'));
         $this->assertSame('tenant-user', config('mqtt-client.connections.default.connection_settings.auth.username'));

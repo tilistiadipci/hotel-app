@@ -78,7 +78,6 @@ class HotelSettingController extends Controller
                 'nullable',
                 'integer',
                 Rule::exists('medias', 'id')->where(fn ($query) => $query
-                    ->where('hotel_id', $hotel->id)
                     ->where('type', 'image')
                     ->whereNull('deleted_at')),
             ];

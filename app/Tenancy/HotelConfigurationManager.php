@@ -3,7 +3,6 @@
 namespace App\Tenancy;
 
 use App\Models\Hotel;
-use Illuminate\Support\Facades\Storage;
 
 class HotelConfigurationManager
 {
@@ -36,14 +35,8 @@ class HotelConfigurationManager
                 'mqtt-client.connections.default.connection_settings.tls.enabled' => $environment['tls'],
             ];
 
-        config($mqttConfiguration + [
-            'filesystems.disks.media.driver' => 'local',
-            'filesystems.disks.media.root' => app(HotelMediaPath::class)->absoluteRoot($settings->media_root),
-            'filesystems.disks.media.visibility' => 'public',
-        ]);
-
-        // Laravel caches resolved filesystem instances. Forget the previous
-        // instance so long-running workers cannot reuse another hotel's root.
-        Storage::forgetDisk('media');
+        // Media files live in one shared root. Hotel configuration only
+        // controls MQTT; it must not alter the media disk per request.
+        config($mqttConfiguration);
     }
 }

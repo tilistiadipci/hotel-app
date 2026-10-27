@@ -15,8 +15,8 @@ return [
 
     'default' => env('FILESYSTEM_DISK', 'local'),
 
-    // One physical root shared by all hotels. The tenant-specific folder from
-    // hotel_configurations.media_root is appended at runtime.
+    // One physical root shared by all hotels. Media files are grouped by
+    // type within this root (images, videos, audios), never by hotel.
     'media_base_root' => env('MEDIA_STORAGE_PATH', 'D:/MEDIA-HOTEL-APP-STORAGE'),
 
     /*

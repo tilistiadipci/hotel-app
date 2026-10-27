@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletes;
 use Illuminate\Support\Str;
 
-class Media extends TenantModel
+class Media extends Model
 {
     use HasFactory, SoftDeletes;
 
